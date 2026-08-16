@@ -9,8 +9,6 @@ const RISK = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "UNKNOWN"];
 export default function Explore({ query = "" }: { query?: string }) {
 	const { t } = useI18n();
 	const params = useMemo(() => new URLSearchParams(query), [query]);
-	// State is initialized from the URL query once; App remounts this page
-	// (key={query}) whenever the hash query changes, so no effect-sync needed.
 	const [items, setItems] = useState<PluginListItem[] | null>(null);
 	const [q, setQ] = useState(params.get("q") ?? "");
 	const [featuredOnly, setFeaturedOnly] = useState(params.get("featured") === "1");
@@ -65,61 +63,63 @@ export default function Explore({ query = "" }: { query?: string }) {
 
 	return (
 		<section>
-			<h1 className="page-title">{t("explore.title")}</h1>
-			<p className="page-subtitle">{t("explore.subtitle")}</p>
-			<div className="controls">
+			<h1 className="mb-1 text-3xl font-extrabold tracking-tight">{t("explore.title")}</h1>
+			<p className="mb-6 opacity-60">{t("explore.subtitle")}</p>
+
+			<div className="mb-8 flex flex-wrap items-center gap-3">
 				<input
-					className="search-input"
+					className="input min-w-52 flex-1"
 					value={q}
 					onChange={(e) => setQ(e.target.value)}
 					placeholder={t("explore.searchPlaceholder")}
 					aria-label={t("explore.searchPlaceholder")}
 				/>
-				<label className="check">
-					<input type="checkbox" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
-					{t("explore.featuredOnly")}
+				<label className="label cursor-pointer gap-2">
+					<input type="checkbox" className="checkbox checkbox-sm" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
+					<span>{t("explore.featuredOnly")}</span>
 				</label>
-				<label className="check">
-					<input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
-					{t("explore.verifiedOnly")}
+				<label className="label cursor-pointer gap-2">
+					<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
+					<span>{t("explore.verifiedOnly")}</span>
 				</label>
-				<select value={capability} onChange={(e) => setCapability(e.target.value)}>
+				<select className="select select-sm" value={capability} onChange={(e) => setCapability(e.target.value)}>
 					<option value="">{t("explore.allCapabilities")}</option>
 					{capabilities.map((c) => (
 						<option key={c} value={c}>{c.replace(/_/g, " ")}</option>
 					))}
 				</select>
-				<select value={pluginType} onChange={(e) => setPluginType(e.target.value)}>
+				<select className="select select-sm" value={pluginType} onChange={(e) => setPluginType(e.target.value)}>
 					<option value="">{t("explore.allTypes")}</option>
 					{pluginTypes.map((pt) => (
 						<option key={pt} value={pt}>{pt.replace(/_/g, " ")}</option>
 					))}
 				</select>
-				<select value={compatibility} onChange={(e) => setCompatibility(e.target.value)}>
+				<select className="select select-sm" value={compatibility} onChange={(e) => setCompatibility(e.target.value)}>
 					<option value="">{t("explore.anyCompatibility")}</option>
 					{COMPATIBILITY.map((c) => (
 						<option key={c} value={c}>{c.replace(/_/g, " ")}</option>
 					))}
 				</select>
-				<select value={risk} onChange={(e) => setRisk(e.target.value)}>
+				<select className="select select-sm" value={risk} onChange={(e) => setRisk(e.target.value)}>
 					<option value="">{t("explore.anyRisk")}</option>
 					{RISK.map((r) => (
 						<option key={r} value={r}>{r}</option>
 					))}
 				</select>
-				<select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+				<select className="select select-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
 					<option value="updated">{t("explore.sortUpdated")}</option>
 					<option value="stars">{t("explore.sortStars")}</option>
 					<option value="new">{t("explore.sortNew")}</option>
 					<option value="trending">{t("explore.sortTrending")}</option>
 				</select>
 			</div>
+
 			{loading ? (
-				<p className="empty">{t("common.loading")}</p>
+				<p className="text-base-content/60">{t("common.loading")}</p>
 			) : items.length === 0 ? (
-				<p className="empty">{t("explore.empty")}</p>
+				<p className="text-base-content/60">{t("explore.empty")}</p>
 			) : (
-				<div className="plugin-grid">
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{items.map((p) => (
 						<PluginCard key={p.fullName} p={p} />
 					))}

@@ -32,17 +32,19 @@ function parseMetadata(json: string | null): Metadata | null {
 
 function FindingsList({ findings }: { findings: Finding[] }) {
 	const { t } = useI18n();
-	if (findings.length === 0) return <p className="empty">{t("detail.noFindings")}</p>;
+	if (findings.length === 0) return <p className="text-base-content/60">{t("detail.noFindings")}</p>;
 	return (
-		<ul className="findings">
+		<ul className="space-y-3">
 			{findings.map((f, i) => (
-				<li key={i} className="finding">
-					<div className="finding-head">
-						<Badge value={f.severity} />
-						<strong>{f.title}</strong>
+				<li key={i} className="card border border-base-300 border-l-4 border-l-primary bg-base-100">
+					<div className="card-body gap-1 py-4">
+						<div className="flex items-center gap-2">
+							<Badge value={f.severity} />
+							<strong className="text-sm">{f.title}</strong>
+						</div>
+						{f.detail && <p className="text-sm opacity-70">{f.detail}</p>}
+						{f.filePath && <code className="text-xs opacity-50">{f.filePath}</code>}
 					</div>
-					{f.detail && <p>{f.detail}</p>}
-					{f.filePath && <code className="finding-file">{f.filePath}</code>}
 				</li>
 			))}
 		</ul>
@@ -51,9 +53,9 @@ function FindingsList({ findings }: { findings: Finding[] }) {
 
 function ScansList({ scans }: { scans: ScanRow[] }) {
 	const { t } = useI18n();
-	if (scans.length === 0) return <p className="empty">{t("detail.noScanHistory")}</p>;
+	if (scans.length === 0) return <p className="text-base-content/60">{t("detail.noScanHistory")}</p>;
 	return (
-		<ul className="findings">
+		<ul className="space-y-3">
 			{scans.map((s) => {
 				const kind = s.status === "completed" ? "PASSED" : s.status === "failed" ? "FAILED" : "UNKNOWN";
 				const statusLabel =
@@ -63,13 +65,15 @@ function ScansList({ scans }: { scans: ScanRow[] }) {
 							? t("detail.scanStatusFailed")
 							: t("detail.scanStatusUnknown");
 				return (
-					<li key={s.id} className="finding">
-						<div className="finding-head">
-							<Badge value={kind} label={statusLabel} />
-							<code>{s.commitSha.slice(0, 12)}</code>
+					<li key={s.id} className="card border border-base-300 bg-base-100">
+						<div className="card-body gap-1 py-4">
+							<div className="flex items-center gap-2">
+								<Badge value={kind} label={statusLabel} />
+								<code className="text-xs opacity-70">{s.commitSha.slice(0, 12)}</code>
+							</div>
+							<p className="text-sm opacity-70">{t("detail.scanRow", { ver: s.scannerVersion, at: s.completedAt ?? s.startedAt })}</p>
+							{s.errorCode && <p className="text-sm text-error">{t("detail.scanError", { code: s.errorCode })}</p>}
 						</div>
-						<p>{t("detail.scanRow", { ver: s.scannerVersion, at: s.completedAt ?? s.startedAt })}</p>
-						{s.errorCode && <p>{t("detail.scanError", { code: s.errorCode })}</p>}
 					</li>
 				);
 			})}
@@ -112,49 +116,98 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 		};
 	}, [owner, repo]);
 
-	if (error) return <p className="error">{t("detail.loadError", { msg: error })}</p>;
-	if (!detail) return <p className="empty">{t("common.loading")}</p>;
+	if (error) return <p className="text-error">{t("detail.loadError", { msg: error })}</p>;
+	if (!detail) return <p className="text-base-content/60">{t("common.loading")}</p>;
 
 	const metadata = parseMetadata(detail.metadataJson);
+	const tabs: { key: Tab; label: string }[] = [
+		{ key: "overview", label: t("detail.overview") },
+		{ key: "compatibility", label: t("detail.compatibility") },
+		{ key: "security", label: t("detail.security") },
+		{ key: "versions", label: t("detail.versions") },
+	];
 
 	return (
-		<section className="detail-layout">
-			<div className="detail-main">
-				<div className="detail-header">
-					<h1>{detail.fullName}</h1>
-					<p className="plugin-desc">{detail.description ?? t("common.noDescription")}</p>
-					<p className="plugin-publisher">
+		<section className="grid items-start gap-8 lg:grid-cols-[1fr_320px]">
+			<div className="min-w-0">
+				<div className="mb-6 border-b border-base-300 pb-6">
+					<h1 className="mb-2 text-3xl font-extrabold tracking-tight break-words md:text-4xl">{detail.fullName}</h1>
+					<p className="mb-2 opacity-70">{detail.description ?? t("common.noDescription")}</p>
+					<p className="mb-4 text-sm opacity-60">
 						{t("detail.by")}{" "}
-						<a href={"#/publisher/" + detail.owner}>{detail.owner}</a>
+						<a className="link font-semibold" href={"#/publisher/" + detail.owner}>{detail.owner}</a>
 					</p>
-					<div className="detail-badges">
+					<div className="flex flex-wrap gap-2">
 						<Badge value={detail.verificationStatus} />
 						<Badge value={detail.compatibilityStatus} />
 						<Badge value={detail.securityStatus} />
 						<Badge value={detail.maintenanceStatus} />
 					</div>
 				</div>
-				<div className="tabs">
-					<button className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>{t("detail.overview")}</button>
-					<button className={tab === "compatibility" ? "active" : ""} onClick={() => setTab("compatibility")}>{t("detail.compatibility")}</button>
-					<button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>{t("detail.security")}</button>
-					<button className={tab === "versions" ? "active" : ""} onClick={() => setTab("versions")}>{t("detail.versions")}</button>
+
+				<div role="tablist" className="tabs tabs-border mb-6">
+					{tabs.map((tb) => (
+						<button
+							key={tb.key}
+							role="tab"
+							className={"tab" + (tab === tb.key ? " tab-active" : "")}
+							onClick={() => setTab(tb.key)}
+						>
+							{tb.label}
+						</button>
+					))}
 				</div>
+
 				{tab === "overview" && (
-					<div className="overview">
+					<div>
 						{metadata && (
-							<dl className="meta-rows">
-								{metadata.packageName && <><dt>{t("detail.package")}</dt><dd>{metadata.packageName}{metadata.packageVersion ? " @" + metadata.packageVersion : ""}</dd></>}
-								{metadata.cordisRange && <><dt>{t("detail.cordis")}</dt><dd>{metadata.cordisRange}</dd></>}
-								{metadata.nodeRange && <><dt>{t("detail.node")}</dt><dd>{metadata.nodeRange}</dd></>}
-								{metadata.dshBundlePatch && <><dt>{t("detail.bundlePatch")}</dt><dd><code>{metadata.dshBundlePatch}</code></dd></>}
-								{(metadata.capabilities?.length ?? 0) > 0 && <><dt>{t("detail.capabilities")}</dt><dd>{metadata.capabilities?.join(", ")}</dd></>}
-								{(metadata.pluginTypes?.length ?? 0) > 0 && <><dt>{t("detail.types")}</dt><dd>{metadata.pluginTypes?.join(", ")}</dd></>}
-								{(metadata.installScripts?.length ?? 0) > 0 && <><dt>{t("detail.installScripts")}</dt><dd>{metadata.installScripts?.join(", ")}</dd></>}
+							<dl className="mb-4 divide-y divide-base-300 rounded-box border border-base-300">
+								{metadata.packageName && (
+									<div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-3">
+										<dt className="text-sm opacity-60">{t("detail.package")}</dt>
+										<dd className="text-sm">{metadata.packageName}{metadata.packageVersion ? " @" + metadata.packageVersion : ""}</dd>
+									</div>
+								)}
+								{metadata.cordisRange && (
+									<div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-3">
+										<dt className="text-sm opacity-60">{t("detail.cordis")}</dt>
+										<dd className="text-sm">{metadata.cordisRange}</dd>
+									</div>
+								)}
+								{metadata.nodeRange && (
+									<div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-3">
+										<dt className="text-sm opacity-60">{t("detail.node")}</dt>
+										<dd className="text-sm">{metadata.nodeRange}</dd>
+									</div>
+								)}
+								{metadata.dshBundlePatch && (
+									<div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-3">
+										<dt className="text-sm opacity-60">{t("detail.bundlePatch")}</dt>
+										<dd className="text-sm"><code>{metadata.dshBundlePatch}</code></dd>
+									</div>
+								)}
+								{(metadata.capabilities?.length ?? 0) > 0 && (
+									<div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-3">
+										<dt className="text-sm opacity-60">{t("detail.capabilities")}</dt>
+										<dd className="text-sm">{metadata.capabilities?.join(", ")}</dd>
+									</div>
+								)}
+								{(metadata.pluginTypes?.length ?? 0) > 0 && (
+									<div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-3">
+										<dt className="text-sm opacity-60">{t("detail.types")}</dt>
+										<dd className="text-sm">{metadata.pluginTypes?.join(", ")}</dd>
+									</div>
+								)}
+								{(metadata.installScripts?.length ?? 0) > 0 && (
+									<div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-3">
+										<dt className="text-sm opacity-60">{t("detail.installScripts")}</dt>
+										<dd className="text-sm">{metadata.installScripts?.join(", ")}</dd>
+									</div>
+								)}
 							</dl>
 						)}
 						{detail.latestCommitSha && (
-							<p className="hint">
+							<p className="text-xs opacity-60">
 								{t("detail.scannedAt", { sha: detail.latestCommitSha, ver: detail.scannerVersion ?? "", at: detail.scannedAt ?? "" })}
 							</p>
 						)}
@@ -164,6 +217,7 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 				{tab === "security" && <FindingsList findings={detail.findings.filter((f) => f.category === "SECURITY")} />}
 				{tab === "versions" && <ScansList scans={scans} />}
 			</div>
+
 			<InstallCard plugin={detail} />
 		</section>
 	);

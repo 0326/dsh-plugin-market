@@ -1,111 +1,19 @@
-:root {
-	font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-	line-height: 1.5;
-	font-weight: 400;
-	color-scheme: light;
-
-	/* ── dsh-plugin market design tokens ────────────────────── */
-	--bg: #ffffff;
-	--surface: #fafafa;
-	--text: #0b0b0b;
-	--muted: #666666;
-	--border: #111111;
-	--border-subtle: #e6e6e6;
-	--code-bg: #f5f5f4;
-
-	--ink: #0b0b0b;      /* absolute black, used for featured blocks */
-	--paper: #ffffff;    /* absolute white */
-
-	--blue: #315cff;
-	--yellow: #ffc928;
-	--red: #ff4438;
-	--green: #1cbf73;
-
-	--accent: var(--blue);
-	--ok: var(--green);
-	--warn: var(--yellow);
-	--bad: var(--red);
-	--info: var(--blue);
-
-	/* text-safe variants (WCAG AA on white) */
-	--ok-text: #0e7a46;
-	--warn-text: #8a6d00;
-	--bad-text: #c92a2a;
-	--info-text: #2748c9;
-
-	--radius-sm: 4px;
-	--radius-md: 8px;
-	--radius-lg: 12px;
-
-	--motion-fast: 120ms;
-	--motion-default: 180ms;
-	--motion-slow: 280ms;
-
-	--font-mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
+@import "tailwindcss";
+@plugin "daisyui" {
+	themes: light --default, dark --prefersdark;
 }
 
-/* Dark theme is opt-in via the theme toggle (data-theme="dark" on <html>).
-   Default is light. */
-[data-theme="dark"] {
-	color-scheme: dark;
-	--bg: #0b0b0b;
-	--surface: #131313;
-	--text: #f5f5f4;
-	--muted: #9c9c9c;
-	--border: #e6e6e6;
-	--border-subtle: #2a2a2a;
-	--code-bg: #171717;
-
-	--accent: #6f8cff;
-	--ok-text: #4ade80;
-	--warn-text: #ffd54a;
-	--bad-text: #ff7a70;
-	--info-text: #8fa8ff;
+@theme {
+	--font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-* {
-	box-sizing: border-box;
-}
-
-body {
-	margin: 0;
-	background: var(--bg);
-	color: var(--text);
-}
-
-a {
-	color: var(--accent);
-	text-decoration: none;
-}
-
-a:hover {
-	text-decoration: underline;
-}
-
-h1, h2, h3, h4 {
-	line-height: 1.15;
-	letter-spacing: -0.01em;
-}
-
-button, input, select {
-	font-family: inherit;
-	font-size: 1rem;
-	color: var(--text);
-}
-
-:focus-visible {
-	outline: 2px solid var(--blue);
-	outline-offset: 2px;
-}
-
-code {
-	font-family: var(--font-mono);
-	font-size: 0.9em;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	*, *::before, *::after {
-		animation-duration: 0.01ms !important;
-		transition-duration: 0.01ms !important;
+@layer base {
+	html {
+		scroll-behavior: smooth;
+	}
+	body {
+		margin: 0;
+		background-color: var(--color-base-100);
+		color: var(--color-base-content);
 	}
 }

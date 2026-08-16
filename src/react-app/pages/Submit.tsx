@@ -26,11 +26,12 @@ export default function Submit() {
 	}
 
 	return (
-		<section className="submit">
-			<h1 className="page-title">{t("submit.title")}</h1>
-			<p className="page-subtitle">{t("submit.desc")}</p>
-			<form onSubmit={handleSubmit}>
+		<section className="mx-auto max-w-2xl">
+			<h1 className="mb-1 text-3xl font-extrabold tracking-tight">{t("submit.title")}</h1>
+			<p className="mb-6 opacity-60">{t("submit.desc")}</p>
+			<form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleSubmit}>
 				<input
+					className="input flex-1"
 					value={url}
 					onChange={(e) => setUrl(e.target.value)}
 					placeholder={t("submit.placeholder")}
@@ -40,8 +41,8 @@ export default function Submit() {
 					{busy ? t("submit.submitting") : t("submit.submit")}
 				</button>
 			</form>
-			{status && <p className="ok-text">{status}</p>}
-			{error && <p className="error">{error}</p>}
+			{status && <p className="mt-4 font-semibold text-success">{status}</p>}
+			{error && <p className="mt-4 text-error">{error}</p>}
 		</section>
 	);
 }

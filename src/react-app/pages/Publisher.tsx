@@ -22,16 +22,16 @@ export default function Publisher({ owner }: { owner: string }) {
 		};
 	}, [owner]);
 
-	if (error) return <p className="error">{t("publisher.loadError", { msg: error })}</p>;
-	if (!pub) return <p className="empty">{t("common.loading")}</p>;
+	if (error) return <p className="text-error">{t("publisher.loadError", { msg: error })}</p>;
+	if (!pub) return <p className="text-base-content/60">{t("common.loading")}</p>;
 
 	return (
 		<section>
-			<h1 className="page-title">{pub.owner}</h1>
-			<p className="publisher-summary">
+			<h1 className="mb-2 text-3xl font-extrabold tracking-tight">{pub.owner}</h1>
+			<p className="mb-6 opacity-60">
 				{t("publisher.summary", { verified: pub.verifiedCount, plugins: pub.repos.length, stars: pub.totalStars })}
 			</p>
-			<div className="plugin-grid">
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{pub.repos.map((p) => (
 					<PluginCard key={p.fullName} p={p} />
 				))}

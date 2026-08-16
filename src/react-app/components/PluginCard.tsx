@@ -19,41 +19,48 @@ export function PluginCard({
 	large?: boolean;
 }) {
 	const { t } = useI18n();
-	const classes = ["plugin-card"];
-	if (featured) classes.push("plugin-card-featured");
-	if (large) classes.push("plugin-card-large");
 	const initial = (p.repo || p.fullName || "?").charAt(0).toUpperCase();
+	const dateStr = formatDate(p.updatedAt);
 
 	return (
-		<a className={classes.join(" ")} href={"#/plugin/" + p.owner + "/" + p.repo}>
-			<div className="plugin-card-top">
-				<span className="plugin-avatar" aria-hidden="true">
-					{initial}
-				</span>
-				<div className="plugin-card-head">
-					<span className="plugin-name">{p.fullName}</span>
-				</div>
-				<div className="plugin-card-badges">
-					{featured && <Badge value="FEATURED" />}
-					<Badge value={p.verificationStatus} />
-					{!featured && <Badge value={p.compatibilityStatus} />}
-				</div>
-			</div>
-			<p className="plugin-desc">{p.description ?? t("common.noDescription")}</p>
-			<div className="plugin-card-meta">
-				{!featured && (
-					<span className="plugin-meta-item">
-						<Badge value={p.riskLevel} label={t("riskLabel", { level: p.riskLevel.toLowerCase() })} />
+		<a
+			className={
+				"card w-full transition-shadow hover:shadow-md " +
+				(featured
+					? "border-none bg-neutral text-neutral-content "
+					: "border border-base-300 bg-base-100 ") +
+				(large ? "md:row-span-2 " : "")
+			}
+			href={"#/plugin/" + p.owner + "/" + p.repo}
+		>
+			<div className={"card-body " + (large ? "gap-5 " : "")}>
+				<div className="flex items-start gap-3">
+					<span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary font-extrabold uppercase text-primary-content">
+						{initial}
 					</span>
-				)}
-				<span className="plugin-meta-item">{t("card.publisher", { owner: p.owner })}</span>
-				<span className="plugin-meta-item">
-					<span className="star" aria-hidden="true">★</span>
-					{p.stars}
-				</span>
-				{formatDate(p.updatedAt) && (
-					<span className="plugin-meta-item">{t("card.updated", { time: formatDate(p.updatedAt) })}</span>
-				)}
+					<div className="min-w-0 flex-1">
+						<p className={"font-bold leading-tight " + (large ? "text-2xl" : "truncate")}>{p.fullName}</p>
+						<p className="text-xs opacity-60">{t("card.publisher", { owner: p.owner })}</p>
+					</div>
+					<div className="flex max-w-[45%] flex-wrap justify-end gap-1">
+						{featured && <Badge value="FEATURED" />}
+						<Badge value={p.verificationStatus} />
+						{!featured && <Badge value={p.compatibilityStatus} />}
+					</div>
+				</div>
+
+				<p className={"line-clamp-2 text-sm " + (featured ? "opacity-80" : "opacity-70")}>
+					{p.description ?? t("common.noDescription")}
+				</p>
+
+				<div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-xs opacity-60">
+					{!featured && <Badge value={p.riskLevel} label={t("riskLabel", { level: p.riskLevel.toLowerCase() })} />}
+					<span className="flex items-center gap-1">
+						<span aria-hidden="true">★</span>
+						{p.stars}
+					</span>
+					{dateStr && <span>{t("card.updated", { time: dateStr })}</span>}
+				</div>
 			</div>
 		</a>
 	);
