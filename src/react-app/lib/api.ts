@@ -42,6 +42,7 @@ export interface RegistryStats {
 	verified: number;
 	featured: number;
 	updatedThisWeek: number;
+	lastScanAt: string | null;
 }
 
 export interface ScanRow {

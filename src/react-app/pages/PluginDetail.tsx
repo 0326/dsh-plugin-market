@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Badge } from "../components/Badge";
+import { Icon, type IconName } from "../components/Icon";
 import { InstallCard } from "../components/InstallCard";
+import { PluginDetailSkeleton } from "../components/Skeletons";
 import { useI18n } from "../lib/i18n";
 import { getPlugin, getScans, type Finding, type PluginDetail as Detail, type ScanRow } from "../lib/api";
 
@@ -117,18 +119,18 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 	}, [owner, repo]);
 
 	if (error) return <p className="text-error">{t("detail.loadError", { msg: error })}</p>;
-	if (!detail) return <p className="text-base-content/60">{t("common.loading")}</p>;
+	if (!detail) return <PluginDetailSkeleton />;
 
 	const metadata = parseMetadata(detail.metadataJson);
-	const tabs: { key: Tab; label: string }[] = [
-		{ key: "overview", label: t("detail.overview") },
-		{ key: "compatibility", label: t("detail.compatibility") },
-		{ key: "security", label: t("detail.security") },
-		{ key: "versions", label: t("detail.versions") },
+	const tabs: { key: Tab; label: string; icon: IconName }[] = [
+		{ key: "overview", label: t("detail.overview"), icon: "layout" },
+		{ key: "compatibility", label: t("detail.compatibility"), icon: "exchange" },
+		{ key: "security", label: t("detail.security"), icon: "shield" },
+		{ key: "versions", label: t("detail.versions"), icon: "history" },
 	];
 
 	return (
-		<section className="grid items-start gap-8 lg:grid-cols-[1fr_320px]">
+		<section className="mx-auto max-w-5xl">
 			<div className="min-w-0">
 				<div className="mb-6 border-b border-base-300 pb-6">
 					<h1 className="mb-2 text-3xl font-extrabold tracking-tight break-words md:text-4xl">{detail.fullName}</h1>
@@ -144,15 +146,17 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 						<Badge value={detail.maintenanceStatus} />
 					</div>
 				</div>
+				<InstallCard plugin={detail} />
 
-				<div role="tablist" className="tabs tabs-border mb-6">
+				<div role="tablist" className="tabs tabs-border mb-6 mt-8">
 					{tabs.map((tb) => (
 						<button
 							key={tb.key}
 							role="tab"
-							className={"tab" + (tab === tb.key ? " tab-active" : "")}
+							className={"tab gap-1.5" + (tab === tb.key ? " tab-active" : "")}
 							onClick={() => setTab(tb.key)}
 						>
+							<Icon name={tb.icon} size={16} stroke={2} />
 							{tb.label}
 						</button>
 					))}
@@ -161,7 +165,7 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 				{tab === "overview" && (
 					<div>
 						{metadata && (
-							<dl className="mb-4 divide-y divide-base-300 rounded-box border border-base-300">
+							<dl className="mb-4 divide-y divide-base-300 border border-base-300">
 								{metadata.packageName && (
 									<div className="grid grid-cols-[140px_1fr] gap-3 px-4 py-3">
 										<dt className="text-sm opacity-60">{t("detail.package")}</dt>
@@ -217,8 +221,6 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 				{tab === "security" && <FindingsList findings={detail.findings.filter((f) => f.category === "SECURITY")} />}
 				{tab === "versions" && <ScansList scans={scans} />}
 			</div>
-
-			<InstallCard plugin={detail} />
 		</section>
 	);
 }

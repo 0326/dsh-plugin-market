@@ -1,6 +1,7 @@
 import type { PluginListItem } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { Badge } from "./Badge";
+import { Icon } from "./Icon";
 
 function formatDate(iso: string | null): string {
 	if (!iso) return "";
@@ -56,10 +57,15 @@ export function PluginCard({
 				<div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-xs opacity-60">
 					{!featured && <Badge value={p.riskLevel} label={t("riskLabel", { level: p.riskLevel.toLowerCase() })} />}
 					<span className="flex items-center gap-1">
-						<span aria-hidden="true">★</span>
+						<Icon name="star-filled" size={13} stroke={1.5} className="text-warning" />
 						{p.stars}
 					</span>
-					{dateStr && <span>{t("card.updated", { time: dateStr })}</span>}
+					{dateStr && (
+						<span className="flex items-center gap-1">
+							<Icon name="clock" size={13} stroke={1.75} />
+							{t("card.updated", { time: dateStr })}
+						</span>
+					)}
 				</div>
 			</div>
 		</a>

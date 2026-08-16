@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { installCommand, type PluginDetail } from "../lib/api";
 import { useI18n } from "../lib/i18n";
-import { Badge } from "./Badge";
+import { Icon } from "./Icon";
 
 export function InstallCard({ plugin }: { plugin: PluginDetail }) {
 	const { t } = useI18n();
@@ -17,31 +17,27 @@ export function InstallCard({ plugin }: { plugin: PluginDetail }) {
 		}
 	}
 	return (
-		<aside className="card sticky top-20 border border-base-300 bg-base-100 shadow-sm">
-			<div className="card-body gap-4">
-				<h3 className="card-title text-sm font-bold uppercase tracking-wide">{t("install.title")}</h3>
-				<dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
-					<dt className="opacity-60">{t("install.format")}</dt>
-					<dd className="m-0"><Badge value={plugin.verificationStatus} /></dd>
-					<dt className="opacity-60">{t("install.compatibility")}</dt>
-					<dd className="m-0"><Badge value={plugin.compatibilityStatus} /></dd>
-					<dt className="opacity-60">{t("install.security")}</dt>
-					<dd className="m-0"><Badge value={plugin.securityStatus} /></dd>
-					<dt className="opacity-60">{t("install.risk")}</dt>
-					<dd className="m-0"><Badge value={plugin.riskLevel} /></dd>
-				</dl>
-				<div className="mockup-code text-xs">
+		<section className="install-panel border-2 border-base-content bg-base-100 p-4 md:p-5">
+			<div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+				<h2 className="text-sm font-extrabold uppercase tracking-widest">{t("install.title")}</h2>
+				<p className="text-xs opacity-55">
+					{plugin.latestCommitSha ? t("install.pinned", { sha: plugin.latestCommitSha.slice(0, 7) }) : t("install.noCommit")}
+				</p>
+			</div>
+			<div className="flex flex-col gap-3 lg:flex-row">
+				<div className="mockup-code min-w-0 flex-1 text-xs">
 					<pre data-prefix="$" className="whitespace-pre-wrap break-all"><code>{cmd}</code></pre>
 				</div>
-					<button className="btn btn-neutral btn-block" onClick={copyCommand}>
+				<div className="flex shrink-0 gap-2">
+					<button className="btn btn-neutral flex-1 lg:flex-none" onClick={copyCommand}>
+						<Icon name="copy" size={16} stroke={2} />
 						{copyState === "copied" ? t("install.copied") : copyState === "failed" ? t("install.copyFailed") : t("install.copy")}
-				</button>
-				{plugin.latestCommitSha ? (
-					<p className="text-xs opacity-60">{t("install.pinned", { sha: plugin.latestCommitSha.slice(0, 7) })}</p>
-				) : (
-					<p className="text-xs opacity-60">{t("install.noCommit")}</p>
-				)}
+					</button>
+					<a className="btn btn-outline flex-1 lg:flex-none" href={plugin.htmlUrl} target="_blank" rel="noreferrer">
+						<Icon name="github" size={17} stroke={2} />{t("install.source")}
+					</a>
+				</div>
 			</div>
-		</aside>
+		</section>
 	);
 }

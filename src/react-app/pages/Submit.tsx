@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Icon } from "../components/Icon";
 import { useI18n } from "../lib/i18n";
 import { submitPlugin } from "../lib/api";
 
@@ -40,6 +41,7 @@ export default function Submit() {
 					required
 				/>
 				<button type="submit" className="btn btn-primary" disabled={busy}>
+					<Icon name="send" size={16} stroke={2} />
 					{busy ? t("submit.submitting") : t("submit.submit")}
 				</button>
 			</form>

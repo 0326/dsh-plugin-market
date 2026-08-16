@@ -12,6 +12,7 @@
 		"publish": true
 	},
 	"dependencies": {
+		"@tabler/icons-react": "^3.46.0",
 		"hono": "4.11.1",
 		"react": "19.2.1",
 		"react-dom": "19.2.1",

@@ -407,6 +407,7 @@ export interface RegistryStats {
 	verified: number;
 	featured: number;
 	updatedThisWeek: number;
+	lastScanAt: string | null;
 }
 
 export async function getStats(db: D1Database): Promise<RegistryStats> {
@@ -417,11 +418,12 @@ export async function getStats(db: D1Database): Promise<RegistryStats> {
 				(SELECT COUNT(*) FROM repositories) AS total,
 				(SELECT COUNT(*) FROM plugins WHERE verification_status = 'FORMAT_VERIFIED') AS verified,
 				(SELECT COUNT(*) FROM plugins WHERE featured = 1) AS featured,
-				(SELECT COUNT(*) FROM repositories WHERE github_pushed_at >= ?) AS updatedThisWeek`,
+				(SELECT COUNT(*) FROM repositories WHERE github_pushed_at >= ?) AS updatedThisWeek,
+				(SELECT MAX(completed_at) FROM scans) AS lastScanAt`,
 		)
 		.bind(weekAgo)
 		.first<RegistryStats>();
-	return row ?? { total: 0, verified: 0, featured: 0, updatedThisWeek: 0 };
+	return row ?? { total: 0, verified: 0, featured: 0, updatedThisWeek: 0, lastScanAt: null };
 }
 
 // --- Scan history ---

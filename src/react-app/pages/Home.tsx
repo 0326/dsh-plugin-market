@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { Icon, type IconName } from "../components/Icon";
 import { Kun } from "../components/Kun";
 import { PluginCard } from "../components/PluginCard";
 import { useI18n } from "../lib/i18n";
@@ -40,19 +41,19 @@ function Section({
 	);
 }
 
-function TrustCard({ icon, tone, title, desc }: { icon: string; tone: string; title: string; desc: string }) {
+function TrustCard({ icon, tone, title, desc }: { icon: IconName; tone: string; title: string; desc: string }) {
 	return (
 		<div className="flex items-start gap-3">
-			<span className={"mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-lg border-2 border-current text-lg font-extrabold " + tone}>
-					{icon}
-				</span>
+			<span className={"mt-0.5 grid h-10 w-10 shrink-0 place-items-center border-2 border-current " + tone}>
+				<Icon name={icon} size={20} stroke={2} />
+			</span>
 			<div><h3 className="font-bold">{title}</h3><p className="mt-1 text-sm opacity-70">{desc}</p></div>
 		</div>
 	);
 }
 
 export default function Home() {
-	const { t } = useI18n();
+	const { t, lang } = useI18n();
 	const [data, setData] = useState<HomeData | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [query, setQuery] = useState("");
@@ -81,6 +82,9 @@ export default function Home() {
 
 	if (error) return <p className="text-error">{t("home.loadError", { msg: error })}</p>;
 	if (!data) return <p className="text-base-content/60">{t("common.loading")}</p>;
+	const lastScanTime = data.stats.lastScanAt
+		? new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(data.stats.lastScanAt))
+		: t("home.noScanYet");
 
 	function onSearch(e: React.FormEvent) {
 		e.preventDefault();
@@ -91,8 +95,10 @@ export default function Home() {
 		<div>
 			<section className="home-hero">
 				<div className="hero-copy">
-					<p className="hero-kicker mb-5">DS-PLUGIN.MARKET</p>
-					<h1 className="hero-title">DSH<span>PLUGIN MARKET</span></h1>
+					<p className="hero-updated mb-5">
+						{t("home.lastScanLabel")}：<time dateTime={data.stats.lastScanAt ?? undefined}>{lastScanTime}</time>
+					</p>
+					<h1 className="hero-title"><strong>DEEPSEEK HARNESS</strong><span>PLUGIN MARKET</span></h1>
 					<p className="hero-tagline">{t("home.heroTagline")}</p>
 					<form className="hero-search join w-full" onSubmit={onSearch} role="search">
 							<input
@@ -103,6 +109,7 @@ export default function Home() {
 								aria-label={t("home.searchPlaceholder")}
 							/>
 							<button type="submit" className="btn join-item btn-neutral">
+								<Icon name="search" size={18} stroke={2} />
 								{t("home.search")}
 							</button>
 						</form>
@@ -113,7 +120,11 @@ export default function Home() {
 						<div className="hero-stat"><strong>{data.stats.updatedThisWeek}</strong><span>{t("home.statsUpdated")}</span></div>
 						</div>
 					</div>
-				<div className="hero-art hidden lg:grid"><Kun className="w-full" ariaHidden /></div>
+				<div className="hero-art hidden lg:grid">
+					<span className="hero-basketball" aria-hidden="true"><Icon name="ball-basketball" size={58} stroke={2.2} /></span>
+					<span className="hero-music" aria-hidden="true">♪</span>
+					<Kun className="w-full" ariaHidden />
+				</div>
 				</section>
 
 			{/* Browse navigation */}
@@ -180,24 +191,12 @@ export default function Home() {
 
 			{/* Trust strip */}
 			<div className="trust-strip">
-				<TrustCard icon="✓" tone="text-success" title={t("home.trustFormatTitle")} desc={t("home.trustFormatDesc")} />
-				<TrustCard icon="⇄" tone="text-info" title={t("home.trustCompatTitle")} desc={t("home.trustCompatDesc")} />
-				<TrustCard icon="!" tone="text-error" title={t("home.trustSecurityTitle")} desc={t("home.trustSecurityDesc")} />
+				<TrustCard icon="check" tone="text-success" title={t("home.trustFormatTitle")} desc={t("home.trustFormatDesc")} />
+				<TrustCard icon="exchange" tone="text-info" title={t("home.trustCompatTitle")} desc={t("home.trustCompatDesc")} />
+				<TrustCard icon="shield-alert" tone="text-error" title={t("home.trustSecurityTitle")} desc={t("home.trustSecurityDesc")} />
 				<a className="flex items-center justify-between gap-3 font-bold" href="#/plugins">{t("home.ctaButton")} <span className="text-2xl">→</span></a>
 			</div>
 
-			{/* Developer CTA */}
-			<div className="dev-cta">
-				<div className="card-body gap-4 md:flex-row md:items-center md:justify-between">
-					<div>
-						<h2 className="text-2xl font-extrabold">{t("home.ctaTitle")}</h2>
-						<p className="opacity-70">{t("home.ctaText")}</p>
-					</div>
-					<a className="btn btn-primary" href="#/plugins">
-						{t("home.ctaButton")}
-					</a>
-				</div>
-			</div>
 		</div>
 	);
 }

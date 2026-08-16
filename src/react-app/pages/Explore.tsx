@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Icon } from "../components/Icon";
 import { PluginCard } from "../components/PluginCard";
+import { PluginGridSkeleton } from "../components/Skeletons";
 import { useI18n } from "../lib/i18n";
 import { getCategories, listPlugins, type PluginListItem, type Sort } from "../lib/api";
 
@@ -9,7 +11,7 @@ const RISK = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "UNKNOWN"];
 export default function Explore({ query = "" }: { query?: string }) {
 	const { t } = useI18n();
 	const params = useMemo(() => new URLSearchParams(query), [query]);
-	const [items, setItems] = useState<PluginListItem[] | null>(null);
+	const [result, setResult] = useState<{ key: string; items: PluginListItem[] } | null>(null);
 	const [q, setQ] = useState(params.get("q") ?? "");
 	const [featuredOnly, setFeaturedOnly] = useState(params.get("featured") === "1");
 	const [verifiedOnly, setVerifiedOnly] = useState(params.get("verified") === "1");
@@ -20,6 +22,7 @@ export default function Explore({ query = "" }: { query?: string }) {
 	const [sort, setSort] = useState<Sort>((params.get("sort") as Sort) ?? "updated");
 	const [capabilities, setCapabilities] = useState<string[]>([]);
 	const [pluginTypes, setPluginTypes] = useState<string[]>([]);
+	const requestKey = JSON.stringify({ q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort });
 
 	useEffect(() => {
 		let ignore = false;
@@ -50,19 +53,20 @@ export default function Explore({ query = "" }: { query?: string }) {
 				sort,
 			})
 				.then((res) => {
-					if (!ignore) setItems(res.items);
+					if (!ignore) setResult({ key: requestKey, items: res.items });
 				})
 				.catch(() => {
-					if (!ignore) setItems([]);
+					if (!ignore) setResult({ key: requestKey, items: [] });
 				});
 		}, 250);
 			return () => {
 				ignore = true;
 				window.clearTimeout(timer);
 			};
-	}, [q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort]);
+	}, [q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort, requestKey]);
 
-	const loading = items === null;
+	const loading = result?.key !== requestKey;
+	const items = result?.items ?? [];
 
 	return (
 		<section>
@@ -70,13 +74,16 @@ export default function Explore({ query = "" }: { query?: string }) {
 			<p className="mb-6 opacity-60">{t("explore.subtitle")}</p>
 
 			<div className="mb-8 flex flex-wrap items-center gap-3">
-				<input
-					className="input min-w-52 flex-1"
-					value={q}
-					onChange={(e) => setQ(e.target.value)}
-					placeholder={t("explore.searchPlaceholder")}
-					aria-label={t("explore.searchPlaceholder")}
-				/>
+				<label className="input flex min-w-52 flex-1 items-center gap-2">
+					<Icon name="search" size={16} stroke={2} className="opacity-50" />
+					<input
+						className="grow border-0 bg-transparent outline-none"
+						value={q}
+						onChange={(e) => setQ(e.target.value)}
+						placeholder={t("explore.searchPlaceholder")}
+						aria-label={t("explore.searchPlaceholder")}
+					/>
+				</label>
 				<label className="label cursor-pointer gap-2">
 					<input type="checkbox" className="checkbox checkbox-sm" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
 					<span>{t("explore.featuredOnly")}</span>
@@ -118,7 +125,7 @@ export default function Explore({ query = "" }: { query?: string }) {
 			</div>
 
 			{loading ? (
-				<p className="text-base-content/60">{t("common.loading")}</p>
+				<PluginGridSkeleton />
 			) : items.length === 0 ? (
 				<p className="text-base-content/60">{t("explore.empty")}</p>
 			) : (
