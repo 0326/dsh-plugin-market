@@ -25,7 +25,7 @@ export function PluginCard({
 	return (
 		<a
 			className={
-				"card w-full transition-shadow hover:shadow-md " +
+				"plugin-card card w-full transition-all duration-200 " +
 				(featured
 					? "border-none bg-neutral text-neutral-content "
 					: "border border-base-300 bg-base-100 ") +
@@ -34,8 +34,8 @@ export function PluginCard({
 			href={"#/plugin/" + p.owner + "/" + p.repo}
 		>
 			<div className={"card-body " + (large ? "gap-5 " : "")}>
-				<div className="flex items-start gap-3">
-					<span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary font-extrabold uppercase text-primary-content">
+					<div className="flex items-start gap-3">
+						<span className="plugin-icon shrink-0 uppercase">
 						{initial}
 					</span>
 					<div className="min-w-0 flex-1">

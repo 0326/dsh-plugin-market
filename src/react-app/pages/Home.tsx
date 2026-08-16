@@ -28,10 +28,10 @@ function Section({
 	children: ReactNode;
 }) {
 	return (
-		<section>
-			<div className="mb-5 flex items-baseline justify-between gap-4">
-				<h2 className="text-2xl font-extrabold tracking-tight">{title}</h2>
-				<a className="link text-sm font-semibold" href={href}>
+		<section className={isEmpty ? "home-section home-section-empty" : "home-section"}>
+			<div className="section-heading">
+				<h2>{title}</h2>
+				<a className="link" href={href}>
 					{seeAll} →
 				</a>
 			</div>
@@ -42,14 +42,11 @@ function Section({
 
 function TrustCard({ icon, tone, title, desc }: { icon: string; tone: string; title: string; desc: string }) {
 	return (
-		<div className="card border border-base-300 bg-base-100">
-			<div className="card-body gap-3">
-				<span className={"grid h-10 w-10 place-items-center rounded-lg border-2 border-current text-lg font-extrabold " + tone}>
+		<div className="flex items-start gap-3">
+			<span className={"mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-lg border-2 border-current text-lg font-extrabold " + tone}>
 					{icon}
 				</span>
-				<h3 className="text-base font-bold">{title}</h3>
-				<p className="text-sm opacity-70">{desc}</p>
-			</div>
+			<div><h3 className="font-bold">{title}</h3><p className="mt-1 text-sm opacity-70">{desc}</p></div>
 		</div>
 	);
 }
@@ -91,19 +88,13 @@ export default function Home() {
 	}
 
 	return (
-		<div className="space-y-16">
-			{/* Hero */}
-			<div className="hero">
-				<div className="hero-content w-full flex-col items-start gap-10 p-0 lg:flex-row lg:items-center lg:justify-between">
-					<div className="max-w-xl">
-						<p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] opacity-60">ds-plugin.market</p>
-						<h1 className="mb-5 text-5xl font-extrabold uppercase leading-[0.95] tracking-tight md:text-7xl">
-							DSH
-							<br />
-							Plugin Market
-						</h1>
-						<p className="mb-7 max-w-md text-base opacity-70">{t("home.heroTagline")}</p>
-						<form className="join w-full max-w-lg" onSubmit={onSearch} role="search">
+		<div>
+			<section className="home-hero">
+				<div className="hero-copy">
+					<p className="hero-kicker mb-5">DS-PLUGIN.MARKET</p>
+					<h1 className="hero-title">DSH<span>PLUGIN MARKET</span></h1>
+					<p className="hero-tagline">{t("home.heroTagline")}</p>
+					<form className="hero-search join w-full" onSubmit={onSearch} role="search">
 							<input
 								className="input join-item w-full"
 								value={query}
@@ -115,43 +106,29 @@ export default function Home() {
 								{t("home.search")}
 							</button>
 						</form>
-						<div className="stats mt-8 w-full bg-transparent">
-							<div className="stat px-0">
-								<div className="stat-value text-2xl">{data.stats.total}</div>
-								<div className="stat-desc opacity-60">{t("home.statsTotal")}</div>
-							</div>
-							<div className="stat">
-								<div className="stat-value text-2xl">{data.stats.featured}</div>
-								<div className="stat-desc opacity-60">{t("home.statsFeatured")}</div>
-							</div>
-							<div className="stat">
-								<div className="stat-value text-2xl">{data.stats.verified}</div>
-								<div className="stat-desc opacity-60">{t("home.statsVerified")}</div>
-							</div>
-							<div className="stat">
-								<div className="stat-value text-2xl">{data.stats.updatedThisWeek}</div>
-								<div className="stat-desc opacity-60">{t("home.statsUpdated")}</div>
-							</div>
+					<div className="hero-stats">
+						<div className="hero-stat"><strong>{data.stats.total}</strong><span>{t("home.statsTotal")}</span></div>
+						<div className="hero-stat"><strong>{data.stats.featured}</strong><span>{t("home.statsFeatured")}</span></div>
+						<div className="hero-stat"><strong>{data.stats.verified}</strong><span>{t("home.statsVerified")}</span></div>
+						<div className="hero-stat"><strong>{data.stats.updatedThisWeek}</strong><span>{t("home.statsUpdated")}</span></div>
 						</div>
 					</div>
-					<div className="hidden shrink-0 lg:block">
-						<Kun className="w-72" ariaHidden />
-					</div>
-				</div>
-			</div>
+				<div className="hero-art hidden lg:grid"><Kun className="w-full" ariaHidden /></div>
+				</section>
 
 			{/* Browse navigation */}
-			<div className="flex flex-wrap items-center gap-2">
-				<span className="mr-1 text-xs font-semibold uppercase tracking-widest opacity-50">{t("home.browse")}</span>
-				<a className="btn btn-sm btn-warning" href="#/plugins?featured=1">{t("home.featured")}</a>
-				<a className="btn btn-outline btn-sm" href="#/plugins?sort=new">{t("home.latest")}</a>
-				<a className="btn btn-outline btn-sm" href="#/plugins?sort=stars">{t("home.popular")}</a>
+			<nav className="category-bar" aria-label={t("home.browse")}>
+				<span className="mr-2 text-xs font-bold uppercase tracking-widest opacity-50">{t("home.browse")}</span>
+				<a className="active btn btn-sm" href="#/plugins?featured=1">{t("home.featured")}</a>
+				<a className="btn btn-sm btn-ghost" href="#/plugins?sort=new">{t("home.latest")}</a>
+				<a className="btn btn-sm btn-ghost" href="#/plugins?sort=stars">{t("home.popular")}</a>
 				{data.capabilities.slice(0, 6).map((c) => (
 					<a key={c} className="btn btn-ghost btn-sm" href={"#/plugins?capability=" + encodeURIComponent(c)}>
 						{c.replace(/_/g, " ")}
 					</a>
 				))}
-			</div>
+				<a className="btn btn-sm btn-ghost ml-auto" href="#/plugins">{t("home.seeAll")} →</a>
+			</nav>
 
 			{/* Featured */}
 			<Section
@@ -202,14 +179,15 @@ export default function Home() {
 			</Section>
 
 			{/* Trust strip */}
-			<div className="grid gap-4 md:grid-cols-3">
+			<div className="trust-strip">
 				<TrustCard icon="✓" tone="text-success" title={t("home.trustFormatTitle")} desc={t("home.trustFormatDesc")} />
 				<TrustCard icon="⇄" tone="text-info" title={t("home.trustCompatTitle")} desc={t("home.trustCompatDesc")} />
 				<TrustCard icon="!" tone="text-error" title={t("home.trustSecurityTitle")} desc={t("home.trustSecurityDesc")} />
+				<a className="flex items-center justify-between gap-3 font-bold" href="#/plugins">{t("home.ctaButton")} <span className="text-2xl">→</span></a>
 			</div>
 
 			{/* Developer CTA */}
-			<div className="card border-2 border-base-300 bg-base-200">
+			<div className="dev-cta">
 				<div className="card-body gap-4 md:flex-row md:items-center md:justify-between">
 					<div>
 						<h2 className="text-2xl font-extrabold">{t("home.ctaTitle")}</h2>
