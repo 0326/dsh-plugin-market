@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "../components/Badge";
 import { Icon, type IconName } from "../components/Icon";
 import { InstallCard } from "../components/InstallCard";
+import { PluginPreview } from "../components/PluginPreview";
 import { PluginDetailSkeleton } from "../components/Skeletons";
 import { useI18n } from "../lib/i18n";
 import { getPlugin, getScans, type Finding, type PluginDetail as Detail, type ScanRow } from "../lib/api";
@@ -133,6 +134,7 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 		<section className="mx-auto max-w-5xl">
 			<div className="min-w-0">
 				<div className="mb-6 border-b border-base-300 pb-6">
+					<PluginPreview src={detail.previewImageUrl} alt={detail.fullName} className="plugin-preview-detail" />
 					<h1 className="mb-2 text-3xl font-extrabold tracking-tight break-words md:text-4xl">{detail.fullName}</h1>
 					<p className="mb-2 opacity-70">{detail.description ?? t("common.noDescription")}</p>
 					<p className="mb-4 text-sm opacity-60">

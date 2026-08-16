@@ -53,6 +53,11 @@ export interface GithubResponse<T> {
 	remaining?: number;
 }
 
+interface GithubGraphqlResponse<T> {
+	data?: T;
+	errors?: { message: string }[];
+}
+
 function parseNumber(value: string | null): number | undefined {
 	if (!value) return undefined;
 	const n = Number(value);
@@ -112,6 +117,51 @@ export class GithubClient {
 	async getRepo(owner: string, repo: string): Promise<GithubRepo> {
 		const res = await this.get<GithubRepo>("/repos/" + encodePath(owner) + "/" + encodePath(repo));
 		return res.data;
+	}
+
+	private async graphql<T>(query: string): Promise<T> {
+		const headers = new Headers({
+			Accept: "application/vnd.github+json",
+			"X-GitHub-Api-Version": "2022-11-28",
+			"User-Agent": "dsh-plugin-market",
+			"Content-Type": "application/json",
+		});
+		if (this.token) headers.set("Authorization", "Bearer " + this.token);
+
+		const res = await fetch("https://api.github.com/graphql", {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ query }),
+		});
+		if (res.status === 429) throw new GithubError("rate limited", 429, undefined, true);
+		if (res.status === 401) throw new GithubError("unauthorized", 401, undefined, false);
+		if (res.status >= 400) throw new GithubError("github error " + res.status, res.status, undefined, false);
+
+		const body = (await res.json()) as GithubGraphqlResponse<T>;
+		if (body.errors?.length) throw new GithubError("graphql error: " + body.errors[0].message, 200, undefined, false);
+		if (!body.data) throw new GithubError("graphql returned no data", 200, undefined, false);
+		return body.data;
+	}
+
+	/**
+	 * Fetch each repository's social preview (Open Graph) image URL in a single
+	 * batched GraphQL request. Missing/unavailable images resolve to null for
+	 * that repo; the keys are `owner/name`.
+	 */
+	async getOpenGraphImageUrls(repos: { owner: string; name: string }[]): Promise<Map<string, string | null>> {
+		const result = new Map<string, string | null>();
+		if (repos.length === 0) return result;
+
+		const fields = repos
+			.map((r, i) => `r${i}: repository(owner: ${JSON.stringify(r.owner)}, name: ${JSON.stringify(r.name)}) { openGraphImageUrl }`)
+			.join("\n");
+		const data = await this.graphql<Record<string, { openGraphImageUrl: string | null } | null>>(`query { ${fields} }`);
+
+		for (let i = 0; i < repos.length; i++) {
+			const key = repos[i].owner + "/" + repos[i].name;
+			result.set(key, data?.[`r${i}`]?.openGraphImageUrl ?? null);
+		}
+		return result;
 	}
 
 	async getBranchSha(owner: string, repo: string, branch: string): Promise<string> {

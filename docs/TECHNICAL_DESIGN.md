@@ -726,6 +726,7 @@ CREATE TABLE repositories (
   github_created_at TEXT,
   github_updated_at TEXT,
   github_pushed_at TEXT,
+  preview_image_url TEXT, -- GitHub social preview (GraphQL openGraphImageUrl); NULL => kun.png fallback
   etag TEXT,
   discovered_at TEXT NOT NULL,
   last_checked_at TEXT,

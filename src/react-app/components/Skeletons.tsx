@@ -29,6 +29,7 @@ export function PluginDetailSkeleton() {
 	return (
 		<section className="mx-auto max-w-5xl" role="status" aria-label="Loading plugin details">
 			<div className="mb-6 border-b border-base-300 pb-6">
+				<span className="skeleton mb-6 block aspect-[2/1] w-full" aria-hidden="true" />
 				<SkeletonLine className="mb-4 h-10 w-2/3" />
 				<SkeletonLine className="mb-3 w-full" />
 				<SkeletonLine className="mb-5 w-1/4" />

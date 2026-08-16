@@ -1,5 +1,5 @@
 import type { ScanJob } from "../domain/scan";
-import { upsertRepository } from "../db/repository";
+import { updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
 import { GithubError, type GithubClient, type GithubSearchReposResult } from "./client";
 
 const TOPIC_QUERY = "topic:dsh-plugin";
@@ -101,7 +101,26 @@ async function paginateShard(client: GithubClient, db: D1Database, queue: Queue<
 				enqueued++;
 			}
 		}
+		await enrichPreviewImages(client, db, res.items);
 		if (res.items.length < PER_PAGE) break;
 	}
 	return { reposSeen, enqueued, shards: 1 };
+}
+
+/**
+ * Populate `preview_image_url` from the GitHub social preview (Open Graph)
+ * image. This is best-effort: a rate limit or GraphQL failure must never
+ * abort discovery, so every error is logged and swallowed.
+ */
+async function enrichPreviewImages(client: GithubClient, db: D1Database, repos: { owner: { login: string }; name: string; full_name: string }[]): Promise<void> {
+	if (repos.length === 0) return;
+	try {
+		const urls = await client.getOpenGraphImageUrls(repos.map((r) => ({ owner: r.owner.login, name: r.name })));
+		for (const repo of repos) {
+			const url = urls.get(repo.full_name);
+			if (url) await updateRepositoryPreviewImage(db, repo.full_name, url);
+		}
+	} catch (err) {
+		console.warn("preview image enrichment failed", err instanceof Error ? err.message : String(err));
+	}
 }

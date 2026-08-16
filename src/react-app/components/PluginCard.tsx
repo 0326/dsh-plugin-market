@@ -2,6 +2,7 @@ import type { PluginListItem } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { Badge } from "./Badge";
 import { Icon } from "./Icon";
+import { PluginPreview } from "./PluginPreview";
 
 function formatDate(iso: string | null): string {
 	if (!iso) return "";
@@ -34,6 +35,7 @@ export function PluginCard({
 			}
 			href={"/plugin/" + p.owner + "/" + p.repo}
 		>
+			<PluginPreview src={p.previewImageUrl} alt={p.fullName} />
 			<div className={"card-body " + (large ? "gap-5 " : "gap-3")}>
 				<div className="flex items-start gap-3">
 					<span className="plugin-icon shrink-0 uppercase">{initial}</span>

@@ -8,6 +8,7 @@ vi.spyOn(globalThis, "setTimeout").mockImplementation(((fn: () => void) => {
 
 vi.mock("../src/worker/db/repository", () => ({
 	upsertRepository: vi.fn(async (_db: unknown, repo: { id: number }) => ({ id: repo.id, changed: true })),
+	updateRepositoryPreviewImage: vi.fn(async () => {}),
 }));
 
 import { runDiscovery } from "../src/worker/github/discovery";
@@ -45,6 +46,7 @@ describe("runDiscovery sharding", () => {
 				if (opts?.sort === "created") return { total_count: repos.length, items: [repos[0]], incomplete_results: false };
 				return { total_count: repos.length, items: repos.slice((page - 1) * perPage, page * perPage), incomplete_results: false };
 			}),
+			getOpenGraphImageUrls: vi.fn(async () => new Map<string, string | null>()),
 		};
 		const queue = { send: vi.fn(async () => {}) };
 		const result = await runDiscovery(client as never, {} as never, queue as never);
@@ -68,6 +70,7 @@ describe("runDiscovery sharding", () => {
 				const total = items.length;
 				return { total_count: total, items: items.slice((page - 1) * perPage, page * perPage), incomplete_results: false };
 			}),
+			getOpenGraphImageUrls: vi.fn(async () => new Map<string, string | null>()),
 		};
 		const queue = { send: vi.fn(async () => {}) };
 		const result = await runDiscovery(client as never, {} as never, queue as never);

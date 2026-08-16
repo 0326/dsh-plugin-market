@@ -20,6 +20,7 @@ export interface RepositoryRow {
 	github_created_at: string | null;
 	github_updated_at: string | null;
 	github_pushed_at: string | null;
+	preview_image_url: string | null;
 	discovered_at: string;
 	last_checked_at: string | null;
 }
@@ -38,6 +39,7 @@ export interface PluginListItem {
 	packageName: string | null;
 	latestCommitSha: string | null;
 	updatedAt: string | null;
+	previewImageUrl: string | null;
 }
 
 export interface PluginDetail extends PluginListItem {
@@ -151,6 +153,14 @@ export async function updateRepositorySha(db: D1Database, id: number, sha: strin
 	await db.prepare("UPDATE repositories SET default_branch_sha = ?, updated_at = ? WHERE id = ?").bind(sha, new Date().toISOString(), id).run();
 }
 
+/** Store the social preview image URL for a repository (best-effort, idempotent). */
+export async function updateRepositoryPreviewImage(db: D1Database, fullName: string, previewImageUrl: string): Promise<void> {
+	await db
+		.prepare("UPDATE repositories SET preview_image_url = ?, updated_at = ? WHERE full_name = ?")
+		.bind(previewImageUrl, new Date().toISOString(), fullName)
+		.run();
+}
+
 export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {}): Promise<PluginListItem[]> {
 	const limit = opts.limit ?? 50;
 	const offset = opts.offset ?? 0;
@@ -203,7 +213,7 @@ export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {})
 			p.verification_status AS verificationStatus, p.compatibility_status AS compatibilityStatus,
 			p.security_status AS securityStatus, p.maintenance_status AS maintenanceStatus,
 			p.risk_level AS riskLevel, p.package_name AS packageName,
-			s.commit_sha AS latestCommitSha, p.updated_at AS updatedAt
+			s.commit_sha AS latestCommitSha, p.updated_at AS updatedAt, r.preview_image_url AS previewImageUrl
 		FROM plugins p
 		JOIN repositories r ON r.id = p.repository_id
 		LEFT JOIN scans s ON s.id = p.latest_scan_id
@@ -218,7 +228,7 @@ export async function getPlugin(db: D1Database, owner: string, repo: string): Pr
 	const row = await db
 		.prepare(
 			`SELECT r.owner, r.name AS repo, r.full_name AS fullName, r.html_url AS htmlUrl, r.description, r.stars, r.forks,
-				r.license_spdx AS licenseSpdx,
+				r.license_spdx AS licenseSpdx, r.preview_image_url AS previewImageUrl,
 				p.verification_status AS verificationStatus, p.compatibility_status AS compatibilityStatus,
 				p.security_status AS securityStatus, p.maintenance_status AS maintenanceStatus, p.risk_level AS riskLevel,
 					p.featured, p.metadata_json AS metadataJson, p.package_name AS packageName, p.updated_at AS updatedAt,
@@ -242,6 +252,7 @@ export async function getPlugin(db: D1Database, owner: string, repo: string): Pr
 		stars: row.stars,
 		forks: row.forks,
 		licenseSpdx: row.licenseSpdx,
+		previewImageUrl: row.previewImageUrl,
 		verificationStatus: row.verificationStatus,
 		compatibilityStatus: row.compatibilityStatus,
 		securityStatus: row.securityStatus,

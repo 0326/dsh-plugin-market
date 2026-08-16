@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getPlugin, getPublisher, getStats, listPlugins, listPluginScans, upsertRepository } from "../db/repository";
+import { getPlugin, getPublisher, getStats, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
 import { CAPABILITY, PLUGIN_TYPE } from "../domain/plugin";
 import type { Env } from "../env";
 import { GithubClient, GithubError, type GithubRepo } from "../github/client";
@@ -114,6 +114,13 @@ api.post("/submit", async (c) => {
 		throw err;
 	}
 	const { id } = await upsertRepository(c.env.DB, repo);
+	try {
+		const urls = await client.getOpenGraphImageUrls([{ owner: repo.owner.login, name: repo.name }]);
+		const preview = urls.get(repo.full_name);
+		if (preview) await updateRepositoryPreviewImage(c.env.DB, repo.full_name, preview);
+	} catch (err) {
+		console.warn("preview image fetch failed for " + repo.full_name, err instanceof Error ? err.message : String(err));
+	}
 	await c.env.SCAN_QUEUE.send({ repositoryId: id, owner: repo.owner.login, repo: repo.name, reason: "MANUAL" });
 	return c.json({ owner: repo.owner.login, repo: repo.name, status: "queued" }, 202);
 });

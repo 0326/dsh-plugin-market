@@ -14,6 +14,7 @@ export interface PluginListItem {
 	packageName: string | null;
 	latestCommitSha: string | null;
 	updatedAt: string | null;
+	previewImageUrl: string | null;
 }
 
 export interface Finding {
