@@ -27,6 +27,18 @@ const SOURCE_PATTERNS: { code: string; title: string; re: RegExp; severity: "LOW
 	{ code: "FILESYSTEM_ACCESS", title: "Broad filesystem access", re: /readFileSync|writeFileSync|\bfs\./, severity: "LOW" },
 ];
 
+/** Return the first source line matching the pattern (truncated for display). */
+function matchedLine(content: string, re: RegExp): string | undefined {
+	const lines = content.split(/\r?\n/);
+	for (const line of lines) {
+		if (re.test(line)) {
+			const t = line.trim();
+			return t.length > 160 ? t.slice(0, 160) + "…" : t;
+		}
+	}
+	return undefined;
+}
+
 /** Static security signals. NEVER executes plugin code; flags patterns conservatively. */
 export function analyzeSecurity(manifest: ParsedPackageJson, files: RepoFile[]): SecurityAnalysis {
 	const findings: Finding[] = [];
@@ -75,7 +87,16 @@ export function analyzeSecurity(manifest: ParsedPackageJson, files: RepoFile[]):
 		if (file.content === undefined || !isSourceFile(file.path)) continue;
 		for (const p of SOURCE_PATTERNS) {
 			if (p.re.test(file.content)) {
-				findings.push({ category: "SECURITY", code: p.code, severity: p.severity, title: p.title, filePath: file.path });
+				const match = matchedLine(file.content, p.re);
+				findings.push({
+					category: "SECURITY",
+					code: p.code,
+					severity: p.severity,
+					title: p.title,
+					detail: "Suspicious pattern detected in source code.",
+					filePath: file.path,
+					evidence: match ? { match } : undefined,
+				});
 			}
 		}
 	}

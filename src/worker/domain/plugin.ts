@@ -115,4 +115,18 @@ export interface PluginMetadata {
 	installScripts: string[];
 	capabilities: Capability[];
 	pluginTypes: PluginType[];
+	/** The DSH / Cordis versions this scan evaluated compatibility against. */
+	compatibilityBaseline?: {
+		dshVersion: string;
+		cordisVersion: string;
+		checkedAt: string;
+	};
+	/** Per-dependency compatibility verdicts (declared range vs baseline). */
+	compatibilityVerdicts?: Array<{
+		packageName: string;
+		constraint: string;
+		source: string;
+		status: string;
+		reason: string;
+	}>;
 }

@@ -32,6 +32,8 @@ export type ConstraintStatus = "COMPATIBLE" | "LIKELY_COMPATIBLE" | "OUTDATED" |
 
 export interface ConstraintVerdict {
 	packageName: string;
+	constraint: string;
+	source: DshConstraint["source"];
 	status: ConstraintStatus;
 	reason: string;
 }
@@ -72,10 +74,10 @@ function extractTargetVersion(constraint: string): string | null {
 	return /^\d+\.\d+\.\d+/.test(t) ? t : null;
 }
 
-export function classifyConstraint(packageName: string, constraint: string, baseline: CompatibilityBaseline): ConstraintVerdict {
+export function classifyConstraint(packageName: string, constraint: string, baseline: CompatibilityBaseline): Omit<ConstraintVerdict, "source"> {
 	const baseVersion = baselineFor(packageName, baseline);
 	if (!baseVersion) {
-		return { packageName, status: "UNKNOWN", reason: "no baseline configured for " + packageName };
+		return { packageName, constraint, status: "UNKNOWN", reason: "no baseline configured for " + packageName };
 	}
 	const base = parseSemver(baseVersion);
 	const target = extractTargetVersion(constraint) ? parseSemver(extractTargetVersion(constraint) as string) : null;
@@ -90,20 +92,20 @@ export function classifyConstraint(packageName: string, constraint: string, base
 		target.patch === base.patch &&
 		compareSemver(target, base) < 0
 	) {
-		return { packageName, status: "OUTDATED", reason: "plugin targets " + constraint + ", current baseline is " + baseVersion };
+		return { packageName, constraint, status: "OUTDATED", reason: "plugin targets " + constraint + ", current baseline is " + baseVersion };
 	}
 
 	const res = satisfiesRange(baseVersion, constraint);
 	if (res.satisfied === false) {
-		return { packageName, status: "INCOMPATIBLE", reason: constraint + " does not satisfy baseline " + baseVersion };
+		return { packageName, constraint, status: "INCOMPATIBLE", reason: constraint + " does not satisfy baseline " + baseVersion };
 	}
 	if (res.satisfied === null) {
-		return { packageName, status: "UNKNOWN", reason: "could not interpret range " + constraint };
+		return { packageName, constraint, status: "UNKNOWN", reason: "could not interpret range " + constraint };
 	}
 	if (/[*xX]|latest|>=0/.test(constraint)) {
-		return { packageName, status: "LIKELY_COMPATIBLE", reason: "loose range " + constraint + " satisfied by " + baseVersion };
+		return { packageName, constraint, status: "LIKELY_COMPATIBLE", reason: "loose range " + constraint + " satisfied by " + baseVersion };
 	}
-	return { packageName, status: "COMPATIBLE", reason: constraint + " satisfied by " + baseVersion };
+	return { packageName, constraint, status: "COMPATIBLE", reason: constraint + " satisfied by " + baseVersion };
 }
 
 const PRIORITY: Record<ConstraintStatus, number> = {
@@ -132,7 +134,7 @@ export function analyzeCompatibility(manifest: ParsedPackageJson, baseline: Comp
 			],
 		};
 	}
-	const verdicts = constraints.map((c) => classifyConstraint(c.packageName, c.constraint, baseline));
+	const verdicts = constraints.map((c) => ({ ...classifyConstraint(c.packageName, c.constraint, baseline), source: c.source }));
 	const worst = verdicts.reduce<ConstraintStatus>((acc, v) => (PRIORITY[v.status] > PRIORITY[acc] ? v.status : acc), "COMPATIBLE");
 	const findings: Finding[] = verdicts.map((v) => ({
 		category: "COMPATIBILITY",

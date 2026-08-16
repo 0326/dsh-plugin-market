@@ -9,6 +9,14 @@ import { getPlugin, getScans, type Finding, type PluginDetail as Detail, type Sc
 
 type Tab = "overview" | "compatibility" | "security" | "versions";
 
+interface CompatibilityVerdict {
+	packageName: string;
+	constraint: string;
+	source: string;
+	status: string;
+	reason: string;
+}
+
 interface Metadata {
 	packageName?: string;
 	packageVersion?: string;
@@ -22,6 +30,12 @@ interface Metadata {
 	installScripts?: string[];
 	capabilities?: string[];
 	pluginTypes?: string[];
+	compatibilityBaseline?: {
+		dshVersion: string;
+		cordisVersion: string;
+		checkedAt: string;
+	};
+	compatibilityVerdicts?: CompatibilityVerdict[];
 }
 
 function parseMetadata(json: string | null): Metadata | null {
@@ -33,6 +47,23 @@ function parseMetadata(json: string | null): Metadata | null {
 	}
 }
 
+function EvidenceBlock({ evidence }: { evidence?: Record<string, unknown> }) {
+	const { t } = useI18n();
+	const entries = evidence ? Object.entries(evidence).filter(([, v]) => v !== undefined && v !== null && String(v) !== "") : [];
+	if (entries.length === 0) return null;
+	return (
+		<div className="mt-1">
+			<p className="mb-1 text-xs font-bold uppercase tracking-wide opacity-50">{t("detail.evidence")}</p>
+			{entries.map(([k, v]) => (
+				<div key={k} className="mb-1">
+					{k !== "match" && <span className="mr-2 font-mono text-xs opacity-50">{k}:</span>}
+					<pre className="overflow-x-auto whitespace-pre-wrap break-all border border-base-300 bg-base-200 px-3 py-2 text-xs"><code>{typeof v === "string" ? v : JSON.stringify(v)}</code></pre>
+				</div>
+			))}
+		</div>
+	);
+}
+
 function FindingsList({ findings }: { findings: Finding[] }) {
 	const { t } = useI18n();
 	if (findings.length === 0) return <p className="text-base-content/60">{t("detail.noFindings")}</p>;
@@ -40,17 +71,69 @@ function FindingsList({ findings }: { findings: Finding[] }) {
 		<ul className="space-y-3">
 			{findings.map((f, i) => (
 				<li key={i} className="card border border-base-300 border-l-4 border-l-primary bg-base-100">
-					<div className="card-body gap-1 py-4">
-						<div className="flex items-center gap-2">
+					<div className="card-body gap-2 py-4">
+						<div className="flex flex-wrap items-center gap-2">
 							<Badge value={f.severity} />
 							<strong className="text-sm">{f.title}</strong>
 						</div>
 						{f.detail && <p className="text-sm opacity-70">{f.detail}</p>}
 						{f.filePath && <code className="text-xs opacity-50">{f.filePath}</code>}
+						<EvidenceBlock evidence={f.evidence} />
 					</div>
 				</li>
 			))}
 		</ul>
+	);
+}
+
+function CompatibilityInfo({ metadata }: { metadata: Metadata | null }) {
+	const { t } = useI18n();
+	const baseline = metadata?.compatibilityBaseline;
+	const verdicts = metadata?.compatibilityVerdicts ?? [];
+	return (
+		<div>
+			{baseline ? (
+				<div className="mb-4 border border-base-300 bg-base-100 p-4">
+					<h3 className="mb-3 text-sm font-extrabold uppercase tracking-widest">{t("detail.baselineTitle")}</h3>
+					<div className="grid gap-3 sm:grid-cols-3">
+						<div>
+							<span className="text-xs opacity-60">DSH</span>
+							<p className="font-mono font-bold">{baseline.dshVersion}</p>
+						</div>
+						<div>
+							<span className="text-xs opacity-60">Cordis</span>
+							<p className="font-mono font-bold">{baseline.cordisVersion}</p>
+						</div>
+						<div>
+							<span className="text-xs opacity-60">{t("detail.baselineCheckedAt")}</span>
+							<p className="text-sm">{new Date(baseline.checkedAt).toLocaleString()}</p>
+						</div>
+					</div>
+				</div>
+			) : (
+				<p className="mb-4 text-base-content/60">{t("detail.noBaseline")}</p>
+			)}
+
+			{verdicts.length > 0 && (
+				<div className="mb-4">
+					<h3 className="mb-2 text-sm font-extrabold uppercase tracking-widest">{t("detail.compatVerdicts")}</h3>
+					<ul className="divide-y divide-base-300 border border-base-300">
+						{verdicts.map((v, i) => (
+							<li key={i} className="grid gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4">
+								<div className="min-w-0">
+									<p className="font-mono text-sm font-bold">
+										{v.packageName} <span className="font-normal text-xs opacity-60">{t("detail.range")}: {v.constraint}</span>
+									</p>
+									<p className="text-xs opacity-70">{v.reason}</p>
+									<p className="mt-0.5 text-xs opacity-50">{v.source}</p>
+								</div>
+								<Badge value={v.status} />
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+		</div>
 	);
 }
 
@@ -147,6 +230,14 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 						<Badge value={detail.securityStatus} />
 						<Badge value={detail.maintenanceStatus} />
 					</div>
+					{metadata?.compatibilityBaseline && (
+						<p className="mt-3 text-sm opacity-70">
+							{t("detail.baselineTitle")}:{" "}
+							<span className="font-mono font-semibold">DSH {metadata.compatibilityBaseline.dshVersion}</span>
+							{" · "}
+							<span className="font-mono font-semibold">Cordis {metadata.compatibilityBaseline.cordisVersion}</span>
+						</p>
+					)}
 				</div>
 				<InstallCard plugin={detail} />
 
@@ -219,8 +310,18 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 						)}
 					</div>
 				)}
-				{tab === "compatibility" && <FindingsList findings={detail.findings.filter((f) => f.category === "COMPATIBILITY")} />}
-				{tab === "security" && <FindingsList findings={detail.findings.filter((f) => f.category === "SECURITY")} />}
+				{tab === "compatibility" && (
+					<div>
+						<CompatibilityInfo metadata={metadata} />
+						<FindingsList findings={detail.findings.filter((f) => f.category === "COMPATIBILITY")} />
+					</div>
+				)}
+				{tab === "security" && (
+					<div>
+						<p className="mb-4 text-sm text-base-content/60">{t("detail.riskNote")}</p>
+						<FindingsList findings={detail.findings.filter((f) => f.category === "SECURITY")} />
+					</div>
+				)}
 				{tab === "versions" && <ScansList scans={scans} />}
 			</div>
 		</section>

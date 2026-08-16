@@ -12,7 +12,7 @@ import { SCANNER_VERSION } from "../domain/scan";
 import type { BundleAnalysis } from "./bundle";
 import { analyzeBundle } from "./bundle";
 import { detectCapabilities, detectPluginTypes } from "./capabilities";
-import { analyzeCompatibility, DEFAULT_BASELINE, type CompatibilityBaseline } from "./compatibility";
+import { analyzeCompatibility, DEFAULT_BASELINE, type CompatibilityAnalysis, type CompatibilityBaseline } from "./compatibility";
 import type { MaintenanceInput } from "./maintenance";
 import { analyzeMaintenance } from "./maintenance";
 import { parsePackageJson } from "./manifest";
@@ -57,7 +57,7 @@ export function scanRepository(input: ScanInput): ScanResult {
 	const maintenance = analyzeMaintenance(input.maintenance);
 
 	const verificationStatus = deriveVerification(bundle);
-	const metadata = buildMetadata(manifest, security, bundle, getFileContent(snapshot, "README.md"));
+	const metadata = buildMetadata(manifest, security, bundle, getFileContent(snapshot, "README.md"), compatibility, input.baseline ?? DEFAULT_BASELINE);
 	const findings = [...bundle.findings, ...compatibility.findings, ...security.findings, ...maintenance.findings];
 
 		return {
@@ -79,7 +79,7 @@ function deriveVerification(bundle: BundleAnalysis): VerificationStatus {
 	return "CANDIDATE";
 }
 
-function buildMetadata(manifest: ParsedPackageJson, security: SecurityAnalysis, bundle: BundleAnalysis, readme?: string): PluginMetadata {
+function buildMetadata(manifest: ParsedPackageJson, security: SecurityAnalysis, bundle: BundleAnalysis, readme: string | undefined, compatibility: CompatibilityAnalysis, baseline: CompatibilityBaseline): PluginMetadata {
 	const dshDependencyRanges: Record<string, string> = {};
 	for (const [name, spec] of Object.entries({ ...(manifest.peerDependencies ?? {}), ...(manifest.dependencies ?? {}) })) {
 		if (name === "cordis" || name.startsWith("@deepseek-ai/")) dshDependencyRanges[name] = spec;
@@ -100,6 +100,18 @@ function buildMetadata(manifest: ParsedPackageJson, security: SecurityAnalysis, 
 		installScripts: security.installScripts,
 		capabilities: detectCapabilities(manifest, readme),
 		pluginTypes: detectPluginTypes(manifest),
+		compatibilityBaseline: {
+			dshVersion: baseline.dshVersion,
+			cordisVersion: baseline.cordisVersion,
+			checkedAt: baseline.checkedAt,
+		},
+		compatibilityVerdicts: compatibility.verdicts.map((v) => ({
+			packageName: v.packageName,
+			constraint: v.constraint,
+			source: v.source,
+			status: v.status,
+			reason: v.reason,
+		})),
 	};
 }
 

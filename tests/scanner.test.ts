@@ -126,6 +126,16 @@ describe("compatibility", () => {
 		const res = analyzeCompatibility({ name: "x" });
 		expect(res.status).toBe("UNKNOWN");
 	});
+
+	it("records per-dependency verdicts with constraint and source", () => {
+		const res = analyzeCompatibility(
+			{ name: "x", dependencies: { "@deepseek-ai/cordis": "^4.0.0" }, peerDependencies: { "@deepseek-ai/dsh": "^0.1.0-rc.6" } },
+			DEFAULT_BASELINE,
+		);
+		expect(res.verdicts.length).toBe(2);
+		expect(res.verdicts.find((v) => v.packageName === "@deepseek-ai/cordis")).toMatchObject({ constraint: "^4.0.0", source: "dependencies", status: "COMPATIBLE" });
+		expect(res.verdicts.find((v) => v.packageName === "@deepseek-ai/dsh")).toMatchObject({ source: "peerDependencies" });
+	});
 });
 
 describe("security", () => {
@@ -173,6 +183,25 @@ describe("scanRepository", () => {
 			baseline: { dshVersion: "2.0.0", cordisVersion: "2.0.0", checkedAt: "2026-08-16T00:00:00.000Z" },
 		});
 		expect(result.compatibilityStatus).toBe("COMPATIBLE");
+	});
+
+	it("persists the compatibility baseline and verdicts in metadata", () => {
+		const result = scanRepository({
+			snapshot: snapshotFor(dshBundlePackage({ dependencies: { "@deepseek-ai/cordis": "^4.0.0" } })),
+			maintenance: { archived: false, disabled: false, stars: 0, forks: 0 },
+			baseline: { dshVersion: "0.1.0-rc.6", cordisVersion: "4.0.1", checkedAt: "2026-08-16T00:00:00.000Z" },
+		});
+		expect(result.metadata.compatibilityBaseline).toEqual({ dshVersion: "0.1.0-rc.6", cordisVersion: "4.0.1", checkedAt: "2026-08-16T00:00:00.000Z" });
+		expect(result.metadata.compatibilityVerdicts?.some((v) => v.packageName === "@deepseek-ai/cordis" && v.constraint === "^4.0.0")).toBe(true);
+	});
+
+	it("attaches the matched source line as evidence for security signals", () => {
+		const snap = snapshotFor(dshBundlePackage());
+		snap.files = [...snap.files, { path: "src/installer.js", content: "const { execSync } = require('child_process'); execSync('echo hi');" }];
+		const result = scanRepository({ snapshot: snap, maintenance: { archived: false, disabled: false, stars: 0, forks: 0 } });
+		const shell = result.findings.find((f) => f.code === "SHELL_EXECUTION");
+		expect(shell).toBeDefined();
+		expect(String(shell?.evidence?.match)).toContain("execSync");
 	});
 
 	it("classifies a standard DSH bundle as FORMAT_VERIFIED", () => {
