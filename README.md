@@ -1,44 +1,266 @@
-# React + Vite + Hono + Cloudflare Workers
+# DS Plugin Market
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/vite-react-template)
+**English** | [简体中文](README.zh-CN.md)
 
-This template provides a minimal setup for building a React application with TypeScript and Vite, designed to run on Cloudflare Workers. It features hot module replacement, ESLint integration, and the flexibility of Workers deployments.
+> **Discover. Verify. Install with confidence.**
+>
+> A trusted plugin registry, discovery, and installation experience for the DeepSeek Harness ecosystem.
 
-![React + TypeScript + Vite + Cloudflare Workers](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/fc7b4b62-442b-4769-641b-ad4422d74300/public)
+🌐 **https://ds-plugin.market**
 
-<!-- dash-content-start -->
+> This project is in early development. DeepSeek Harness itself is currently in Developer Preview, so plugin specifications and compatibility rules may evolve quickly.
 
-🚀 Supercharge your web development with this powerful stack:
+## Why DS Plugin Market?
 
-- [**React**](https://react.dev/) - A modern UI library for building interactive interfaces
-- [**Vite**](https://vite.dev/) - Lightning-fast build tooling and development server
-- [**Hono**](https://hono.dev/) - Ultralight, modern backend framework
-- [**Cloudflare Workers**](https://developers.cloudflare.com/workers/) - Edge computing platform for global deployment
+DeepSeek Harness is built around the idea that **Everything is a Plugin**. Today, the community can discover related repositories through the GitHub [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic.
 
-### ✨ Key Features
+But a GitHub topic can only answer:
 
-- 🔥 Hot Module Replacement (HMR) for rapid development
-- 📦 TypeScript support out of the box
-- 🛠️ ESLint configuration included
-- ⚡ Zero-config deployment to Cloudflare's global network
-- 🎯 API routes with Hono's elegant routing
-- 🔄 Full-stack development setup
-- 🔎 Built-in Observability to monitor your Worker
+> “Which repositories claim to be related to DSH plugins?”
 
-Get started in minutes with local development or deploy directly via the Cloudflare dashboard. Perfect for building modern, performant web applications at the edge.
+Before installing third-party code, users need better answers:
 
-<!-- dash-content-end -->
+- Is this repository actually a valid DSH Plugin / Bundle?
+- Is it compatible with the current DSH / Cordis versions?
+- Is it still actively maintained?
+- Does installation execute `prepare`, `postinstall`, or other scripts?
+- What security and supply-chain signals should I know about?
+- Which exact version or commit should I install to match the code that was scanned?
 
-## Getting Started
+**DS Plugin Market is not just a nicer UI for a GitHub Topic. It turns candidate repositories into a structured, verifiable, and traceable plugin registry.**
 
-To start a new project with this template, run:
+## What it provides
 
-```bash
-npm create cloudflare@latest -- --template=cloudflare/templates/vite-react-template
+### Discover
+
+Continuously discover candidate DSH plugin repositories from public sources such as GitHub instead of maintaining a static list by hand.
+
+### Verify
+
+Analyze plugin structure, including signals such as:
+
+- `package.json`
+- `dsh.bundle.patch`
+- `cordis.patch.yml`
+- DSH / Cordis dependencies and peer dependencies
+- plugin entry points and exports
+- Node.js engine requirements
+- client / web platform metadata
+
+Repositories move through an explicit lifecycle:
+
+```text
+Candidate
+   ↓
+Detected
+   ↓
+Format Verified
+   ↓
+Featured (curated)
 ```
 
-A live deployment of this template is available at:
-[https://react-vite-template.templates.workers.dev](https://react-vite-template.templates.workers.dev)
+### Assess
+
+Build an independent Trust Profile for every plugin:
+
+```text
+Format Verification
+Compatibility
+Security Scan
+Maintenance
+Publisher Trust (later)
+```
+
+For example:
+
+```text
+✓ Format Verified
+✓ Compatible with current DSH baseline
+⚠ prepare script detected
+✓ Active maintenance
+○ Publisher not verified
+```
+
+### Install with confidence
+
+Scan results are bound to an exact commit SHA. For GitHub installs, DS Plugin Market should prefer a pinned command such as:
+
+```bash
+dsh plugin --profile web add github:owner/repo#<scanned_commit_sha>
+```
+
+This makes the code users install traceable to the code represented by the displayed scan result.
+
+## What does “Verified” mean?
+
+This distinction is fundamental:
+
+> **Format Verified ≠ Safe**
+
+`Format Verified` only means that a repository matches the DSH Plugin / Bundle structure understood by the current scanner version.
+
+Security signals are evaluated and displayed separately, including:
+
+- install scripts;
+- dependency risk signals;
+- shell / process execution;
+- filesystem / network access patterns;
+- dynamic code execution heuristics;
+- public vulnerability sources added in later stages.
+
+Even when no high-risk signal is detected, **a security scan is not a guarantee that third-party code is safe**.
+
+## Why install scripts matter
+
+DeepSeek Harness can install plugins directly from GitHub:
+
+```bash
+dsh plugin --profile web add github:owner/repo
+```
+
+A Git dependency may use a `prepare` script to build artifacts after download. Allowing that build means third-party code can execute during installation.
+
+DS Plugin Market therefore treats these as first-class trust signals:
+
+```text
+Install scripts
+Build required
+Scanned commit
+Recommended pinned install
+```
+
+—not as hidden repository metadata behind stars, language, or license.
+
+## How it works
+
+```text
+GitHub dsh-plugin Topic / Submit
+              │
+              ▼
+        Candidate Discovery
+              │
+              ▼
+       GitHub REST API
+              │
+      ┌───────┴────────┐
+      │                │
+      ▼                ▼
+Repository         Commit / Tree
+Metadata              Files
+      │                │
+      └───────┬────────┘
+              ▼
+        Static Scanner
+              │
+      ┌───────┼──────────┐
+      ▼       ▼          ▼
+   Format  Compatibility Security
+      │       │          │
+      └───────┼──────────┘
+              ▼
+        Trust Profile
+              │
+              ▼
+      Cloudflare D1 Registry
+              │
+              ▼
+        ds-plugin.market
+```
+
+Automatic updates are designed around:
+
+```text
+Cloudflare Cron
+      ↓
+Discover new / changed repos
+      ↓
+Cloudflare Queue
+      ↓
+Static Scan
+      ↓
+D1
+```
+
+The project does not rely on high-frequency scraping of GitHub HTML pages.
+
+## Scanner security boundary
+
+The v1.0 scanner follows one hard rule:
+
+> **Never execute untrusted plugin code.**
+
+It reads and statically analyzes repository files through APIs. It does not:
+
+```text
+npm install third-party repo
+pnpm install third-party repo
+run prepare / postinstall
+execute plugin entry
+execute repository shell scripts
+```
+
+If something cannot be determined safely through static analysis, the correct result is `Unknown`, not an invented safety claim.
+
+## Architecture
+
+Current project stack:
+
+```text
+Frontend
+React 19 + TypeScript + Vite
+
+API
+Hono
+
+Runtime
+Cloudflare Workers
+
+Registry
+Cloudflare D1
+
+Scheduling
+Cloudflare Cron Triggers
+
+Scan Jobs
+Cloudflare Queues
+
+Source
+GitHub REST API
+```
+
+For architecture, data models, scanner rules, trust semantics, and implementation phases, see:
+
+**[Technical Design v1.0](docs/TECHNICAL_DESIGN.md)**
+
+## v1.0 roadmap
+
+### Registry MVP
+
+- [ ] GitHub `dsh-plugin` candidate discovery
+- [ ] Incremental GitHub API sync
+- [ ] D1 registry
+- [ ] `package.json` / `cordis.patch.yml` parsing
+- [ ] Candidate / Detected / Format Verified states
+- [ ] Home / Explore / Plugin Detail pages
+- [ ] Basic installation commands
+
+### Trust Layer
+
+- [ ] DSH / Cordis compatibility analysis
+- [ ] Install-script detection
+- [ ] Static security signals
+- [ ] Maintenance signals
+- [ ] Commit-bound scan history
+- [ ] Pinned-commit install commands
+
+### Discovery Experience
+
+- [ ] Capability taxonomy
+- [ ] Advanced filters
+- [ ] Featured / Trending / New & Verified
+- [ ] Submit Plugin
+- [ ] Publisher pages
+- [ ] AI-assisted search as an enhancement, not a core dependency
 
 ## Development
 
@@ -48,43 +270,50 @@ Install dependencies:
 npm install
 ```
 
-Start the development server with:
+Start locally:
 
 ```bash
 npm run dev
 ```
 
-Your application will be available at [http://localhost:5173](http://localhost:5173).
-
-## Production
-
-Build your project for production:
+Build:
 
 ```bash
 npm run build
 ```
 
-Preview your build locally:
+Deploy to Cloudflare Workers:
 
 ```bash
-npm run preview
+npm run deploy
 ```
 
-Deploy your project to Cloudflare Workers:
+> GitHub credentials, D1, Queue, and Cron bindings will be introduced as the Registry MVP is implemented. GitHub credentials must be stored as Cloudflare Secrets and must never be exposed to frontend code or committed to the repository.
 
-```bash
-npm run build && npm run deploy
+## Core principle
+
+```text
+GitHub = Source of Truth for Code
+
+DS Plugin Market
+= Source of Truth for Plugin Metadata & Trust Signals
 ```
 
-Monitor your workers:
+We do not host third-party plugins, mirror their release systems, or replace GitHub / npm.
 
-```bash
-npx wrangler tail
-```
+Our job is simpler and more focused:
 
-## Additional Resources
+> **GitHub tells you what claims to be a DSH plugin. DS Plugin Market tells you what it actually is, whether it is compatible, and what you should know before installing it.**
 
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Vite Documentation](https://vitejs.dev/guide/)
-- [React Documentation](https://reactjs.org/)
-- [Hono Documentation](https://hono.dev/)
+## Disclaimer
+
+DS Plugin Market is a community project. It is not an official DeepSeek product and does not represent DeepSeek review, approval, or endorsement of third-party plugins.
+
+Verification, compatibility, and security results are automated observations tied to a specific scanner version, time, and commit. They are decision-support signals, not a substitute for source review or other security controls.
+
+## Links
+
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
+- [GitHub `dsh-plugin` Topic](https://github.com/topics/dsh-plugin)
+- [DSH Plugin Tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/index.md)
+- [DSH Package & Install Guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.md)
