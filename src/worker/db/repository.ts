@@ -2,6 +2,7 @@ import type { Finding } from "../domain/finding";
 import { SCANNER_VERSION, type ScanJobError } from "../domain/scan";
 import type { GithubRepo } from "../github/client";
 import type { ScanResult } from "../scanner";
+import type { CompatibilityBaseline } from "../scanner/compatibility";
 
 export interface RepositoryRow {
 	id: number;
@@ -54,7 +55,13 @@ export interface ListPluginsOptions {
 	q?: string;
 	status?: string;
 	verifiedOnly?: boolean;
-	sort?: "updated" | "stars" | "new";
+	featured?: boolean;
+	capability?: string;
+	pluginType?: string;
+	compatibility?: string;
+	risk?: string;
+	owner?: string;
+	sort?: "updated" | "stars" | "new" | "trending";
 	limit?: number;
 	offset?: number;
 }
@@ -149,13 +156,43 @@ export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {})
 		where.push("p.verification_status = ?");
 		params.push(opts.status);
 	}
+	if (opts.featured) where.push("p.featured = 1");
+	if (opts.compatibility) {
+		where.push("p.compatibility_status = ?");
+		params.push(opts.compatibility);
+	}
+	if (opts.risk) {
+		where.push("p.risk_level = ?");
+		params.push(opts.risk);
+	}
+	if (opts.capability) {
+		where.push("p.capabilities_json LIKE ?");
+		params.push('%"' + opts.capability + '"%');
+	}
+	if (opts.pluginType) {
+		where.push("p.plugin_types_json LIKE ?");
+		params.push('%"' + opts.pluginType + '"%');
+	}
+	if (opts.owner) {
+		where.push("r.owner = ?");
+		params.push(opts.owner);
+	}
 	if (opts.q) {
 		where.push("(r.full_name LIKE ? OR r.description LIKE ? OR p.package_name LIKE ?)");
 		const like = "%" + opts.q + "%";
 		params.push(like, like, like);
 	}
+
+	let orderBy = "r.updated_at DESC";
+	if (opts.sort === "stars") orderBy = "r.stars DESC";
+	else if (opts.sort === "new") orderBy = "r.discovered_at DESC";
+	else if (opts.sort === "trending") {
+		where.push("r.github_pushed_at >= ?");
+		params.push(new Date(Date.now() - 90 * 86_400_000).toISOString());
+		orderBy = "r.stars DESC";
+	}
+
 	const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
-	const orderBy = opts.sort === "stars" ? "r.stars DESC" : opts.sort === "new" ? "r.discovered_at DESC" : "r.updated_at DESC";
 	const sql =
 		`SELECT r.owner, r.name AS repo, r.full_name AS fullName, r.description, r.stars,
 			p.verification_status AS verificationStatus, p.compatibility_status AS compatibilityStatus,
@@ -235,13 +272,15 @@ export async function completeScan(db: D1Database, scanId: number, result: ScanR
 	await addFindings(db, scanId, result.findings);
 
 	const metadataJson = JSON.stringify(result.metadata);
+	const capabilitiesJson = JSON.stringify(result.metadata.capabilities ?? []);
+	const pluginTypesJson = JSON.stringify(result.metadata.pluginTypes ?? []);
 	const existing = await db.prepare("SELECT id FROM plugins WHERE repository_id = (SELECT repository_id FROM scans WHERE id = ?)").bind(scanId).first<{ id: number }>();
 	if (existing) {
 		await db
 			.prepare(
 				`UPDATE plugins SET package_name = ?, package_version = ?, plugin_name = ?, description = ?,
 					verification_status = ?, compatibility_status = ?, security_status = ?, maintenance_status = ?,
-					risk_level = ?, latest_scan_id = ?, metadata_json = ?, updated_at = ? WHERE id = ?`,
+					risk_level = ?, latest_scan_id = ?, metadata_json = ?, capabilities_json = ?, plugin_types_json = ?, updated_at = ? WHERE id = ?`,
 			)
 			.bind(
 				result.metadata.packageName ?? null,
@@ -255,6 +294,8 @@ export async function completeScan(db: D1Database, scanId: number, result: ScanR
 				result.riskLevel,
 				scanId,
 				metadataJson,
+				capabilitiesJson,
+				pluginTypesJson,
 				now,
 				existing.id,
 			)
@@ -264,8 +305,8 @@ export async function completeScan(db: D1Database, scanId: number, result: ScanR
 			.prepare(
 				`INSERT INTO plugins (repository_id, package_name, package_version, plugin_name, description,
 					verification_status, compatibility_status, security_status, maintenance_status, risk_level,
-					latest_scan_id, metadata_json, created_at, updated_at)
-				SELECT repository_id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM scans WHERE id = ?`,
+					latest_scan_id, metadata_json, capabilities_json, plugin_types_json, created_at, updated_at)
+				SELECT repository_id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM scans WHERE id = ?`,
 			)
 			.bind(
 				result.metadata.packageName ?? null,
@@ -279,6 +320,8 @@ export async function completeScan(db: D1Database, scanId: number, result: ScanR
 				result.riskLevel,
 				scanId,
 				metadataJson,
+				capabilitiesJson,
+				pluginTypesJson,
 				now,
 				now,
 				scanId,
@@ -318,4 +361,95 @@ export async function listFindings(db: D1Database, scanId: number): Promise<Find
 		filePath: r.filePath ?? undefined,
 		evidence: r.evidenceJson ? (JSON.parse(r.evidenceJson) as Record<string, unknown>) : undefined,
 	}));
+}
+
+// --- Compatibility baseline ---
+
+export async function getBaseline(db: D1Database): Promise<CompatibilityBaseline | null> {
+	return db
+		.prepare("SELECT dsh_version AS dshVersion, cordis_version AS cordisVersion, checked_at AS checkedAt FROM baseline WHERE id = 1")
+		.first<CompatibilityBaseline>();
+}
+
+export async function upsertBaseline(db: D1Database, baseline: CompatibilityBaseline): Promise<void> {
+	await db
+		.prepare("INSERT OR REPLACE INTO baseline (id, dsh_version, cordis_version, checked_at, updated_at) VALUES (1, ?, ?, ?, ?)")
+		.bind(baseline.dshVersion, baseline.cordisVersion, baseline.checkedAt, baseline.checkedAt)
+		.run();
+}
+
+// --- Registry stats ---
+
+export interface RegistryStats {
+	totalCandidates: number;
+	verified: number;
+	featured: number;
+	updatedThisWeek: number;
+}
+
+export async function getStats(db: D1Database): Promise<RegistryStats> {
+	const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+	const row = await db
+		.prepare(
+			`SELECT
+				(SELECT COUNT(*) FROM plugins) AS totalCandidates,
+				(SELECT COUNT(*) FROM plugins WHERE verification_status = 'FORMAT_VERIFIED') AS verified,
+				(SELECT COUNT(*) FROM plugins WHERE featured = 1) AS featured,
+				(SELECT COUNT(*) FROM plugins WHERE updated_at >= ?) AS updatedThisWeek`,
+		)
+		.bind(weekAgo)
+		.first<RegistryStats>();
+	return row ?? { totalCandidates: 0, verified: 0, featured: 0, updatedThisWeek: 0 };
+}
+
+// --- Scan history ---
+
+export interface ScanRow {
+	id: number;
+	commitSha: string;
+	scannerVersion: string;
+	status: string;
+	startedAt: string;
+	completedAt: string | null;
+	errorCode: string | null;
+}
+
+export async function listPluginScans(db: D1Database, owner: string, repo: string): Promise<ScanRow[]> {
+	const res = await db
+		.prepare(
+			`SELECT s.id, s.commit_sha AS commitSha, s.scanner_version AS scannerVersion, s.status,
+				s.started_at AS startedAt, s.completed_at AS completedAt, s.error_code AS errorCode
+			FROM scans s JOIN repositories r ON r.id = s.repository_id
+			WHERE r.owner = ? AND r.name = ? ORDER BY s.id DESC LIMIT 50`,
+		)
+		.bind(owner, repo)
+		.all<ScanRow>();
+	return res.results ?? [];
+}
+
+// --- Featured curation ---
+
+export async function setFeatured(db: D1Database, owner: string, repo: string, featured: boolean): Promise<boolean> {
+	const res = await db
+		.prepare("UPDATE plugins SET featured = ?, updated_at = ? WHERE repository_id = (SELECT id FROM repositories WHERE owner = ? AND name = ?)")
+		.bind(featured ? 1 : 0, new Date().toISOString(), owner, repo)
+		.run();
+	return res.meta.changes > 0;
+}
+
+// --- Publisher ---
+
+export interface PublisherInfo {
+	owner: string;
+	repos: PluginListItem[];
+	totalStars: number;
+	verifiedCount: number;
+}
+
+export async function getPublisher(db: D1Database, owner: string): Promise<PublisherInfo | null> {
+	const repos = await listPlugins(db, { owner, limit: 100 });
+	if (repos.length === 0) return null;
+	const totalStars = repos.reduce((sum, p) => sum + p.stars, 0);
+	const verifiedCount = repos.filter((p) => p.verificationStatus === "FORMAT_VERIFIED").length;
+	return { owner, repos, totalStars, verifiedCount };
 }

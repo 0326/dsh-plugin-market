@@ -1,9 +1,10 @@
-import { completeScan, createScan, getRepositoryByFullName, updateRepositorySha } from "../db/repository";
+import { completeScan, createScan, getBaseline, getRepositoryByFullName, updateRepositorySha } from "../db/repository";
 import type { ScanJob } from "../domain/scan";
 import type { Env } from "../env";
 import { GithubClient } from "../github/client";
 import { fetchSnapshot } from "../github/repository";
 import { scanRepository } from "../scanner";
+import { DEFAULT_BASELINE } from "../scanner/compatibility";
 
 /** A transient failure (e.g. rate limit) that should be retried by the queue. */
 export class TransientScanError extends Error {
@@ -29,6 +30,7 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 	}
 
 	const snapshot = fetched.snapshot;
+	const baseline = (await getBaseline(env.DB)) ?? DEFAULT_BASELINE;
 	const result = scanRepository({
 		snapshot,
 		maintenance: {
@@ -38,6 +40,7 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 			stars: repo.stars,
 			forks: repo.forks,
 		},
+		baseline,
 	});
 
 	const scanId = await createScan(env.DB, repo.id, snapshot.commitSha);

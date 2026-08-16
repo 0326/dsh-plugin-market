@@ -3,12 +3,14 @@ import "./App.css";
 import Explore from "./pages/Explore";
 import Home from "./pages/Home";
 import PluginDetail from "./pages/PluginDetail";
+import Publisher from "./pages/Publisher";
 import Submit from "./pages/Submit";
 
 type Route =
 	| { name: "home" }
 	| { name: "explore" }
 	| { name: "plugin"; owner: string; repo: string }
+	| { name: "publisher"; owner: string }
 	| { name: "submit" };
 
 function parseRoute(hash: string): Route {
@@ -17,6 +19,7 @@ function parseRoute(hash: string): Route {
 	if (segments.length === 0) return { name: "home" };
 	if (segments[0] === "plugins") return { name: "explore" };
 	if (segments[0] === "plugin" && segments[1] && segments[2]) return { name: "plugin", owner: segments[1], repo: segments[2] };
+	if (segments[0] === "publisher" && segments[1]) return { name: "publisher", owner: segments[1] };
 	if (segments[0] === "submit") return { name: "submit" };
 	return { name: "home" };
 }
@@ -51,6 +54,7 @@ function App() {
 				{route.name === "home" && <Home />}
 				{route.name === "explore" && <Explore />}
 				{route.name === "plugin" && <PluginDetail owner={route.owner} repo={route.repo} />}
+				{route.name === "publisher" && <Publisher owner={route.owner} />}
 				{route.name === "submit" && <Submit />}
 			</main>
 			<footer className="footer">

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Badge } from "../components/Badge";
 import { InstallCard } from "../components/InstallCard";
-import { getPlugin, type Finding, type PluginDetail as Detail } from "../lib/api";
+import { getPlugin, getScans, type Finding, type PluginDetail as Detail, type ScanRow } from "../lib/api";
 
-type Tab = "overview" | "compatibility" | "security";
+type Tab = "overview" | "compatibility" | "security" | "versions";
 
 interface Metadata {
 	packageName?: string;
@@ -47,8 +47,30 @@ function FindingsList({ findings }: { findings: Finding[] }) {
 	);
 }
 
+function ScansList({ scans }: { scans: ScanRow[] }) {
+	if (scans.length === 0) return <p className="empty">No scan history.</p>;
+	return (
+		<ul className="findings">
+			{scans.map((s) => {
+				const kind = s.status === "completed" ? "PASSED" : s.status === "failed" ? "FAILED" : "UNKNOWN";
+				return (
+					<li key={s.id} className="finding">
+						<div className="finding-head">
+							<Badge value={kind} label={s.status} />
+							<code>{s.commitSha.slice(0, 12)}</code>
+						</div>
+						<p>scanner {s.scannerVersion} · {s.completedAt ?? s.startedAt}</p>
+						{s.errorCode && <p>error: {s.errorCode}</p>}
+					</li>
+				);
+			})}
+		</ul>
+	);
+}
+
 export default function PluginDetail({ owner, repo }: { owner: string; repo: string }) {
 	const [detail, setDetail] = useState<Detail | null>(null);
+	const [scans, setScans] = useState<ScanRow[]>([]);
 	const [error, setError] = useState<string | null>(null);
 	const [tab, setTab] = useState<Tab>("overview");
 
@@ -66,6 +88,20 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 		};
 	}, [owner, repo]);
 
+	useEffect(() => {
+		let ignore = false;
+		getScans(owner, repo)
+			.then((r) => {
+				if (!ignore) setScans(r.scans);
+			})
+			.catch(() => {
+				if (!ignore) setScans([]);
+			});
+		return () => {
+			ignore = true;
+		};
+	}, [owner, repo]);
+
 	if (error) return <p className="error">Failed to load plugin: {error}</p>;
 	if (!detail) return <p className="empty">Loading…</p>;
 
@@ -76,6 +112,9 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 			<div className="detail-main">
 				<h1>{detail.fullName}</h1>
 				<p className="plugin-desc">{detail.description ?? "No description."}</p>
+				<p className="hint">
+					by <a href={"#/publisher/" + detail.owner}>{detail.owner}</a>
+				</p>
 				<div className="detail-badges">
 					<Badge value={detail.verificationStatus} />
 					<Badge value={detail.compatibilityStatus} />
@@ -86,6 +125,7 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 					<button className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
 					<button className={tab === "compatibility" ? "active" : ""} onClick={() => setTab("compatibility")}>Compatibility</button>
 					<button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>Security</button>
+					<button className={tab === "versions" ? "active" : ""} onClick={() => setTab("versions")}>Versions</button>
 				</div>
 				{tab === "overview" && (
 					<div className="overview">
@@ -109,6 +149,7 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 				)}
 				{tab === "compatibility" && <FindingsList findings={detail.findings.filter((f) => f.category === "COMPATIBILITY")} />}
 				{tab === "security" && <FindingsList findings={detail.findings.filter((f) => f.category === "SECURITY")} />}
+				{tab === "versions" && <ScansList scans={scans} />}
 			</div>
 			<InstallCard plugin={detail} />
 		</section>

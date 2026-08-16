@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getPlugin, listPlugins, upsertRepository } from "../db/repository";
+import { getPlugin, getPublisher, getStats, listPlugins, listPluginScans, upsertRepository } from "../db/repository";
 import { CAPABILITY, PLUGIN_TYPE } from "../domain/plugin";
 import type { Env } from "../env";
 import { GithubClient, GithubError, type GithubRepo } from "../github/client";
@@ -23,11 +23,17 @@ function parseRepoUrl(input: string | undefined): { owner: string; repo: string 
 
 api.get("/plugins", async (c) => {
 	const q = c.req.query();
+	const sort = q.sort === "stars" || q.sort === "new" || q.sort === "trending" ? q.sort : "updated";
 	const items = await listPlugins(c.env.DB, {
 		q: q.q,
 		verifiedOnly: q.verified === "1" || q.verified === "true",
+		featured: q.featured === "1" || q.featured === "true",
 		status: q.status,
-		sort: q.sort === "stars" || q.sort === "new" ? q.sort : "updated",
+		capability: q.capability,
+		pluginType: q.pluginType,
+		compatibility: q.compatibility,
+		risk: q.risk,
+		sort,
 		limit: clampInt(q.limit, 50, 1, 100),
 		offset: clampInt(q.offset, 0, 0, 100000),
 	});
@@ -40,13 +46,26 @@ api.get("/plugins/:owner/:repo", async (c) => {
 	return c.json(detail);
 });
 
+api.get("/plugins/:owner/:repo/scans", async (c) => {
+	const scans = await listPluginScans(c.env.DB, c.req.param("owner"), c.req.param("repo"));
+	return c.json({ scans });
+});
+
 api.get("/plugins/:owner/:repo/scans/latest", async (c) => {
 	const detail = await getPlugin(c.env.DB, c.req.param("owner"), c.req.param("repo"));
 	if (!detail) return c.json({ error: "not_found" }, 404);
 	return c.json({ commitSha: detail.latestCommitSha, scannerVersion: detail.scannerVersion, scannedAt: detail.scannedAt, findings: detail.findings });
 });
 
+api.get("/stats", async (c) => c.json(await getStats(c.env.DB)));
+
 api.get("/categories", (c) => c.json({ capabilities: CAPABILITY, pluginTypes: PLUGIN_TYPE }));
+
+api.get("/publishers/:owner", async (c) => {
+	const pub = await getPublisher(c.env.DB, c.req.param("owner"));
+	if (!pub) return c.json({ error: "not_found" }, 404);
+	return c.json(pub);
+});
 
 api.get("/search", async (c) => {
 	const q = c.req.query("q");

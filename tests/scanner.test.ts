@@ -4,6 +4,7 @@ import { analyzeCompatibility, classifyConstraint, DEFAULT_BASELINE } from "../s
 import { analyzeMaintenance } from "../src/worker/scanner/maintenance";
 import { parsePackageJson } from "../src/worker/scanner/manifest";
 import { scanRepository } from "../src/worker/scanner";
+import { computeBaseline } from "../src/worker/npm/baseline";
 import { analyzeSecurity } from "../src/worker/scanner/security";
 import { compareSemver, parseSemver, satisfiesRange } from "../src/worker/scanner/semver";
 import type { RepoSnapshot } from "../src/worker/scanner/snapshot";
@@ -138,7 +139,26 @@ describe("maintenance", () => {
 	});
 });
 
+describe("baseline", () => {
+	it("resolves versions from a fetcher and falls back when missing", async () => {
+		const b = await computeBaseline(async (pkg) => (pkg === "@deepseek-ai/cordis" ? "0.2.0" : null));
+		expect(b.cordisVersion).toBe("0.2.0");
+		expect(b.dshVersion).toBe(DEFAULT_BASELINE.dshVersion);
+		expect(b.checkedAt).toBeTruthy();
+	});
+});
+
 describe("scanRepository", () => {
+	it("uses the provided compatibility baseline", () => {
+		const pkg = dshBundlePackage({ dependencies: { "@deepseek-ai/cordis": "^2.0.0" } });
+		const result = scanRepository({
+			snapshot: snapshotFor(pkg),
+			maintenance: { archived: false, disabled: false, stars: 0, forks: 0 },
+			baseline: { dshVersion: "2.0.0", cordisVersion: "2.0.0", checkedAt: "2026-08-16T00:00:00.000Z" },
+		});
+		expect(result.compatibilityStatus).toBe("COMPATIBLE");
+	});
+
 	it("classifies a standard DSH bundle as FORMAT_VERIFIED", () => {
 		const result = scanRepository({
 			snapshot: snapshotFor(dshBundlePackage()),

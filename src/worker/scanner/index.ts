@@ -12,7 +12,7 @@ import { SCANNER_VERSION } from "../domain/scan";
 import type { BundleAnalysis } from "./bundle";
 import { analyzeBundle } from "./bundle";
 import { detectCapabilities, detectPluginTypes } from "./capabilities";
-import { analyzeCompatibility } from "./compatibility";
+import { analyzeCompatibility, DEFAULT_BASELINE, type CompatibilityBaseline } from "./compatibility";
 import type { MaintenanceInput } from "./maintenance";
 import { analyzeMaintenance } from "./maintenance";
 import { parsePackageJson } from "./manifest";
@@ -37,6 +37,7 @@ export interface ScanResult {
 export interface ScanInput {
 	snapshot: RepoSnapshot;
 	maintenance: MaintenanceInput;
+	baseline?: CompatibilityBaseline;
 }
 
 /** Pure entry point: snapshot in, structured scan result out. */
@@ -51,7 +52,7 @@ export function scanRepository(input: ScanInput): ScanResult {
 
 	const manifest = parsed.manifest;
 	const bundle = analyzeBundle(manifest, snapshot);
-	const compatibility = analyzeCompatibility(manifest);
+	const compatibility = analyzeCompatibility(manifest, input.baseline ?? DEFAULT_BASELINE);
 	const security = analyzeSecurity(manifest, snapshot.files);
 	const maintenance = analyzeMaintenance(input.maintenance);
 

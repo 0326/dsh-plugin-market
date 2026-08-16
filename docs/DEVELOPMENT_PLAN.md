@@ -37,15 +37,21 @@
 
 ### M2 — Trust Layer（技术方案 Phase 2）
 
-- 兼容性 baseline 从 npm/官方仓库定时同步到 D1
-- 详情页 Compatibility / Security / Maintenance Tabs + 可展开 findings
-- pinned-commit 安装命令
+- [x] 兼容性 baseline 从 npm registry 同步到 D1（`src/worker/npm/baseline.ts` + `baseline` 表 + 每小时 cron）
+- [x] Scanner 从 D1 读取 baseline（`processScanJob` 传参，缺省回退 `DEFAULT_BASELINE`）
+- [x] 详情页 Compatibility / Security / Maintenance / Versions Tabs + 可展开 findings
+- [x] 扫描历史（`GET /api/plugins/:owner/:repo/scans` + Versions tab）
+- [x] pinned-commit 安装命令（InstallCard）
 
 ### M3 — Discovery Experience（技术方案 Phase 3）
 
-- capability taxonomy + 高级筛选
-- Featured / Trending / New & Verified
-- Submit 强化、Publisher 页、SEO、AI Search（可选）
+- [x] capability taxonomy + plugin type 双维度（详情展示 + 筛选）
+- [x] 高级筛选（capability / pluginType / compatibility / risk / verified / search / sort）
+- [x] Featured（internal 置顶接口 + 首页区块）/ Trending / New & Verified / Popular
+- [x] Registry 统计（`GET /api/stats`：candidates / verified / updated-this-week）
+- [x] Publisher 页（`GET /api/publishers/:owner` + `/publisher/:owner`）
+- [x] SEO / OpenGraph / Twitter meta
+- [ ] AI Search（可选增强，后置，不阻断主体）
 
 ## 关键约束（护栏）
 
