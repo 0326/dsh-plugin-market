@@ -13,9 +13,7 @@ app.get("/api/", (c) => c.json({ name: "dsh-plugin-market", status: "ok" }));
 app.route("/api", api);
 app.route("/api/internal", internal);
 
-export default app;
-
-export async function scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+async function scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
 	ctx.waitUntil(
 		(async () => {
 			await Promise.allSettled([runCronDiscovery(env), syncBaseline(env)]);
@@ -23,7 +21,7 @@ export async function scheduled(_controller: ScheduledController, env: Env, ctx:
 	);
 }
 
-export async function queue(batch: MessageBatch<ScanJob>, env: Env): Promise<void> {
+async function queue(batch: MessageBatch<ScanJob>, env: Env): Promise<void> {
 	for (const message of batch.messages) {
 		try {
 			await processScanJob(env, message.body);
@@ -39,3 +37,12 @@ export async function queue(batch: MessageBatch<ScanJob>, env: Env): Promise<voi
 		}
 	}
 }
+
+// Cloudflare Workers module format: every handler (fetch / scheduled / queue)
+// must be a property of the default export object. A top-level named export is
+// not recognized as a handler, which caused "Queue handler is missing" (11001).
+export default {
+	fetch: app.fetch,
+	scheduled,
+	queue,
+};
