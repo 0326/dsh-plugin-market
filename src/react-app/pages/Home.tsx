@@ -150,13 +150,10 @@ export default function Home() {
 				empty={t("home.emptyFeatured")}
 				isEmpty={data.featured.length === 0}
 			>
-				<div className="grid gap-4 md:grid-cols-2">
-					{data.featured[0] && <PluginCard p={data.featured[0]} featured large />}
-					<div className="grid gap-4">
-						{data.featured.slice(1, 3).map((p) => (
-							<PluginCard key={p.fullName} p={p} featured />
-						))}
-					</div>
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{data.featured.slice(0, 3).map((p) => (
+						<PluginCard key={p.fullName} p={p} featured />
+					))}
 				</div>
 			</Section>
 

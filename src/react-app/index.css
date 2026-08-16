@@ -167,8 +167,8 @@
 	.section-heading h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.25rem); font-weight: 900; letter-spacing: -0.055em; }
 	.section-heading h2::after { content: ""; display: block; width: 2.25rem; height: 3px; margin-top: 0.45rem; background: var(--color-secondary); }
 	.section-heading a { font-size: 0.85rem; font-weight: 800; }
-	.plugin-card { border: 2px solid var(--color-base-content); box-shadow: none; }
-	.plugin-card:hover { transform: translateY(-2px); box-shadow: 5px 5px 0 var(--color-base-content); }
+	.plugin-card { height: 100%; border: 2px solid var(--color-base-content); box-shadow: none; }
+	.plugin-card:hover { transform: translateY(-2px); box-shadow: 5px 5px 0 var(--color-secondary); }
 	.plugin-card.featured { border-color: var(--color-neutral); background: var(--color-neutral); color: var(--color-neutral-content); }
 	.plugin-card .card-body { padding: clamp(1.1rem, 2vw, 1.75rem); }
 	.plugin-card .plugin-icon { display: grid; place-items: center; width: 3.25rem; height: 3.25rem; background: var(--color-secondary); color: white; font-size: 1.35rem; font-weight: 900; }

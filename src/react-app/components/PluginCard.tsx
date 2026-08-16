@@ -14,11 +14,9 @@ function formatDate(iso: string | null): string {
 export function PluginCard({
 	p,
 	featured = false,
-	large = false,
 }: {
 	p: PluginListItem;
 	featured?: boolean;
-	large?: boolean;
 }) {
 	const { t } = useI18n();
 	const initial = (p.repo || p.fullName || "?").charAt(0).toUpperCase();
@@ -28,19 +26,16 @@ export function PluginCard({
 		<a
 			className={
 				"plugin-card card w-full transition-all duration-200 " +
-				(featured
-					? "border-none bg-neutral text-neutral-content "
-					: "border border-base-300 bg-base-100 ") +
-				(large ? "md:row-span-2 " : "")
+				(featured ? "border-none bg-neutral text-neutral-content " : "border border-base-300 bg-base-100 ")
 			}
 			href={"/plugin/" + p.owner + "/" + p.repo}
 		>
 			<PluginPreview src={p.previewImageUrl} alt={p.fullName} />
-			<div className={"card-body " + (large ? "gap-5 " : "gap-3")}>
+			<div className="card-body gap-3">
 				<div className="flex items-start gap-3">
 					<span className="plugin-icon shrink-0 uppercase">{initial}</span>
 					<div className="min-w-0 flex-1">
-						<p className={"truncate font-bold leading-tight " + (large ? "text-2xl" : "text-base")}>{p.fullName}</p>
+						<p className="truncate font-bold leading-tight text-base">{p.fullName}</p>
 						<p className="mt-0.5 text-xs opacity-60">{t("card.publisher", { owner: p.owner })}</p>
 					</div>
 				</div>

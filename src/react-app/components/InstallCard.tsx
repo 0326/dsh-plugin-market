@@ -24,11 +24,11 @@ export function InstallCard({ plugin }: { plugin: PluginDetail }) {
 					{plugin.latestCommitSha ? t("install.pinned", { sha: plugin.latestCommitSha.slice(0, 7) }) : t("install.noCommit")}
 				</p>
 			</div>
-			<div className="flex flex-col gap-3">
-				<div className="mockup-code min-w-0 text-xs">
+			<div className="flex flex-col gap-3 md:flex-row md:items-center">
+				<div className="mockup-code min-w-0 flex-1 text-xs">
 					<pre data-prefix="$" className="whitespace-pre-wrap break-all"><code>{cmd}</code></pre>
 				</div>
-				<div className="flex flex-col gap-2">
+				<div className="flex shrink-0 flex-row gap-2">
 					<button className="btn btn-neutral" onClick={copyCommand}>
 						<Icon name="copy" size={16} stroke={2} />
 						{copyState === "copied" ? t("install.copied") : copyState === "failed" ? t("install.copyFailed") : t("install.copy")}
