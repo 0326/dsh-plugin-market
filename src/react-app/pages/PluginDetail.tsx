@@ -120,16 +120,19 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 	return (
 		<section className="detail-layout">
 			<div className="detail-main">
-				<h1>{detail.fullName}</h1>
-				<p className="plugin-desc">{detail.description ?? t("common.noDescription")}</p>
-				<p className="hint">
-					{t("detail.by")} <a href={"#/publisher/" + detail.owner}>{detail.owner}</a>
-				</p>
-				<div className="detail-badges">
-					<Badge value={detail.verificationStatus} />
-					<Badge value={detail.compatibilityStatus} />
-					<Badge value={detail.securityStatus} />
-					<Badge value={detail.maintenanceStatus} />
+				<div className="detail-header">
+					<h1>{detail.fullName}</h1>
+					<p className="plugin-desc">{detail.description ?? t("common.noDescription")}</p>
+					<p className="plugin-publisher">
+						{t("detail.by")}{" "}
+						<a href={"#/publisher/" + detail.owner}>{detail.owner}</a>
+					</p>
+					<div className="detail-badges">
+						<Badge value={detail.verificationStatus} />
+						<Badge value={detail.compatibilityStatus} />
+						<Badge value={detail.securityStatus} />
+						<Badge value={detail.maintenanceStatus} />
+					</div>
 				</div>
 				<div className="tabs">
 					<button className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>{t("detail.overview")}</button>

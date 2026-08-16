@@ -2,7 +2,7 @@ import { useI18n } from "../lib/i18n";
 
 const KIND: Record<string, string> = {
 	FORMAT_VERIFIED: "ok",
-	FEATURED: "accent",
+	FEATURED: "featured",
 	DETECTED: "info",
 	CANDIDATE: "muted",
 	REJECTED: "bad",

@@ -27,8 +27,8 @@ export default function Publisher({ owner }: { owner: string }) {
 
 	return (
 		<section>
-			<h1>{pub.owner}</h1>
-			<p className="plugin-desc">
+			<h1 className="page-title">{pub.owner}</h1>
+			<p className="publisher-summary">
 				{t("publisher.summary", { verified: pub.verifiedCount, plugins: pub.repos.length, stars: pub.totalStars })}
 			</p>
 			<div className="plugin-grid">

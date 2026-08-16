@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PluginCard } from "../components/PluginCard";
 import { useI18n } from "../lib/i18n";
 import { getCategories, listPlugins, type PluginListItem, type Sort } from "../lib/api";
@@ -6,16 +6,20 @@ import { getCategories, listPlugins, type PluginListItem, type Sort } from "../l
 const COMPATIBILITY = ["COMPATIBLE", "LIKELY_COMPATIBLE", "OUTDATED", "INCOMPATIBLE", "UNKNOWN"];
 const RISK = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "UNKNOWN"];
 
-export default function Explore() {
+export default function Explore({ query = "" }: { query?: string }) {
 	const { t } = useI18n();
+	const params = useMemo(() => new URLSearchParams(query), [query]);
+	// State is initialized from the URL query once; App remounts this page
+	// (key={query}) whenever the hash query changes, so no effect-sync needed.
 	const [items, setItems] = useState<PluginListItem[] | null>(null);
-	const [q, setQ] = useState("");
-	const [verifiedOnly, setVerifiedOnly] = useState(false);
-	const [capability, setCapability] = useState("");
-	const [pluginType, setPluginType] = useState("");
-	const [compatibility, setCompatibility] = useState("");
-	const [risk, setRisk] = useState("");
-	const [sort, setSort] = useState<Sort>("updated");
+	const [q, setQ] = useState(params.get("q") ?? "");
+	const [featuredOnly, setFeaturedOnly] = useState(params.get("featured") === "1");
+	const [verifiedOnly, setVerifiedOnly] = useState(params.get("verified") === "1");
+	const [capability, setCapability] = useState(params.get("capability") ?? "");
+	const [pluginType, setPluginType] = useState(params.get("pluginType") ?? "");
+	const [compatibility, setCompatibility] = useState(params.get("compatibility") ?? "");
+	const [risk, setRisk] = useState(params.get("risk") ?? "");
+	const [sort, setSort] = useState<Sort>((params.get("sort") as Sort) ?? "updated");
 	const [capabilities, setCapabilities] = useState<string[]>([]);
 	const [pluginTypes, setPluginTypes] = useState<string[]>([]);
 
@@ -38,6 +42,7 @@ export default function Explore() {
 		let ignore = false;
 		listPlugins({
 			q: q || undefined,
+			featured: featuredOnly,
 			verified: verifiedOnly,
 			capability: capability || undefined,
 			pluginType: pluginType || undefined,
@@ -54,15 +59,26 @@ export default function Explore() {
 		return () => {
 			ignore = true;
 		};
-	}, [q, verifiedOnly, capability, pluginType, compatibility, risk, sort]);
+	}, [q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort]);
 
 	const loading = items === null;
 
 	return (
 		<section>
-			<h1>{t("explore.title")}</h1>
+			<h1 className="page-title">{t("explore.title")}</h1>
+			<p className="page-subtitle">{t("explore.subtitle")}</p>
 			<div className="controls">
-				<input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("explore.searchPlaceholder")} />
+				<input
+					className="search-input"
+					value={q}
+					onChange={(e) => setQ(e.target.value)}
+					placeholder={t("explore.searchPlaceholder")}
+					aria-label={t("explore.searchPlaceholder")}
+				/>
+				<label className="check">
+					<input type="checkbox" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
+					{t("explore.featuredOnly")}
+				</label>
 				<label className="check">
 					<input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
 					{t("explore.verifiedOnly")}

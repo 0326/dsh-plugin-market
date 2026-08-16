@@ -27,8 +27,8 @@ export default function Submit() {
 
 	return (
 		<section className="submit">
-			<h1>{t("submit.title")}</h1>
-			<p className="plugin-desc">{t("submit.desc")}</p>
+			<h1 className="page-title">{t("submit.title")}</h1>
+			<p className="page-subtitle">{t("submit.desc")}</p>
 			<form onSubmit={handleSubmit}>
 				<input
 					value={url}
@@ -36,7 +36,9 @@ export default function Submit() {
 					placeholder={t("submit.placeholder")}
 					required
 				/>
-				<button type="submit" disabled={busy}>{busy ? t("submit.submitting") : t("submit.submit")}</button>
+				<button type="submit" className="btn btn-primary" disabled={busy}>
+					{busy ? t("submit.submitting") : t("submit.submit")}
+				</button>
 			</form>
 			{status && <p className="ok-text">{status}</p>}
 			{error && <p className="error">{error}</p>}
