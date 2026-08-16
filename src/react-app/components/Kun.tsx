@@ -1,5 +1,5 @@
 /**
- * Kun — the DS Plugin Market mascot (flat vector whale).
+ * Kun — the dsh-plugin market mascot (flat vector whale).
  * Brand asset per DESIGN.md: black body, white belly, big round eyes,
  * red blush, yellow mouth, symmetric top fins, whale tail.
  */
@@ -10,7 +10,7 @@ export function Kun({ className = "", ariaHidden = false }: { className?: string
 			className={className}
 			role={ariaHidden ? "presentation" : "img"}
 			aria-hidden={ariaHidden || undefined}
-			aria-label={ariaHidden ? undefined : "Kun — DS Plugin Market mascot"}
+			aria-label={ariaHidden ? undefined : "Kun — dsh-plugin market mascot"}
 		>
 			{/* tail flukes */}
 			<path d="M50 82 C 32 56, 5 56, 5 76 C 7 90, 26 94, 48 94 Z" fill="#0b0b0b" />

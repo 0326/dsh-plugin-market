@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   DS Plugin Market — Editorial Marketplace × Light Neo-Brutalism
+   dsh-plugin market — Editorial Marketplace × Light Neo-Brutalism
    per DESIGN.md. Black/white base, strong borders, restrained
    radius, small brand accents (blue / yellow / red / green).
    ══════════════════════════════════════════════════════════════ */
@@ -46,6 +46,24 @@
 	flex: none;
 }
 
+.brand-name {
+	display: inline-flex;
+	align-items: baseline;
+}
+
+.brand-invert {
+	background: var(--text);
+	color: var(--bg);
+	border-radius: 3px;
+	padding: 0.04em 0.32em;
+}
+
+.topbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
 .topbar nav {
 	display: flex;
 	align-items: center;
@@ -65,11 +83,21 @@
 	text-decoration: none;
 }
 
+.theme-switch,
 .lang-switch {
-	margin-left: 0.25rem;
 	padding: 0.4rem 0.9rem;
 	border-radius: 999px;
 	font-size: 0.85rem;
+	font-weight: 600;
+	border: 1px solid var(--border);
+	background: var(--bg);
+	cursor: pointer;
+	transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.theme-switch:hover,
+.lang-switch:hover {
+	border-color: var(--blue);
 }
 
 .content {

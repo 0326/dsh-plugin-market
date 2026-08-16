@@ -4,7 +4,17 @@
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/svg+xml" href="/vite.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="description" content="DS Plugin Market — 面向 DeepSeek Harness 生态的可信插件注册、发现与安装平台。" />
+		<meta name="theme-color" content="#ffffff" />
+		<meta name="description" content="dsh-plugin market — 面向 DeepSeek Harness 生态的可信插件注册、发现与安装平台。" />
+		<script>
+			// Apply the persisted theme before first paint to avoid a flash.
+			// Default is light; only a saved "dark" choice switches to dark.
+			try {
+				if (localStorage.getItem("dsh-market-theme") === "dark") {
+					document.documentElement.dataset.theme = "dark";
+				}
+			} catch (e) {}
+		</script>
 		<meta property="og:type" content="website" />
 		<meta property="og:site_name" content="dsh-plugin market" />
 		<meta property="og:title" content="dsh-plugin market" />

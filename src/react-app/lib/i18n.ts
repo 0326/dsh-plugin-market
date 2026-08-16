@@ -9,11 +9,12 @@ export type Dict = { [key: string]: string | Dict };
 const zh: Dict = {
 	meta: {
 		title: "dsh-plugin market",
-		description: "DS Plugin Market — 面向 DeepSeek Harness 生态的可信插件注册、发现与安装平台。",
+		description: "dsh-plugin market — 面向 DeepSeek Harness 生态的可信插件注册、发现与安装平台。",
 	},
 	nav: { home: "首页", explore: "探索", submit: "提交插件" },
 	langSwitch: "English",
-	footer: "DS Plugin Market 是社区项目，并非 DeepSeek 官方产品。格式验证 ≠ 安全。",
+	theme: { light: "亮色", dark: "暗色" },
+	footer: "dsh-plugin market 是社区项目，并非 DeepSeek 官方产品。格式验证 ≠ 安全。",
 	common: {
 		loading: "加载中…",
 		noDescription: "暂无描述。",
@@ -136,11 +137,12 @@ const zh: Dict = {
 const en: Dict = {
 	meta: {
 		title: "dsh-plugin market",
-		description: "DS Plugin Market — a trusted plugin registry for the DeepSeek Harness ecosystem.",
+		description: "dsh-plugin market — a trusted plugin registry for the DeepSeek Harness ecosystem.",
 	},
 	nav: { home: "Home", explore: "Explore", submit: "Submit" },
 	langSwitch: "中文",
-	footer: "DS Plugin Market is a community project — not an official DeepSeek product. Format Verified ≠ Safe.",
+	theme: { light: "Light", dark: "Dark" },
+	footer: "dsh-plugin market is a community project — not an official DeepSeek product. Format Verified ≠ Safe.",
 	common: {
 		loading: "Loading…",
 		noDescription: "No description.",

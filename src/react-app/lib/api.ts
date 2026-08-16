@@ -1,4 +1,4 @@
-/** Typed client for the DS Plugin Market API. */
+/** Typed client for the dsh-plugin market API. */
 
 export interface PluginListItem {
 	owner: string;
