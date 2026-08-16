@@ -8,7 +8,17 @@
 
 🌐 **https://ds-plugin.market**
 
-> 项目处于早期开发阶段。DeepSeek Harness 本身也处于 Developer Preview，插件规范和兼容性规则可能快速变化。
+![DS Plugin Market](screenshot.png)
+
+![Runtime](https://img.shields.io/badge/Runtime-Cloudflare%20Workers-orange)
+![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript-61dafb)
+![API](https://img.shields.io/badge/API-Hono-ff6c37)
+![Registry](https://img.shields.io/badge/Registry-Cloudflare%20D1-f6821f)
+![Deploy](https://img.shields.io/badge/Deploy-GitHub%20Actions-2088ff)
+
+> 本项目面向 DeepSeek Harness 生态。DeepSeek Harness 本身处于 Developer Preview，插件规范和兼容性规则可能快速变化，本项目的扫描规则会随之演进。
+
+---
 
 ## 为什么做这个项目？
 
@@ -37,7 +47,7 @@ DeepSeek Harness 的核心理念是 **Everything is a Plugin**。官方目前通
 
 ### Verify
 
-自动分析插件结构，例如：
+自动分析插件结构，包括：
 
 - `package.json`
 - `dsh.bundle.patch`
@@ -47,7 +57,7 @@ DeepSeek Harness 的核心理念是 **Everything is a Plugin**。官方目前通
 - Node.js engine
 - Client / Web platform metadata
 
-并区分：
+候选仓库通过明确的生命周期逐步升级：
 
 ```text
 Candidate
@@ -68,7 +78,7 @@ Format Verification
 Compatibility
 Security Scan
 Maintenance
-Publisher Trust (later)
+Publisher Trust
 ```
 
 例如：
@@ -89,7 +99,7 @@ Publisher Trust (later)
 dsh plugin --profile web add github:owner/repo#<scanned_commit_sha>
 ```
 
-这样用户实际安装的代码可以和市场展示的扫描结果对应起来。
+这样用户实际安装的代码，可以和市场展示的扫描结果一一对应。
 
 ## “Verified”代表什么？
 
@@ -131,6 +141,41 @@ Recommended pinned install
 
 而不是只展示 Stars、Language 和 License。
 
+## 功能特性（当前已实现）
+
+### Registry MVP
+
+- [x] GitHub `dsh-plugin` topic 候选发现 + 增量同步（SHA 增量 + ETag + rate-limit / 429 退避）
+- [x] D1 Registry（6 张核心表 + 版本化迁移）
+- [x] Scanner v1 纯函数：manifest / bundle / compatibility / security / maintenance / semver
+- [x] Cron 定时发现 + Cloudflare Queue 异步扫描（幂等键 `repo_id + sha + scanner_version`）
+- [x] 公共 API + internal API（secret 守卫）
+- [x] 首页 / Explore / Plugin Detail / Submit 页面
+
+### Trust Layer
+
+- [x] DSH / Cordis 兼容性 baseline（从 npm registry 同步，每小时 cron，缺省回退内置 baseline）
+- [x] 安装脚本检测 + 静态安全信号 + 维护信号
+- [x] commit 绑定的扫描历史（Versions Tab + `GET /api/plugins/:owner/:repo/scans`）
+- [x] pinned-commit 安装命令（InstallCard）
+
+### Discovery Experience
+
+- [x] Capability taxonomy + Plugin Type 双维度（详情展示 + 筛选）
+- [x] 高级筛选（capability / pluginType / compatibility / risk / verified / search / sort）
+- [x] Featured（internal 置顶接口 + 首页区块）/ Trending / New & Verified / Popular
+- [x] Registry 统计（`GET /api/stats`：candidates / verified / updated-this-week）
+- [x] Publisher 页（`GET /api/publishers/:owner` + `/publisher/:owner`）
+- [x] SEO / OpenGraph / Twitter meta
+- [ ] AI Search（可选增强，后置，不阻断主体）
+
+### 其他
+
+- [x] 中英文双语（i18n，浏览器语言自动检测）
+- [x] 亮 / 暗主题切换（持久化，无首屏闪烁）
+- [x] 插件社交预览图（GitHub Open Graph 集成，M4）
+- [x] 骨架屏（Skeleton）加载状态
+
 ## 工作原理
 
 ```text
@@ -170,7 +215,7 @@ Metadata              Files
 自动更新链路：
 
 ```text
-Cloudflare Cron
+Cloudflare Cron（每小时）
       ↓
 Discover new / changed repos
       ↓
@@ -181,7 +226,7 @@ Static Scan
 D1
 ```
 
-不会通过高频爬取 GitHub HTML 页面获取数据。
+项目不会通过高频爬取 GitHub HTML 页面获取数据。
 
 ## Scanner 安全边界
 
@@ -199,70 +244,33 @@ execute plugin entry
 execute repository shell scripts
 ```
 
-对于无法静态判断的内容，结果应明确标记为 `Unknown`，而不是猜测为安全。
+对于无法静态判断的内容，结果明确标记为 `Unknown`，而不是猜测为安全。
 
 ## 技术架构
 
-当前项目技术栈：
-
 ```text
-Frontend
-React 19 + TypeScript + Vite
-
-API
-Hono
-
-Runtime
-Cloudflare Workers
-
-Registry
-Cloudflare D1
-
-Scheduling
-Cloudflare Cron Triggers
-
-Scan Jobs
-Cloudflare Queues
-
-Source
-GitHub REST API
+Frontend        React 19 + TypeScript + Vite 7 + Tailwind CSS 4 + daisyUI 5
+API             Hono 4
+Runtime         Cloudflare Workers
+Registry        Cloudflare D1（SQLite）
+Scheduling      Cloudflare Cron Triggers（每小时）
+Scan Jobs       Cloudflare Queues
+Source          GitHub REST API
+Test            Vitest（scanner / discovery / curation 单测）
 ```
 
 详细架构、数据模型、扫描规则和分期方案请阅读：
 
-**[技术方案 v1.0](docs/TECHNICAL_DESIGN.md)**
+**[技术方案 v1.0](docs/TECHNICAL_DESIGN.md)** · **[开发计划](docs/DEVELOPMENT_PLAN.md)** · **[设计语言](DESIGN.md)**
 
-## v1.0 范围
+## 快速开始
 
-### Registry MVP
+### 环境要求
 
-- [ ] GitHub `dsh-plugin` candidate discovery
-- [ ] GitHub API 增量同步
-- [ ] D1 Registry
-- [ ] `package.json` / `cordis.patch.yml` parser
-- [ ] Candidate / Detected / Format Verified 状态
-- [ ] 首页 / Explore / Plugin Detail
-- [ ] 基础安装命令
+- Node.js 20+
+- 一个 Cloudflare 账户（本地开发 D1 不需要；部署需要）
 
-### Trust Layer
-
-- [ ] DSH / Cordis compatibility analysis
-- [ ] Install script detection
-- [ ] Static security signals
-- [ ] Maintenance signals
-- [ ] Commit-bound scan history
-- [ ] Pinned commit install command
-
-### Discovery Experience
-
-- [ ] Capability taxonomy
-- [ ] Advanced filters
-- [ ] Featured / Trending / New & Verified
-- [ ] Submit Plugin
-- [ ] Publisher pages
-- [ ] AI-assisted search（增强能力，不作为基础依赖）
-
-## 开发
+### 本地开发
 
 安装依赖：
 
@@ -288,13 +296,13 @@ wrangler d1 migrations apply DB --local
 npm run dev
 ```
 
-常用脚本：
+### 常用脚本
 
 ```bash
-npm run build        # tsc -b && vite build
+npm run build        # tsc -b && vite build && 清理构建产物中的 secret
 npm run check        # 类型检查 + 构建 + wrangler deploy --dry-run
 npm run lint         # eslint
-npm test             # vitest（scanner 单测）
+npm test             # vitest（scanner 纯函数单测）
 npm run cf-typegen   # 修改绑定后重新生成 worker-configuration.d.ts
 npm run deploy       # 部署到 Cloudflare Workers
 ```
@@ -303,13 +311,11 @@ npm run deploy       # 部署到 Cloudflare Workers
 
 ## 部署（GitHub Actions）
 
-推送到 `main` 会通过 `.github/workflows/deploy.yml` 自动部署。该 workflow 会
-幂等地创建 Cloudflare Queue 与 D1 数据库、应用 D1 迁移，并执行 `wrangler deploy`。
+推送到 `main` 会通过 `.github/workflows/deploy.yml` 自动部署。该 workflow 会幂等地创建 Cloudflare Queue 与 D1 数据库、注入 `database_id`、应用 D1 迁移，并执行 `wrangler deploy`。
 
 需要的 GitHub 仓库 secret：
 
-- `CLOUDFLARE_API_TOKEN` — 一个具有 **Workers Scripts: Edit**、**D1: Edit**、
-  **Workers Queues: Edit** 权限的 Cloudflare API Token。
+- `CLOUDFLARE_API_TOKEN` — 具有 **Workers Scripts: Edit**、**D1: Edit**、**Workers Queues: Edit** 权限的 Cloudflare API Token。
 - `CLOUDFLARE_ACCOUNT_ID` — 你的 Cloudflare 账户 ID。
 
 Worker 运行时 secret（一次性配置，禁止提交）：
@@ -319,7 +325,16 @@ wrangler secret put GITHUB_TOKEN        # worker 调用 GitHub API 所用的 Git
 wrangler secret put INTERNAL_API_SECRET # 守卫 /api/internal/* 接口
 ```
 
-## 核心原则
+## 参与贡献
+
+我们欢迎任何形式的贡献：报告问题、改进文档、完善扫描规则、新增前端功能等。
+
+1. Fork 本仓库并创建特性分支。
+2. 开发前请阅读 [技术方案](docs/TECHNICAL_DESIGN.md) 与 [开发计划](docs/DEVELOPMENT_PLAN.md)，遵守 Scanner 安全边界。
+3. 提交前运行 `npm run check` 与 `npm test`。
+4. 提交 Pull Request。
+
+核心原则：
 
 ```text
 GitHub = Source of Truth for Code
@@ -328,9 +343,7 @@ DS Plugin Market
 = Source of Truth for Plugin Metadata & Trust Signals
 ```
 
-我们不托管插件、不复制第三方发布体系，也不试图替代 GitHub / npm。
-
-我们的职责是：
+我们不托管插件、不复制第三方发布体系，也不试图替代 GitHub / npm。我们的职责是：
 
 > **GitHub 告诉你哪些仓库声称自己是 DSH Plugin；DS Plugin Market 告诉你它到底是什么、是否兼容，以及安装前你应该知道什么。**
 
@@ -346,3 +359,9 @@ DS Plugin Market 是社区项目，不是 DeepSeek 官方产品，也不代表 D
 - [GitHub `dsh-plugin` Topic](https://github.com/topics/dsh-plugin)
 - [DSH Plugin Tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/index.md)
 - [DSH Package & Install Guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.md)
+
+## License
+
+[MIT](LICENSE)
+
+版权所有 © 2026 0326
