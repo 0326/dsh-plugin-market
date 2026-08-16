@@ -70,11 +70,12 @@ export default function Explore({ query = "" }: { query?: string }) {
 
 	return (
 		<section>
-			<h1 className="mb-1 text-3xl font-extrabold tracking-tight">{t("explore.title")}</h1>
-			<p className="mb-6 opacity-60">{t("explore.subtitle")}</p>
-
-			<div className="mb-8 flex flex-wrap items-center gap-3">
-				<label className="input flex min-w-52 flex-1 items-center gap-2">
+			<div className="explore-head">
+				<div className="explore-heading-copy">
+					<h1 className="text-3xl font-extrabold tracking-tight">{t("explore.title")}</h1>
+					<p className="opacity-60">{t("explore.subtitle")}</p>
+				</div>
+				<label className="explore-search input flex items-center gap-2">
 					<Icon name="search" size={16} stroke={2} className="opacity-50" />
 					<input
 						className="grow border-0 bg-transparent outline-none"
@@ -84,14 +85,10 @@ export default function Explore({ query = "" }: { query?: string }) {
 						aria-label={t("explore.searchPlaceholder")}
 					/>
 				</label>
-				<label className="label cursor-pointer gap-2">
-					<input type="checkbox" className="checkbox checkbox-sm" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
-					<span>{t("explore.featuredOnly")}</span>
-				</label>
-				<label className="label cursor-pointer gap-2">
-					<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
-					<span>{t("explore.verifiedOnly")}</span>
-				</label>
+			</div>
+
+			<div className="explore-filters-scroll mb-8">
+			<div className="explore-filters">
 				<select aria-label={t("explore.allCapabilities")} className="select select-sm" value={capability} onChange={(e) => setCapability(e.target.value)}>
 					<option value="">{t("explore.allCapabilities")}</option>
 					{capabilities.map((c) => (
@@ -122,6 +119,17 @@ export default function Explore({ query = "" }: { query?: string }) {
 					<option value="new">{t("explore.sortNew")}</option>
 					<option value="trending">{t("explore.sortTrending")}</option>
 				</select>
+				<div className="explore-checks">
+					<label className="label cursor-pointer gap-2">
+						<input type="checkbox" className="checkbox checkbox-sm" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
+						<span>{t("explore.featuredOnly")}</span>
+					</label>
+					<label className="label cursor-pointer gap-2">
+						<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
+						<span>{t("explore.verifiedOnly")}</span>
+					</label>
+				</div>
+			</div>
 			</div>
 
 			{loading ? (

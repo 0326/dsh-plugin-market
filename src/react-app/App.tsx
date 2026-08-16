@@ -1,8 +1,9 @@
-import { useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import { GitHubStar } from "./components/GitHubStar";
 import { Icon } from "./components/Icon";
 import { Kun } from "./components/Kun";
 import { useI18n } from "./lib/i18n";
+import { navigate, useRoute } from "./lib/router";
 import { useTheme } from "./lib/theme";
 import About from "./pages/About";
 import Explore from "./pages/Explore";
@@ -11,51 +12,40 @@ import PluginDetail from "./pages/PluginDetail";
 import Publisher from "./pages/Publisher";
 import Submit from "./pages/Submit";
 
-type Route =
-	| { name: "home" }
-	| { name: "explore"; query: string }
-	| { name: "plugin"; owner: string; repo: string }
-	| { name: "publisher"; owner: string }
-	| { name: "submit" }
-	| { name: "about" };
-
-function parseRoute(hash: string): Route {
-	const [pathPart, queryPart] = hash.split("?");
-	const path = pathPart.replace(/^#/, "") || "/";
-	const segments = path.split("/").filter(Boolean);
-	const query = queryPart ?? "";
-	if (segments.length === 0) return { name: "home" };
-	if (segments[0] === "plugins") return { name: "explore", query };
-	if (segments[0] === "plugin" && segments[1] && segments[2]) return { name: "plugin", owner: segments[1], repo: segments[2] };
-	if (segments[0] === "publisher" && segments[1]) return { name: "publisher", owner: segments[1] };
-	if (segments[0] === "submit") return { name: "submit" };
-	if (segments[0] === "about") return { name: "about" };
-	return { name: "home" };
-}
-
-function subscribe(callback: () => void): () => void {
-	window.addEventListener("hashchange", callback);
-	return () => window.removeEventListener("hashchange", callback);
-}
-
-function getSnapshot(): string {
-	return window.location.hash || "#/";
-}
-
-function useHashRoute(): Route {
-	const hash = useSyncExternalStore(subscribe, getSnapshot);
-	return parseRoute(hash);
+function navClass(active: boolean): string {
+	return "btn btn-sm " + (active ? "bg-neutral text-neutral-content" : "btn-ghost");
 }
 
 function App() {
-	const route = useHashRoute();
+	const route = useRoute();
 	const { t, toggleLang, lang } = useI18n();
 	const { theme, toggleTheme } = useTheme();
+
+	// Intercept in-app link clicks so path-based navigation stays in the SPA
+	// (no full reload). External links and new-tab clicks are left untouched.
+	useEffect(() => {
+		function onClick(e: MouseEvent) {
+			if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+			const target = e.target as Element | null;
+			const anchor = target?.closest?.("a");
+			if (!anchor) return;
+			const href = anchor.getAttribute("href");
+			if (!href) return;
+			if (/^(https?:)?\/\//.test(href) || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+			e.preventDefault();
+			navigate(href);
+		}
+		document.addEventListener("click", onClick);
+		return () => document.removeEventListener("click", onClick);
+	}, []);
+
+	const isMarket = route.name === "explore" || route.name === "plugin" || route.name === "publisher";
+
 	return (
 		<div className="app-frame flex min-h-screen flex-col bg-base-100 text-base-content">
 			<header className="site-header navbar sticky top-0 z-30 px-4 md:px-7">
 				<div className="navbar-start">
-					<a className="flex items-center gap-2" href="#/" aria-label="DSH-PLUGIN MARKET">
+					<a className="flex items-center gap-2" href="/" aria-label="DSH-PLUGIN MARKET">
 						<Kun className="h-11 w-11 object-contain" ariaHidden />
 						<span className="brand-lockup">
 							DSH-PLUGIN <strong>MARKET</strong>
@@ -63,19 +53,20 @@ function App() {
 					</a>
 				</div>
 				<nav className="navbar-center hidden gap-2 md:flex" aria-label="Primary">
-					<a className="btn btn-sm bg-neutral text-neutral-content" href="#/plugins">{t("nav.explore")}</a>
-					<a className="btn btn-ghost btn-sm" href="#/submit">{t("nav.submit")}</a>
-					<a className="btn btn-ghost btn-sm" href="#/about">{t("nav.about")}</a>
+					<a className={navClass(route.name === "home")} href="/">{t("nav.home")}</a>
+					<a className={navClass(isMarket)} href="/plugins">{t("nav.explore")}</a>
+					<a className={navClass(route.name === "submit")} href="/submit">{t("nav.submit")}</a>
+					<a className={navClass(route.name === "about")} href="/about">{t("nav.about")}</a>
 				</nav>
 				<div className="navbar-end gap-2">
 					<div className="hidden sm:block"><GitHubStar /></div>
 					<div className="dropdown dropdown-end md:hidden">
 						<div tabIndex={0} role="button" className="btn btn-ghost btn-sm text-xl" aria-label="Menu">☰</div>
 						<ul tabIndex={0} className="dropdown-content menu z-50 mt-3 w-52 border border-base-300 bg-base-100 p-2 shadow">
-							<li><a href="#/">{t("nav.home")}</a></li>
-							<li><a href="#/plugins">{t("nav.explore")}</a></li>
-							<li><a href="#/submit">{t("nav.submit")}</a></li>
-							<li><a href="#/about">{t("nav.about")}</a></li>
+							<li><a href="/">{t("nav.home")}</a></li>
+							<li><a href="/plugins">{t("nav.explore")}</a></li>
+							<li><a href="/submit">{t("nav.submit")}</a></li>
+							<li><a href="/about">{t("nav.about")}</a></li>
 							<li><button type="button" onClick={toggleTheme}><Icon name={theme === "light" ? "moon" : "sun"} size={16} stroke={2} />{theme === "light" ? t("theme.dark") : t("theme.light")}</button></li>
 						</ul>
 					</div>

@@ -137,7 +137,7 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 					<p className="mb-2 opacity-70">{detail.description ?? t("common.noDescription")}</p>
 					<p className="mb-4 text-sm opacity-60">
 						{t("detail.by")}{" "}
-						<a className="link font-semibold" href={"#/publisher/" + detail.owner}>{detail.owner}</a>
+						<a className="link font-semibold" href={"/publisher/" + detail.owner}>{detail.owner}</a>
 					</p>
 					<div className="flex flex-wrap gap-2">
 						<Badge value={detail.verificationStatus} />

@@ -24,16 +24,16 @@ export function InstallCard({ plugin }: { plugin: PluginDetail }) {
 					{plugin.latestCommitSha ? t("install.pinned", { sha: plugin.latestCommitSha.slice(0, 7) }) : t("install.noCommit")}
 				</p>
 			</div>
-			<div className="flex flex-col gap-3 lg:flex-row">
-				<div className="mockup-code min-w-0 flex-1 text-xs">
+			<div className="flex flex-col gap-3">
+				<div className="mockup-code min-w-0 text-xs">
 					<pre data-prefix="$" className="whitespace-pre-wrap break-all"><code>{cmd}</code></pre>
 				</div>
-				<div className="flex shrink-0 gap-2">
-					<button className="btn btn-neutral flex-1 lg:flex-none" onClick={copyCommand}>
+				<div className="flex flex-col gap-2">
+					<button className="btn btn-neutral" onClick={copyCommand}>
 						<Icon name="copy" size={16} stroke={2} />
 						{copyState === "copied" ? t("install.copied") : copyState === "failed" ? t("install.copyFailed") : t("install.copy")}
 					</button>
-					<a className="btn btn-outline flex-1 lg:flex-none" href={plugin.htmlUrl} target="_blank" rel="noreferrer">
+					<a className="btn btn-outline" href={plugin.htmlUrl} target="_blank" rel="noreferrer">
 						<Icon name="github" size={17} stroke={2} />{t("install.source")}
 					</a>
 				</div>

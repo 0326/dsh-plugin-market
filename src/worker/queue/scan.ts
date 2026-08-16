@@ -5,6 +5,7 @@ import { GithubClient } from "../github/client";
 import { fetchSnapshot } from "../github/repository";
 import { scanRepository } from "../scanner";
 import { DEFAULT_BASELINE } from "../scanner/compatibility";
+import { maybeAutoFeatureScan } from "../curation/featured";
 
 /** A transient failure (e.g. rate limit) that should be retried by the queue. */
 export class TransientScanError extends Error {
@@ -46,4 +47,5 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 	if (!scan.created) return;
 	await completeScan(env.DB, scan.id, result);
 	await updateRepositorySha(env.DB, repo.id, snapshot.commitSha);
+	await maybeAutoFeatureScan(env, repo, result);
 }

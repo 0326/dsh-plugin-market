@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { recomputeFeatured } from "../curation/featured";
 import { getRepositoryByFullName, setFeatured } from "../db/repository";
 import type { Env } from "../env";
 import { GithubClient } from "../github/client";
@@ -53,6 +54,11 @@ internal.post("/plugins/:owner/:repo/feature", async (c) => {
 	const ok = await setFeatured(c.env.DB, owner, repo, featured);
 	if (!ok) return c.json({ error: "not_found" }, 404);
 	return c.json({ owner, repo, featured });
+});
+
+internal.post("/featured/recompute", async (c) => {
+	const result = await recomputeFeatured(c.env);
+	return c.json(result);
 });
 
 internal.post("/scan/:owner/:repo", async (c) => {

@@ -1,29 +1,32 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "dsh-plugin-market",
-	"main": "./src/worker/index.ts",
-	"compatibility_date": "2025-11-25",
-	"compatibility_flags": ["nodejs_compat"],
-	"observability": {
-		"enabled": true
-	},
-	"upload_source_maps": true,
-	"assets": {
-		"directory": "./dist/client",
-		"not_found_handling": "single-page-application"
-	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "dsh-plugin-market",
-			"migrations_dir": "migrations"
-		}
-	],
-	"queues": {
-		"producers": [{ "binding": "SCAN_QUEUE", "queue": "dsh-plugin-scan" }],
-		"consumers": [{ "queue": "dsh-plugin-scan" }]
-	},
-	"triggers": {
-		"crons": ["0 * * * *"]
-	}
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dsh-plugin-market",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2025-11-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dsh-plugin-market",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "queues": {
+    "producers": [{ "binding": "SCAN_QUEUE", "queue": "dsh-plugin-scan" }],
+    "consumers": [{ "queue": "dsh-plugin-scan" }]
+  },
+  "vars": {
+    "AUTO_FEATURE_MIN_STARS": "1000"
+  },
+  "triggers": {
+    "crons": ["0 * * * *"]
+  }
 }

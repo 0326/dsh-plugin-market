@@ -3,6 +3,7 @@ import { Icon, type IconName } from "../components/Icon";
 import { Kun } from "../components/Kun";
 import { PluginCard } from "../components/PluginCard";
 import { useI18n } from "../lib/i18n";
+import { navigate } from "../lib/router";
 import { getCategories, getStats, listPlugins, type PluginListItem, type RegistryStats } from "../lib/api";
 
 interface HomeData {
@@ -88,7 +89,7 @@ export default function Home() {
 
 	function onSearch(e: React.FormEvent) {
 		e.preventDefault();
-		window.location.hash = "#/plugins?q=" + encodeURIComponent(query);
+		navigate("/plugins?q=" + encodeURIComponent(query));
 	}
 
 	return (
@@ -130,22 +131,22 @@ export default function Home() {
 			{/* Browse navigation */}
 			<nav className="category-bar" aria-label={t("home.browse")}>
 				<span className="mr-2 text-xs font-bold uppercase tracking-widest opacity-50">{t("home.browse")}</span>
-				<a className="active btn btn-sm" href="#/plugins?featured=1">{t("home.featured")}</a>
-				<a className="btn btn-sm btn-ghost" href="#/plugins?sort=new">{t("home.latest")}</a>
-				<a className="btn btn-sm btn-ghost" href="#/plugins?sort=stars">{t("home.popular")}</a>
+				<a className="active btn btn-sm" href="/plugins?featured=1">{t("home.featured")}</a>
+				<a className="btn btn-sm btn-ghost" href="/plugins?sort=new">{t("home.latest")}</a>
+				<a className="btn btn-sm btn-ghost" href="/plugins?sort=stars">{t("home.popular")}</a>
 				{data.capabilities.slice(0, 6).map((c) => (
-					<a key={c} className="btn btn-ghost btn-sm" href={"#/plugins?capability=" + encodeURIComponent(c)}>
+					<a key={c} className="btn btn-ghost btn-sm" href={"/plugins?capability=" + encodeURIComponent(c)}>
 						{c.replace(/_/g, " ")}
 					</a>
 				))}
-				<a className="btn btn-sm btn-ghost ml-auto" href="#/plugins">{t("home.seeAll")} →</a>
+				<a className="btn btn-sm btn-ghost ml-auto" href="/plugins">{t("home.seeAll")} →</a>
 			</nav>
 
 			{/* Featured */}
 			<Section
 				title={t("home.featured")}
 				seeAll={t("home.seeAll")}
-				href="#/plugins?featured=1"
+				href="/plugins?featured=1"
 				empty={t("home.emptyFeatured")}
 				isEmpty={data.featured.length === 0}
 			>
@@ -163,7 +164,7 @@ export default function Home() {
 			<Section
 				title={t("home.latest")}
 				seeAll={t("home.seeAll")}
-				href="#/plugins?sort=new"
+				href="/plugins?sort=new"
 				empty={t("home.emptyVerified")}
 				isEmpty={data.latest.length === 0}
 			>
@@ -178,7 +179,7 @@ export default function Home() {
 			<Section
 				title={t("home.popular")}
 				seeAll={t("home.seeAll")}
-				href="#/plugins?sort=stars"
+				href="/plugins?sort=stars"
 				empty={t("home.emptyVerified")}
 				isEmpty={data.popular.length === 0}
 			>
@@ -194,7 +195,7 @@ export default function Home() {
 				<TrustCard icon="check" tone="text-success" title={t("home.trustFormatTitle")} desc={t("home.trustFormatDesc")} />
 				<TrustCard icon="exchange" tone="text-info" title={t("home.trustCompatTitle")} desc={t("home.trustCompatDesc")} />
 				<TrustCard icon="shield-alert" tone="text-error" title={t("home.trustSecurityTitle")} desc={t("home.trustSecurityDesc")} />
-				<a className="flex items-center justify-between gap-3 font-bold" href="#/plugins">{t("home.ctaButton")} <span className="text-2xl">→</span></a>
+				<a className="flex items-center justify-between gap-3 font-bold" href="/plugins">{t("home.ctaButton")} <span className="text-2xl">→</span></a>
 			</div>
 
 		</div>

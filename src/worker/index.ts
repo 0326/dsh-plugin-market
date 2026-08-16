@@ -4,6 +4,7 @@ import { internal } from "./api/internal";
 import { runCronDiscovery } from "./cron/discovery";
 import type { ScanJob } from "./domain/scan";
 import type { Env } from "./env";
+import { recomputeFeatured } from "./curation/featured";
 import { syncBaseline } from "./npm/baseline";
 import { processScanJob, TransientScanError } from "./queue/scan";
 
@@ -16,7 +17,7 @@ app.route("/api/internal", internal);
 async function scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
 	ctx.waitUntil(
 		(async () => {
-			await Promise.allSettled([runCronDiscovery(env), syncBaseline(env)]);
+			await Promise.allSettled([runCronDiscovery(env), syncBaseline(env), recomputeFeatured(env)]);
 		})(),
 	);
 }
