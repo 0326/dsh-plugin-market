@@ -5,7 +5,7 @@ import type { Env } from "../env";
 import { GithubClient } from "../github/client";
 import { runDiscovery } from "../github/discovery";
 import { syncBaseline } from "../npm/baseline";
-import { processScanJob, TransientScanError } from "../queue/scan";
+import { enqueueRescanAll, processScanJob, TransientScanError } from "../queue/scan";
 
 export const internal = new Hono<{ Bindings: Env }>();
 
@@ -58,6 +58,11 @@ internal.post("/plugins/:owner/:repo/feature", async (c) => {
 
 internal.post("/featured/recompute", async (c) => {
 	const result = await recomputeFeatured(c.env);
+	return c.json(result);
+});
+
+internal.post("/rescan/queue", async (c) => {
+	const result = await enqueueRescanAll(c.env);
 	return c.json(result);
 });
 

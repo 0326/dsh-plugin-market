@@ -27,6 +27,6 @@
     "AUTO_FEATURE_MIN_STARS": "1000"
   },
   "triggers": {
-    "crons": ["0 * * * *"]
+    "crons": ["0 * * * *", "30 0 * * *"]
   }
 }

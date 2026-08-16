@@ -6,7 +6,7 @@ import type { ScanJob } from "./domain/scan";
 import type { Env } from "./env";
 import { recomputeFeatured } from "./curation/featured";
 import { syncBaseline } from "./npm/baseline";
-import { processScanJob, TransientScanError } from "./queue/scan";
+import { enqueueRescanAll, processScanJob, TransientScanError } from "./queue/scan";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -14,7 +14,23 @@ app.get("/api/", (c) => c.json({ name: "dsh-plugin-market", status: "ok" }));
 app.route("/api", api);
 app.route("/api/internal", internal);
 
-async function scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+/** Daily cron that queues a re-scan of repos with a stale scanner version. */
+const RESCAN_CRON = "30 0 * * *";
+
+async function scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+	if (controller.cron === RESCAN_CRON) {
+		ctx.waitUntil(
+			(async () => {
+				try {
+					const result = await enqueueRescanAll(env);
+					console.log("rescan queued", JSON.stringify(result));
+				} catch (err) {
+					console.error("rescan queue failed", err);
+				}
+			})(),
+		);
+		return;
+	}
 	ctx.waitUntil(
 		(async () => {
 			await Promise.allSettled([runCronDiscovery(env), syncBaseline(env), recomputeFeatured(env)]);

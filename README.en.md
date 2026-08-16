@@ -173,7 +173,7 @@ Rather than only showing Stars, Language, and License.
 
 - [x] Bilingual i18n (zh-CN / en, auto-detected from browser)
 - [x] Light / dark theme toggle (persisted, no flash on load)
-- [x] Plugin social preview images (GitHub Open Graph integration, M4)
+- [x] Plugin preview images: GitHub Open Graph integration + scan-time backfill (README first-image fallback, commit-pinned)
 - [x] Skeleton loading states
 
 ## How it works

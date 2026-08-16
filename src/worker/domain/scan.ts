@@ -3,7 +3,7 @@
 export type ScanReason = "DISCOVERY" | "COMMIT_CHANGED" | "MANUAL" | "SCANNER_UPGRADE";
 
 /** Current scanner version; every scan is bound to it. */
-export const SCANNER_VERSION = "0.1.0";
+export const SCANNER_VERSION = "0.2.0";
 
 /** Message body placed on the scan queue. */
 export interface ScanJob {

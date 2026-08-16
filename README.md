@@ -173,7 +173,7 @@ Recommended pinned install
 
 - [x] 中英文双语（i18n，浏览器语言自动检测）
 - [x] 亮 / 暗主题切换（持久化，无首屏闪烁）
-- [x] 插件社交预览图（GitHub Open Graph 集成，M4）
+- [x] 插件预览图：GitHub Open Graph 集成 + 扫描期回填（README 首图兜底，绑定 commit）
 - [x] 骨架屏（Skeleton）加载状态
 
 ## 工作原理

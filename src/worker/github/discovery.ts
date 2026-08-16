@@ -1,5 +1,6 @@
 import type { ScanJob } from "../domain/scan";
 import { updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
+import { extractReadmeImage } from "../scanner/readme-image";
 import { GithubError, type GithubClient, type GithubSearchReposResult } from "./client";
 
 const TOPIC_QUERY = "topic:dsh-plugin";
@@ -123,4 +124,34 @@ async function enrichPreviewImages(client: GithubClient, db: D1Database, repos: 
 	} catch (err) {
 		console.warn("preview image enrichment failed", err instanceof Error ? err.message : String(err));
 	}
+}
+
+/**
+ * Backfill a repository's preview image when it has none yet: prefer the
+ * GitHub social preview (Open Graph), then fall back to the first
+ * presentable image found in the README (pinned to the scanned commit).
+ * Best-effort — failures never abort a scan.
+ */
+export async function ensurePreviewImage(
+	client: GithubClient,
+	db: D1Database,
+	repo: { owner: string; name: string; full_name: string; preview_image_url: string | null },
+	readme: string | undefined,
+	commitSha: string,
+): Promise<void> {
+	if (repo.preview_image_url) return;
+
+	try {
+		const urls = await client.getOpenGraphImageUrls([{ owner: repo.owner, name: repo.name }]);
+		const url = urls.get(repo.full_name);
+		if (url) {
+			await updateRepositoryPreviewImage(db, repo.full_name, url);
+			return;
+		}
+	} catch (err) {
+		console.warn("preview image backfill (open graph) failed", err instanceof Error ? err.message : String(err));
+	}
+
+	const readmeImage = extractReadmeImage(readme, { owner: repo.owner, repo: repo.name, sha: commitSha });
+	if (readmeImage) await updateRepositoryPreviewImage(db, repo.full_name, readmeImage);
 }
