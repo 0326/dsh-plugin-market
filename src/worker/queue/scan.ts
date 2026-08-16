@@ -1,4 +1,4 @@
-import { completeScan, createScan, getBaseline, getRepositoryByFullName, updateRepositorySha } from "../db/repository";
+import { completeScan, createScan, getBaseline, getRepositoryById, updateRepositorySha } from "../db/repository";
 import type { ScanJob } from "../domain/scan";
 import type { Env } from "../env";
 import { GithubClient } from "../github/client";
@@ -15,18 +15,17 @@ export class TransientScanError extends Error {
 }
 
 export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
-	const repo = await getRepositoryByFullName(env.DB, job.owner + "/" + job.repo);
+	const repo = await getRepositoryById(env.DB, job.repositoryId);
 	if (!repo) {
-		console.warn("scan skipped: repository not in registry", job.owner + "/" + job.repo);
+		console.warn("scan skipped: repository not in registry", job.repositoryId);
 		return;
 	}
 
 	const client = new GithubClient(env.GITHUB_TOKEN);
-	const fetched = await fetchSnapshot(client, job.owner, job.repo, repo.default_branch ?? "main", job.expectedSha);
+	const fetched = await fetchSnapshot(client, repo.owner, repo.name, repo.default_branch ?? "main", job.expectedSha);
 	if (fetched.error || !fetched.snapshot) {
 		if (fetched.error?.code === "GITHUB_RATE_LIMITED") throw new TransientScanError(fetched.error.message);
-		console.warn("scan failed", job.owner + "/" + job.repo, fetched.error?.code ?? "UNKNOWN");
-		return;
+		throw new Error("scan failed for " + repo.full_name + ": " + (fetched.error?.message ?? "unknown error"));
 	}
 
 	const snapshot = fetched.snapshot;
@@ -43,7 +42,8 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 		baseline,
 	});
 
-	const scanId = await createScan(env.DB, repo.id, snapshot.commitSha);
-	await completeScan(env.DB, scanId, result);
+	const scan = await createScan(env.DB, repo.id, snapshot.commitSha);
+	if (!scan.created) return;
+	await completeScan(env.DB, scan.id, result);
 	await updateRepositorySha(env.DB, repo.id, snapshot.commitSha);
 }

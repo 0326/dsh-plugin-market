@@ -74,6 +74,14 @@ describe("manifest", () => {
 		expect(parsePackageJson("[1,2,3]").ok).toBe(false);
 		expect(parsePackageJson(undefined).ok).toBe(false);
 	});
+
+	it("normalizes malformed field types instead of throwing", () => {
+		const res = parsePackageJson(JSON.stringify({ keywords: "search", dependencies: { bad: 1 }, scripts: { prepare: 2 } }));
+		expect(res.ok).toBe(true);
+		expect(res.manifest?.keywords).toBeUndefined();
+		expect(res.manifest?.dependencies).toEqual({});
+		expect(res.manifest?.scripts).toEqual({});
+	});
 });
 
 describe("bundle", () => {
@@ -92,6 +100,14 @@ describe("bundle", () => {
 		const b = analyzeBundle(pkg, { ...snapshotFor(pkg), files: snap });
 		expect(b.patchExists).toBe(false);
 		expect(b.findings.some((f) => f.code === "PATCH_MISSING")).toBe(true);
+	});
+
+	it("does not verify arbitrary YAML-looking text", () => {
+		const pkg = dshBundlePackage();
+		const snap = snapshotFor(pkg);
+		snap.files = snap.files.map((file) => file.path === "cordis.patch.yml" ? { ...file, content: "name: not-a-cordis-patch\n" } : file);
+		const b = analyzeBundle(pkg, snap);
+		expect(b.patchParseable).toBe(false);
 	});
 });
 
@@ -195,5 +211,6 @@ describe("scanRepository", () => {
 		});
 		expect(result.verificationStatus).toBe("CANDIDATE");
 		expect(result.findings.some((f) => f.code === "MANIFEST_INVALID")).toBe(true);
+		expect(result.riskLevel).toBe("HIGH");
 	});
 });

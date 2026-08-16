@@ -31,7 +31,7 @@ async function queue(batch: MessageBatch<ScanJob>, env: Env): Promise<void> {
 				if (message.attempts < 3) message.retry({ delaySeconds: 30 * (message.attempts + 1) });
 				else message.ack();
 			} else {
-				console.error("scan job error", err);
+				console.error(JSON.stringify({ message: "scan job error", error: err instanceof Error ? err.message : String(err), repositoryId: message.body.repositoryId }));
 				message.ack();
 			}
 		}

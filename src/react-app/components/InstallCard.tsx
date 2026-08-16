@@ -1,10 +1,21 @@
+import { useState } from "react";
 import { installCommand, type PluginDetail } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { Badge } from "./Badge";
 
 export function InstallCard({ plugin }: { plugin: PluginDetail }) {
 	const { t } = useI18n();
+	const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 	const cmd = installCommand(plugin.owner, plugin.repo, plugin.latestCommitSha);
+	async function copyCommand() {
+		try {
+			if (!navigator.clipboard) throw new Error("clipboard unavailable");
+			await navigator.clipboard.writeText(cmd);
+			setCopyState("copied");
+		} catch {
+			setCopyState("failed");
+		}
+	}
 	return (
 		<aside className="card sticky top-20 border border-base-300 bg-base-100 shadow-sm">
 			<div className="card-body gap-4">
@@ -22,8 +33,8 @@ export function InstallCard({ plugin }: { plugin: PluginDetail }) {
 				<div className="mockup-code text-xs">
 					<pre data-prefix="$" className="whitespace-pre-wrap break-all"><code>{cmd}</code></pre>
 				</div>
-				<button className="btn btn-neutral btn-block" onClick={() => navigator.clipboard?.writeText(cmd)}>
-					{t("install.copy")}
+					<button className="btn btn-neutral btn-block" onClick={copyCommand}>
+						{copyState === "copied" ? t("install.copied") : copyState === "failed" ? t("install.copyFailed") : t("install.copy")}
 				</button>
 				{plugin.latestCommitSha ? (
 					<p className="text-xs opacity-60">{t("install.pinned", { sha: plugin.latestCommitSha.slice(0, 7) })}</p>

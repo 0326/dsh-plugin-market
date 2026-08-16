@@ -8,16 +8,31 @@ import { processScanJob, TransientScanError } from "../queue/scan";
 
 export const internal = new Hono<{ Bindings: Env }>();
 
+async function secretsMatch(provided: string | undefined, expected: string): Promise<boolean> {
+	if (!provided || !expected) return false;
+	const encoder = new TextEncoder();
+	const [providedHash, expectedHash] = await Promise.all([
+		crypto.subtle.digest("SHA-256", encoder.encode(provided)),
+		crypto.subtle.digest("SHA-256", encoder.encode(expected)),
+	]);
+	return crypto.subtle.timingSafeEqual(providedHash, expectedHash);
+}
+
 internal.use("*", async (c, next) => {
 	const secret = c.req.header("x-internal-secret");
-	if (!secret || secret !== c.env.INTERNAL_API_SECRET) return c.json({ error: "unauthorized" }, 401);
+	if (!(await secretsMatch(secret, c.env.INTERNAL_API_SECRET))) return c.json({ error: "unauthorized" }, 401);
 	await next();
 });
 
 internal.post("/discovery/run", async (c) => {
 	const client = new GithubClient(c.env.GITHUB_TOKEN);
-	const run = await runDiscovery(client, c.env.DB, c.env.SCAN_QUEUE);
-	return c.json(run);
+	c.executionCtx.waitUntil(
+		(async () => {
+			const run = await runDiscovery(client, c.env.DB, c.env.SCAN_QUEUE);
+			console.log("discovery completed", JSON.stringify(run));
+		})(),
+	);
+	return c.json({ status: "started" });
 });
 
 internal.post("/baseline/sync", async (c) => {

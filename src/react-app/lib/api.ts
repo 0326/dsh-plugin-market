@@ -38,7 +38,7 @@ export interface PluginDetail extends PluginListItem {
 }
 
 export interface RegistryStats {
-	totalCandidates: number;
+	total: number;
 	verified: number;
 	featured: number;
 	updatedThisWeek: number;

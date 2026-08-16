@@ -119,10 +119,16 @@ export class GithubClient {
 		return res.data.commit.sha;
 	}
 
-	async searchRepos(query: string, page: number, perPage: number): Promise<GithubSearchReposResult> {
-		const res = await this.get<GithubSearchReposResult>(
-			"/search/repositories?q=" + encodeURIComponent(query) + "&page=" + page + "&per_page=" + perPage,
-		);
+	async searchRepos(
+		query: string,
+		page: number,
+		perPage: number,
+		opts?: { sort?: string; order?: "asc" | "desc" },
+	): Promise<GithubSearchReposResult> {
+		let url = "/search/repositories?q=" + encodeURIComponent(query) + "&page=" + page + "&per_page=" + perPage;
+		if (opts?.sort) url += "&sort=" + opts.sort;
+		if (opts?.order) url += "&order=" + opts.order;
+		const res = await this.get<GithubSearchReposResult>(url);
 		return res.data;
 	}
 

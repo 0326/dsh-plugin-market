@@ -2,7 +2,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "dsh-plugin-market",
 	"main": "./src/worker/index.ts",
-	"compatibility_date": "2025-10-08",
+	"compatibility_date": "2026-08-16",
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
 		"enabled": true

@@ -117,6 +117,10 @@ export default function Home() {
 						</form>
 						<div className="stats mt-8 w-full bg-transparent">
 							<div className="stat px-0">
+								<div className="stat-value text-2xl">{data.stats.total}</div>
+								<div className="stat-desc opacity-60">{t("home.statsTotal")}</div>
+							</div>
+							<div className="stat">
 								<div className="stat-value text-2xl">{data.stats.featured}</div>
 								<div className="stat-desc opacity-60">{t("home.statsFeatured")}</div>
 							</div>

@@ -30,7 +30,9 @@ export default function Submit() {
 			<h1 className="mb-1 text-3xl font-extrabold tracking-tight">{t("submit.title")}</h1>
 			<p className="mb-6 opacity-60">{t("submit.desc")}</p>
 			<form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleSubmit}>
+				<label className="sr-only" htmlFor="repository-url">{t("submit.placeholder")}</label>
 				<input
+					id="repository-url"
 					className="input flex-1"
 					value={url}
 					onChange={(e) => setUrl(e.target.value)}

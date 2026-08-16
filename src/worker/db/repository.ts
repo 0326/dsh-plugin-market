@@ -77,14 +77,15 @@ export async function upsertRepository(db: D1Database, repo: GithubRepo): Promis
 		const changed = existing.github_pushed_at !== repo.pushed_at;
 		await db
 			.prepare(
-				`UPDATE repositories SET
-					name = ?, full_name = ?, html_url = ?, description = ?, default_branch = ?,
+					`UPDATE repositories SET
+						owner = ?, name = ?, full_name = ?, html_url = ?, description = ?, default_branch = ?,
 					stars = ?, forks = ?, license_spdx = ?, archived = ?, github_updated_at = ?,
 					github_pushed_at = ?, last_checked_at = ?, updated_at = ?
 				WHERE id = ?`,
 			)
 			.bind(
-				repo.name,
+					repo.owner.login,
+					repo.name,
 				repo.full_name,
 				repo.html_url,
 				repo.description,
@@ -140,6 +141,10 @@ export async function getRepositoryByFullName(db: D1Database, fullName: string):
 		.prepare("SELECT * FROM repositories WHERE full_name = ?")
 		.bind(fullName)
 		.first<RepositoryRow>();
+}
+
+export async function getRepositoryById(db: D1Database, id: number): Promise<RepositoryRow | null> {
+	return db.prepare("SELECT * FROM repositories WHERE id = ?").bind(id).first<RepositoryRow>();
 }
 
 export async function updateRepositorySha(db: D1Database, id: number, sha: string): Promise<void> {
@@ -216,7 +221,7 @@ export async function getPlugin(db: D1Database, owner: string, repo: string): Pr
 				r.license_spdx AS licenseSpdx,
 				p.verification_status AS verificationStatus, p.compatibility_status AS compatibilityStatus,
 				p.security_status AS securityStatus, p.maintenance_status AS maintenanceStatus, p.risk_level AS riskLevel,
-				p.featured, p.metadata_json AS metadataJson,
+					p.featured, p.metadata_json AS metadataJson, p.package_name AS packageName, p.updated_at AS updatedAt,
 				s.commit_sha AS latestCommitSha, s.scanner_version AS scannerVersion, s.completed_at AS scannedAt, s.id AS scanId
 			FROM plugins p
 			JOIN repositories r ON r.id = p.repository_id
@@ -253,35 +258,51 @@ export async function getPlugin(db: D1Database, owner: string, repo: string): Pr
 	};
 }
 
-export async function createScan(db: D1Database, repositoryId: number, commitSha: string): Promise<number> {
+export async function createScan(db: D1Database, repositoryId: number, commitSha: string): Promise<{ id: number; created: boolean }> {
+	const existing = await db
+		.prepare("SELECT id, status FROM scans WHERE repository_id = ? AND commit_sha = ? AND scanner_version = ?")
+		.bind(repositoryId, commitSha, SCANNER_VERSION)
+		.first<{ id: number; status: string }>();
+	if (existing?.status === "completed") return { id: existing.id, created: false };
+	if (existing) return { id: existing.id, created: true };
 	const now = new Date().toISOString();
-	await db
+	const res = await db
 		.prepare("INSERT OR IGNORE INTO scans (repository_id, commit_sha, scanner_version, status, started_at) VALUES (?, ?, ?, 'running', ?)")
 		.bind(repositoryId, commitSha, SCANNER_VERSION, now)
 		.run();
-	const row = await db
-		.prepare("SELECT id FROM scans WHERE repository_id = ? AND commit_sha = ? AND scanner_version = ?")
-		.bind(repositoryId, commitSha, SCANNER_VERSION)
-		.first<{ id: number }>();
-	return row ? row.id : 0;
+	if (res.meta.changes === 0) {
+		const row = await db
+			.prepare("SELECT id FROM scans WHERE repository_id = ? AND commit_sha = ? AND scanner_version = ?")
+			.bind(repositoryId, commitSha, SCANNER_VERSION)
+			.first<{ id: number }>();
+		if (!row) throw new Error("scan insert did not return an id");
+		return { id: row.id, created: true };
+	}
+	return { id: res.meta.last_row_id, created: true };
 }
 
 export async function completeScan(db: D1Database, scanId: number, result: ScanResult): Promise<void> {
 	const now = new Date().toISOString();
-	await db.prepare("UPDATE scans SET status = 'completed', completed_at = ? WHERE id = ?").bind(now, scanId).run();
-	await addFindings(db, scanId, result.findings);
-
 	const metadataJson = JSON.stringify(result.metadata);
 	const capabilitiesJson = JSON.stringify(result.metadata.capabilities ?? []);
 	const pluginTypesJson = JSON.stringify(result.metadata.pluginTypes ?? []);
 	const existing = await db.prepare("SELECT id FROM plugins WHERE repository_id = (SELECT repository_id FROM scans WHERE id = ?)").bind(scanId).first<{ id: number }>();
+	const statements = [
+		db.prepare("UPDATE scans SET status = 'completed', completed_at = ?, error_code = NULL, error_message = NULL WHERE id = ?").bind(now, scanId),
+		db.prepare("DELETE FROM scan_findings WHERE scan_id = ?").bind(scanId),
+	];
+	for (const f of result.findings) {
+		statements.push(
+			db.prepare("INSERT INTO scan_findings (scan_id, category, code, severity, title, detail, file_path, evidence_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(scanId, f.category, f.code, f.severity, f.title, f.detail ?? null, f.filePath ?? null, JSON.stringify(f.evidence ?? {}), now),
+		);
+	}
 	if (existing) {
-		await db
-			.prepare(
+		statements.push(
+			db.prepare(
 				`UPDATE plugins SET package_name = ?, package_version = ?, plugin_name = ?, description = ?,
 					verification_status = ?, compatibility_status = ?, security_status = ?, maintenance_status = ?,
 					risk_level = ?, latest_scan_id = ?, metadata_json = ?, capabilities_json = ?, plugin_types_json = ?, updated_at = ? WHERE id = ?`,
-			)
+				)
 			.bind(
 				result.metadata.packageName ?? null,
 				result.metadata.packageVersion ?? null,
@@ -298,16 +319,16 @@ export async function completeScan(db: D1Database, scanId: number, result: ScanR
 				pluginTypesJson,
 				now,
 				existing.id,
-			)
-			.run();
+				),
+			);
 	} else {
-		await db
-			.prepare(
+		statements.push(
+			db.prepare(
 				`INSERT INTO plugins (repository_id, package_name, package_version, plugin_name, description,
 					verification_status, compatibility_status, security_status, maintenance_status, risk_level,
 					latest_scan_id, metadata_json, capabilities_json, plugin_types_json, created_at, updated_at)
 				SELECT repository_id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM scans WHERE id = ?`,
-			)
+				)
 			.bind(
 				result.metadata.packageName ?? null,
 				result.metadata.packageVersion ?? null,
@@ -325,9 +346,10 @@ export async function completeScan(db: D1Database, scanId: number, result: ScanR
 				now,
 				now,
 				scanId,
-			)
-			.run();
+				),
+			);
 	}
+	await db.batch(statements);
 }
 
 export async function failScan(db: D1Database, scanId: number, error: ScanJobError): Promise<void> {
@@ -381,7 +403,7 @@ export async function upsertBaseline(db: D1Database, baseline: CompatibilityBase
 // --- Registry stats ---
 
 export interface RegistryStats {
-	totalCandidates: number;
+	total: number;
 	verified: number;
 	featured: number;
 	updatedThisWeek: number;
@@ -392,14 +414,14 @@ export async function getStats(db: D1Database): Promise<RegistryStats> {
 	const row = await db
 		.prepare(
 			`SELECT
-				(SELECT COUNT(*) FROM plugins) AS totalCandidates,
+				(SELECT COUNT(*) FROM repositories) AS total,
 				(SELECT COUNT(*) FROM plugins WHERE verification_status = 'FORMAT_VERIFIED') AS verified,
 				(SELECT COUNT(*) FROM plugins WHERE featured = 1) AS featured,
-				(SELECT COUNT(*) FROM plugins WHERE updated_at >= ?) AS updatedThisWeek`,
+				(SELECT COUNT(*) FROM repositories WHERE github_pushed_at >= ?) AS updatedThisWeek`,
 		)
 		.bind(weekAgo)
 		.first<RegistryStats>();
-	return row ?? { totalCandidates: 0, verified: 0, featured: 0, updatedThisWeek: 0 };
+	return row ?? { total: 0, verified: 0, featured: 0, updatedThisWeek: 0 };
 }
 
 // --- Scan history ---

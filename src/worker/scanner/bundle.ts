@@ -1,6 +1,7 @@
 import type { Finding } from "../domain/finding";
 import type { ParsedPackageJson } from "../domain/plugin";
 import type { RepoSnapshot } from "./snapshot";
+import { parseDocument } from "yaml";
 
 export interface BundleAnalysis {
 	hasDshBundle: boolean;
@@ -27,13 +28,15 @@ function resolvePatchPath(patchPath: string): string {
  */
 function isPlausiblePatchYaml(content: string | undefined): boolean {
 	if (!content || !content.trim()) return false;
-	for (const line of content.split(/\r?\n/)) {
-		const t = line.trim();
-		if (!t || t.startsWith("#")) continue;
-		if (/^\s*[\w."'/-]+\s*:/.test(t)) return true;
-		if (/^\s*-\s/.test(t)) return true;
+	try {
+		const document = parseDocument(content, { strict: true });
+		if (document.errors.length > 0) return false;
+		const value = document.toJS() as unknown;
+		if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+		return Object.prototype.hasOwnProperty.call(value, "plugins") || Object.prototype.hasOwnProperty.call(value, "patch");
+	} catch {
+		return false;
 	}
-	return false;
 }
 
 /** Detect DSH signals and validate bundle structure (does NOT validate code safety). */

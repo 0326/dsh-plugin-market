@@ -83,7 +83,7 @@ function App() {
 			<main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-6">
 				{route.name === "home" && <Home />}
 				{route.name === "explore" && <Explore key={route.query} query={route.query} />}
-				{route.name === "plugin" && <PluginDetail owner={route.owner} repo={route.repo} />}
+					{route.name === "plugin" && <PluginDetail key={route.owner + "/" + route.repo} owner={route.owner} repo={route.repo} />}
 				{route.name === "publisher" && <Publisher owner={route.owner} />}
 				{route.name === "submit" && <Submit />}
 			</main>

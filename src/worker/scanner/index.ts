@@ -60,7 +60,7 @@ export function scanRepository(input: ScanInput): ScanResult {
 	const metadata = buildMetadata(manifest, security, bundle, getFileContent(snapshot, "README.md"));
 	const findings = [...bundle.findings, ...compatibility.findings, ...security.findings, ...maintenance.findings];
 
-	return {
+		return {
 		scannerVersion: SCANNER_VERSION,
 		commitSha: snapshot.commitSha,
 		verificationStatus,
@@ -115,7 +115,7 @@ function buildFailure(snapshot: RepoSnapshot, maintenance: MaintenanceInput, err
 		compatibilityStatus: "UNKNOWN",
 		securityStatus: "UNKNOWN",
 		maintenanceStatus: maintenanceAnalysis.status,
-		riskLevel: "LOW",
+			riskLevel: deriveRiskLevel(findings),
 		findings: [...findings, ...maintenanceAnalysis.findings],
 		metadata: {
 			dshDependencyRanges: {},

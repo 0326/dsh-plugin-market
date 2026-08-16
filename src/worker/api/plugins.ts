@@ -15,10 +15,26 @@ function clampInt(raw: string | undefined, def: number, min: number, max: number
 function parseRepoUrl(input: string | undefined): { owner: string; repo: string } | null {
 	if (!input) return null;
 	const t = input.trim();
-	let m = /^https?:\/\/github\.com\/([^/\s]+)\/([^/\s#?]+)/.exec(t);
-	if (!m) m = /^(?:github\.com\/)?([^/\s]+)\/([^/\s#?]+)$/.exec(t);
-	if (!m) return null;
-	return { owner: m[1], repo: m[2].replace(/\.git$/, "") };
+	let owner: string | undefined;
+	let repo: string | undefined;
+	if (/^https?:\/\//i.test(t)) {
+		try {
+			const url = new URL(t);
+			if (url.hostname.toLowerCase() !== "github.com" || url.search || url.hash) return null;
+			const parts = url.pathname.split("/").filter(Boolean);
+			if (parts.length !== 2) return null;
+			[owner, repo] = parts;
+		} catch {
+			return null;
+		}
+	} else {
+		const m = /^(?:github\.com\/)?([^/\s]+)\/([^/\s#?]+)$/.exec(t);
+		if (!m) return null;
+		[, owner, repo] = m;
+	}
+	if (!owner || !repo || !/^[A-Za-z0-9_.-]+$/.test(owner) || !/^[A-Za-z0-9_.-]+$/.test(repo)) return null;
+	const normalizedRepo = repo.replace(/\.git$/, "");
+	return normalizedRepo ? { owner, repo: normalizedRepo } : null;
 }
 
 api.get("/plugins", async (c) => {
@@ -75,10 +91,14 @@ api.get("/search", async (c) => {
 });
 
 api.post("/submit", async (c) => {
+	const contentLength = Number(c.req.header("content-length") ?? 0);
+	if (contentLength > 4096) return c.json({ error: "request_too_large" }, 413);
 	let url: string | undefined;
 	try {
-		const body = await c.req.json<{ url?: string }>();
-		url = body?.url;
+		const raw = await c.req.text();
+		if (raw.length > 2048) return c.json({ error: "request_too_large" }, 413);
+		const body = JSON.parse(raw) as { url?: unknown };
+		url = typeof body?.url === "string" ? body.url : undefined;
 	} catch {
 		url = undefined;
 	}
@@ -94,6 +114,6 @@ api.post("/submit", async (c) => {
 		throw err;
 	}
 	const { id } = await upsertRepository(c.env.DB, repo);
-	await c.env.SCAN_QUEUE.send({ repositoryId: id, owner: parsed.owner, repo: parsed.repo, reason: "MANUAL" });
-	return c.json({ owner: parsed.owner, repo: parsed.repo, status: "queued" });
+	await c.env.SCAN_QUEUE.send({ repositoryId: id, owner: repo.owner.login, repo: repo.name, reason: "MANUAL" });
+	return c.json({ owner: repo.owner.login, repo: repo.name, status: "queued" }, 202);
 });

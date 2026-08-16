@@ -38,25 +38,28 @@ export default function Explore({ query = "" }: { query?: string }) {
 
 	useEffect(() => {
 		let ignore = false;
-		listPlugins({
-			q: q || undefined,
-			featured: featuredOnly,
-			verified: verifiedOnly,
-			capability: capability || undefined,
-			pluginType: pluginType || undefined,
-			compatibility: compatibility || undefined,
-			risk: risk || undefined,
-			sort,
-		})
-			.then((res) => {
-				if (!ignore) setItems(res.items);
+		const timer = window.setTimeout(() => {
+			listPlugins({
+				q: q || undefined,
+				featured: featuredOnly,
+				verified: verifiedOnly,
+				capability: capability || undefined,
+				pluginType: pluginType || undefined,
+				compatibility: compatibility || undefined,
+				risk: risk || undefined,
+				sort,
 			})
-			.catch(() => {
-				if (!ignore) setItems([]);
-			});
-		return () => {
-			ignore = true;
-		};
+				.then((res) => {
+					if (!ignore) setItems(res.items);
+				})
+				.catch(() => {
+					if (!ignore) setItems([]);
+				});
+		}, 250);
+			return () => {
+				ignore = true;
+				window.clearTimeout(timer);
+			};
 	}, [q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort]);
 
 	const loading = items === null;
@@ -82,31 +85,31 @@ export default function Explore({ query = "" }: { query?: string }) {
 					<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
 					<span>{t("explore.verifiedOnly")}</span>
 				</label>
-				<select className="select select-sm" value={capability} onChange={(e) => setCapability(e.target.value)}>
+				<select aria-label={t("explore.allCapabilities")} className="select select-sm" value={capability} onChange={(e) => setCapability(e.target.value)}>
 					<option value="">{t("explore.allCapabilities")}</option>
 					{capabilities.map((c) => (
 						<option key={c} value={c}>{c.replace(/_/g, " ")}</option>
 					))}
 				</select>
-				<select className="select select-sm" value={pluginType} onChange={(e) => setPluginType(e.target.value)}>
+				<select aria-label={t("explore.allTypes")} className="select select-sm" value={pluginType} onChange={(e) => setPluginType(e.target.value)}>
 					<option value="">{t("explore.allTypes")}</option>
 					{pluginTypes.map((pt) => (
 						<option key={pt} value={pt}>{pt.replace(/_/g, " ")}</option>
 					))}
 				</select>
-				<select className="select select-sm" value={compatibility} onChange={(e) => setCompatibility(e.target.value)}>
+				<select aria-label={t("explore.anyCompatibility")} className="select select-sm" value={compatibility} onChange={(e) => setCompatibility(e.target.value)}>
 					<option value="">{t("explore.anyCompatibility")}</option>
 					{COMPATIBILITY.map((c) => (
 						<option key={c} value={c}>{c.replace(/_/g, " ")}</option>
 					))}
 				</select>
-				<select className="select select-sm" value={risk} onChange={(e) => setRisk(e.target.value)}>
+				<select aria-label={t("explore.anyRisk")} className="select select-sm" value={risk} onChange={(e) => setRisk(e.target.value)}>
 					<option value="">{t("explore.anyRisk")}</option>
 					{RISK.map((r) => (
 						<option key={r} value={r}>{r}</option>
 					))}
 				</select>
-				<select className="select select-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+				<select aria-label={t("explore.sortUpdated")} className="select select-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
 					<option value="updated">{t("explore.sortUpdated")}</option>
 					<option value="stars">{t("explore.sortStars")}</option>
 					<option value="new">{t("explore.sortNew")}</option>
