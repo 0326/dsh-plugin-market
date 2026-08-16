@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { PluginCard } from "../components/PluginCard";
+import { useI18n } from "../lib/i18n";
 import { getPublisher, type Publisher } from "../lib/api";
 
 export default function Publisher({ owner }: { owner: string }) {
+	const { t } = useI18n();
 	const [pub, setPub] = useState<Publisher | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
@@ -20,14 +22,14 @@ export default function Publisher({ owner }: { owner: string }) {
 		};
 	}, [owner]);
 
-	if (error) return <p className="error">Failed to load publisher: {error}</p>;
-	if (!pub) return <p className="empty">Loading…</p>;
+	if (error) return <p className="error">{t("publisher.loadError", { msg: error })}</p>;
+	if (!pub) return <p className="empty">{t("common.loading")}</p>;
 
 	return (
 		<section>
 			<h1>{pub.owner}</h1>
 			<p className="plugin-desc">
-				{pub.verifiedCount} verified · {pub.repos.length} plugins · ★ {pub.totalStars}
+				{t("publisher.summary", { verified: pub.verifiedCount, plugins: pub.repos.length, stars: pub.totalStars })}
 			</p>
 			<div className="plugin-grid">
 				{pub.repos.map((p) => (

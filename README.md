@@ -1,53 +1,53 @@
 # DS Plugin Market
 
-**English** | [简体中文](README.zh-CN.md)
+[English](README.en.md) | **简体中文**
 
 > **Discover. Verify. Install with confidence.**
 >
-> A trusted plugin registry, discovery, and installation experience for the DeepSeek Harness ecosystem.
+> 面向 DeepSeek Harness 生态的可信插件注册、发现与安装平台。
 
 🌐 **https://ds-plugin.market**
 
-> This project is in early development. DeepSeek Harness itself is currently in Developer Preview, so plugin specifications and compatibility rules may evolve quickly.
+> 项目处于早期开发阶段。DeepSeek Harness 本身也处于 Developer Preview，插件规范和兼容性规则可能快速变化。
 
-## Why DS Plugin Market?
+## 为什么做这个项目？
 
-DeepSeek Harness is built around the idea that **Everything is a Plugin**. Today, the community can discover related repositories through the GitHub [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic.
+DeepSeek Harness 的核心理念是 **Everything is a Plugin**。官方目前通过 GitHub [`dsh-plugin`](https://github.com/topics/dsh-plugin) Topic 帮助社区发现插件。
 
-But a GitHub topic can only answer:
+但 GitHub Topic 只能回答：
 
-> “Which repositories claim to be related to DSH plugins?”
+> “哪些仓库声称自己与 DSH Plugin 有关？”
 
-Before installing third-party code, users need better answers:
+它不能回答用户安装前更重要的问题：
 
-- Is this repository actually a valid DSH Plugin / Bundle?
-- Is it compatible with the current DSH / Cordis versions?
-- Is it still actively maintained?
-- Does installation execute `prepare`, `postinstall`, or other scripts?
-- What security and supply-chain signals should I know about?
-- Which exact version or commit should I install to match the code that was scanned?
+- 这个仓库**真的是**符合规范的 DSH Plugin / Bundle 吗？
+- 它和我当前使用的 DSH / Cordis **兼容吗**？
+- 它最近还在**维护**吗？
+- 安装时会不会执行 `prepare` / `postinstall` 等脚本？
+- 它有哪些需要关注的**安全和供应链风险**？
+- 我应该安装哪个版本 / commit，才能和市场扫描的代码保持一致？
 
-**DS Plugin Market is not just a nicer UI for a GitHub Topic. It turns candidate repositories into a structured, verifiable, and traceable plugin registry.**
+**DS Plugin Market 不只是 GitHub Topic 的展示层，而是把候选仓库转换为结构化、可验证、可追溯的 Plugin Registry。**
 
-## What it provides
+## 核心价值
 
 ### Discover
 
-Continuously discover candidate DSH plugin repositories from public sources such as GitHub instead of maintaining a static list by hand.
+持续从 GitHub 等公开来源发现 DSH 插件候选仓库，而不是依赖人工维护一份静态清单。
 
 ### Verify
 
-Analyze plugin structure, including signals such as:
+自动分析插件结构，例如：
 
 - `package.json`
 - `dsh.bundle.patch`
 - `cordis.patch.yml`
-- DSH / Cordis dependencies and peer dependencies
-- plugin entry points and exports
-- Node.js engine requirements
-- client / web platform metadata
+- DSH / Cordis dependencies 与 peerDependencies
+- Plugin entry / exports
+- Node.js engine
+- Client / Web platform metadata
 
-Repositories move through an explicit lifecycle:
+并区分：
 
 ```text
 Candidate
@@ -61,7 +61,7 @@ Featured (curated)
 
 ### Assess
 
-Build an independent Trust Profile for every plugin:
+为每个插件生成独立的 Trust Profile：
 
 ```text
 Format Verification
@@ -71,7 +71,7 @@ Maintenance
 Publisher Trust (later)
 ```
 
-For example:
+例如：
 
 ```text
 ✓ Format Verified
@@ -83,44 +83,44 @@ For example:
 
 ### Install with confidence
 
-Scan results are bound to an exact commit SHA. For GitHub installs, DS Plugin Market should prefer a pinned command such as:
+扫描结果绑定具体 commit SHA。对于 GitHub 安装，优先推荐安装已扫描的 commit：
 
 ```bash
 dsh plugin --profile web add github:owner/repo#<scanned_commit_sha>
 ```
 
-This makes the code users install traceable to the code represented by the displayed scan result.
+这样用户实际安装的代码可以和市场展示的扫描结果对应起来。
 
-## What does “Verified” mean?
+## “Verified”代表什么？
 
-This distinction is fundamental:
+这是本项目最重要的设计原则之一：
 
 > **Format Verified ≠ Safe**
 
-`Format Verified` only means that a repository matches the DSH Plugin / Bundle structure understood by the current scanner version.
+`Format Verified` 只表示仓库符合当前 Scanner 所理解的 DSH Plugin / Bundle 结构规则。
 
-Security signals are evaluated and displayed separately, including:
+安全相关信息独立展示，包括：
 
-- install scripts;
-- dependency risk signals;
-- shell / process execution;
-- filesystem / network access patterns;
-- dynamic code execution heuristics;
-- public vulnerability sources added in later stages.
+- 安装脚本；
+- 依赖风险信号；
+- Shell / process execution；
+- 文件系统 / 网络访问特征；
+- 动态代码执行等静态风险信号；
+- 后续接入的公开漏洞数据源。
 
-Even when no high-risk signal is detected, **a security scan is not a guarantee that third-party code is safe**.
+即使 Security Scan 没有发现高风险信号，也**不代表第三方插件绝对安全**。
 
-## Why install scripts matter
+## 为什么安装脚本特别重要？
 
-DeepSeek Harness can install plugins directly from GitHub:
+DeepSeek Harness 支持直接从 GitHub 安装插件：
 
 ```bash
 dsh plugin --profile web add github:owner/repo
 ```
 
-A Git dependency may use a `prepare` script to build artifacts after download. Allowing that build means third-party code can execute during installation.
+对于需要构建的 Git dependency，作者可能通过 `prepare` 脚本生成产物。允许该脚本意味着第三方代码会在安装阶段执行。
 
-DS Plugin Market therefore treats these as first-class trust signals:
+因此 DS Plugin Market 会把以下信息作为一等信息展示：
 
 ```text
 Install scripts
@@ -129,9 +129,9 @@ Scanned commit
 Recommended pinned install
 ```
 
-—not as hidden repository metadata behind stars, language, or license.
+而不是只展示 Stars、Language 和 License。
 
-## How it works
+## 工作原理
 
 ```text
 GitHub dsh-plugin Topic / Submit
@@ -167,7 +167,7 @@ Metadata              Files
         ds-plugin.market
 ```
 
-Automatic updates are designed around:
+自动更新链路：
 
 ```text
 Cloudflare Cron
@@ -181,15 +181,15 @@ Static Scan
 D1
 ```
 
-The project does not rely on high-frequency scraping of GitHub HTML pages.
+不会通过高频爬取 GitHub HTML 页面获取数据。
 
-## Scanner security boundary
+## Scanner 安全边界
 
-The v1.0 scanner follows one hard rule:
+v1.0 坚持一个原则：
 
 > **Never execute untrusted plugin code.**
 
-It reads and statically analyzes repository files through APIs. It does not:
+Scanner 只通过 API 读取和静态分析源码/配置，不会：
 
 ```text
 npm install third-party repo
@@ -199,11 +199,11 @@ execute plugin entry
 execute repository shell scripts
 ```
 
-If something cannot be determined safely through static analysis, the correct result is `Unknown`, not an invented safety claim.
+对于无法静态判断的内容，结果应明确标记为 `Unknown`，而不是猜测为安全。
 
-## Architecture
+## 技术架构
 
-Current project stack:
+当前项目技术栈：
 
 ```text
 Frontend
@@ -228,30 +228,30 @@ Source
 GitHub REST API
 ```
 
-For architecture, data models, scanner rules, trust semantics, and implementation phases, see:
+详细架构、数据模型、扫描规则和分期方案请阅读：
 
-**[Technical Design v1.0](docs/TECHNICAL_DESIGN.md)**
+**[技术方案 v1.0](docs/TECHNICAL_DESIGN.md)**
 
-## v1.0 roadmap
+## v1.0 范围
 
 ### Registry MVP
 
 - [ ] GitHub `dsh-plugin` candidate discovery
-- [ ] Incremental GitHub API sync
-- [ ] D1 registry
-- [ ] `package.json` / `cordis.patch.yml` parsing
-- [ ] Candidate / Detected / Format Verified states
-- [ ] Home / Explore / Plugin Detail pages
-- [ ] Basic installation commands
+- [ ] GitHub API 增量同步
+- [ ] D1 Registry
+- [ ] `package.json` / `cordis.patch.yml` parser
+- [ ] Candidate / Detected / Format Verified 状态
+- [ ] 首页 / Explore / Plugin Detail
+- [ ] 基础安装命令
 
 ### Trust Layer
 
 - [ ] DSH / Cordis compatibility analysis
-- [ ] Install-script detection
+- [ ] Install script detection
 - [ ] Static security signals
 - [ ] Maintenance signals
 - [ ] Commit-bound scan history
-- [ ] Pinned-commit install commands
+- [ ] Pinned commit install command
 
 ### Discovery Experience
 
@@ -260,67 +260,66 @@ For architecture, data models, scanner rules, trust semantics, and implementatio
 - [ ] Featured / Trending / New & Verified
 - [ ] Submit Plugin
 - [ ] Publisher pages
-- [ ] AI-assisted search as an enhancement, not a core dependency
+- [ ] AI-assisted search（增强能力，不作为基础依赖）
 
-## Development
+## 开发
 
-Install dependencies:
+安装依赖：
 
 ```bash
 npm install
 ```
 
-Configure local secrets (optional for browsing; required for discovery/scan):
+配置本地 secret（仅浏览可省略；发现/扫描需要）：
 
 ```bash
 cp .dev.vars.example .dev.vars
 ```
 
-Create and migrate the local D1 database:
+创建并迁移本地 D1 数据库：
 
 ```bash
 wrangler d1 migrations apply DB --local
 ```
 
-Start locally:
+本地启动：
 
 ```bash
 npm run dev
 ```
 
-Common scripts:
+常用脚本：
 
 ```bash
 npm run build        # tsc -b && vite build
-npm run check        # type-check + build + wrangler deploy --dry-run
+npm run check        # 类型检查 + 构建 + wrangler deploy --dry-run
 npm run lint         # eslint
-npm test             # vitest (scanner unit tests)
-npm run cf-typegen   # regenerate worker-configuration.d.ts after binding changes
-npm run deploy       # deploy to Cloudflare Workers
+npm test             # vitest（scanner 单测）
+npm run cf-typegen   # 修改绑定后重新生成 worker-configuration.d.ts
+npm run deploy       # 部署到 Cloudflare Workers
 ```
 
-> `GITHUB_TOKEN` and `INTERNAL_API_SECRET` are Worker secrets (or local `.dev.vars`), and must never be committed or exposed to frontend code. Discovery and scanning require a GitHub token; browsing the registry only needs the D1 database.
+> `GITHUB_TOKEN` 与 `INTERNAL_API_SECRET` 为 Worker secret（本地可用 `.dev.vars`），禁止提交到仓库或暴露给前端。发现与扫描需要 GitHub Token；仅浏览注册表只需要 D1 数据库。
 
-## Deployment (GitHub Actions)
+## 部署（GitHub Actions）
 
-Pushing to `main` auto-deploys via `.github/workflows/deploy.yml`. The workflow
-provisions the Cloudflare Queue and D1 database (idempotently), applies D1
-migrations, and runs `wrangler deploy`.
+推送到 `main` 会通过 `.github/workflows/deploy.yml` 自动部署。该 workflow 会
+幂等地创建 Cloudflare Queue 与 D1 数据库、应用 D1 迁移，并执行 `wrangler deploy`。
 
-Required GitHub repository secrets:
+需要的 GitHub 仓库 secret：
 
-- `CLOUDFLARE_API_TOKEN` — a Cloudflare API token with **Workers Scripts: Edit**,
-  **D1: Edit**, and **Workers Queues: Edit** permissions.
-- `CLOUDFLARE_ACCOUNT_ID` — your Cloudflare account ID.
+- `CLOUDFLARE_API_TOKEN` — 一个具有 **Workers Scripts: Edit**、**D1: Edit**、
+  **Workers Queues: Edit** 权限的 Cloudflare API Token。
+- `CLOUDFLARE_ACCOUNT_ID` — 你的 Cloudflare 账户 ID。
 
-Worker runtime secrets (set once, never committed):
+Worker 运行时 secret（一次性配置，禁止提交）：
 
 ```bash
-wrangler secret put GITHUB_TOKEN        # GitHub PAT the worker uses to call the GitHub API
-wrangler secret put INTERNAL_API_SECRET # guards /api/internal/* endpoints
+wrangler secret put GITHUB_TOKEN        # worker 调用 GitHub API 所用的 GitHub PAT
+wrangler secret put INTERNAL_API_SECRET # 守卫 /api/internal/* 接口
 ```
 
-## Core principle
+## 核心原则
 
 ```text
 GitHub = Source of Truth for Code
@@ -329,19 +328,19 @@ DS Plugin Market
 = Source of Truth for Plugin Metadata & Trust Signals
 ```
 
-We do not host third-party plugins, mirror their release systems, or replace GitHub / npm.
+我们不托管插件、不复制第三方发布体系，也不试图替代 GitHub / npm。
 
-Our job is simpler and more focused:
+我们的职责是：
 
-> **GitHub tells you what claims to be a DSH plugin. DS Plugin Market tells you what it actually is, whether it is compatible, and what you should know before installing it.**
+> **GitHub 告诉你哪些仓库声称自己是 DSH Plugin；DS Plugin Market 告诉你它到底是什么、是否兼容，以及安装前你应该知道什么。**
 
-## Disclaimer
+## 免责声明
 
-DS Plugin Market is a community project. It is not an official DeepSeek product and does not represent DeepSeek review, approval, or endorsement of third-party plugins.
+DS Plugin Market 是社区项目，不是 DeepSeek 官方产品，也不代表 DeepSeek 对第三方插件的审核或背书。
 
-Verification, compatibility, and security results are automated observations tied to a specific scanner version, time, and commit. They are decision-support signals, not a substitute for source review or other security controls.
+所有 Verification、Compatibility 和 Security 结果都基于特定 Scanner 版本、特定时间和特定 commit 的自动化分析，只作为安装决策的辅助信息，不能替代源码审查或其他安全措施。
 
-## Links
+## 相关链接
 
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 - [GitHub `dsh-plugin` Topic](https://github.com/topics/dsh-plugin)

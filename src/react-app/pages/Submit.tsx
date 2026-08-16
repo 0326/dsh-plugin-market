@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useI18n } from "../lib/i18n";
 import { submitPlugin } from "../lib/api";
 
 export default function Submit() {
+	const { t } = useI18n();
 	const [url, setUrl] = useState("");
 	const [status, setStatus] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -14,7 +16,7 @@ export default function Submit() {
 		setStatus(null);
 		try {
 			const res = await submitPlugin(url);
-			setStatus("Queued " + res.owner + "/" + res.repo + " for scanning.");
+			setStatus(t("submit.queued", { owner: res.owner, repo: res.repo }));
 			setUrl("");
 		} catch (err) {
 			setError(err instanceof Error ? err.message : String(err));
@@ -25,16 +27,16 @@ export default function Submit() {
 
 	return (
 		<section className="submit">
-			<h1>Submit a plugin</h1>
-			<p className="plugin-desc">Paste a GitHub repository URL. We validate it, add it as a candidate, and enqueue a scan.</p>
+			<h1>{t("submit.title")}</h1>
+			<p className="plugin-desc">{t("submit.desc")}</p>
 			<form onSubmit={handleSubmit}>
 				<input
 					value={url}
 					onChange={(e) => setUrl(e.target.value)}
-					placeholder="https://github.com/owner/repo"
+					placeholder={t("submit.placeholder")}
 					required
 				/>
-				<button type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit"}</button>
+				<button type="submit" disabled={busy}>{busy ? t("submit.submitting") : t("submit.submit")}</button>
 			</form>
 			{status && <p className="ok-text">{status}</p>}
 			{error && <p className="error">{error}</p>}

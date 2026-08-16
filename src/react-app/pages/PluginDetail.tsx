@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Badge } from "../components/Badge";
 import { InstallCard } from "../components/InstallCard";
+import { useI18n } from "../lib/i18n";
 import { getPlugin, getScans, type Finding, type PluginDetail as Detail, type ScanRow } from "../lib/api";
 
 type Tab = "overview" | "compatibility" | "security" | "versions";
@@ -30,7 +31,8 @@ function parseMetadata(json: string | null): Metadata | null {
 }
 
 function FindingsList({ findings }: { findings: Finding[] }) {
-	if (findings.length === 0) return <p className="empty">No findings for this category.</p>;
+	const { t } = useI18n();
+	if (findings.length === 0) return <p className="empty">{t("detail.noFindings")}</p>;
 	return (
 		<ul className="findings">
 			{findings.map((f, i) => (
@@ -48,19 +50,26 @@ function FindingsList({ findings }: { findings: Finding[] }) {
 }
 
 function ScansList({ scans }: { scans: ScanRow[] }) {
-	if (scans.length === 0) return <p className="empty">No scan history.</p>;
+	const { t } = useI18n();
+	if (scans.length === 0) return <p className="empty">{t("detail.noScanHistory")}</p>;
 	return (
 		<ul className="findings">
 			{scans.map((s) => {
 				const kind = s.status === "completed" ? "PASSED" : s.status === "failed" ? "FAILED" : "UNKNOWN";
+				const statusLabel =
+					s.status === "completed"
+						? t("detail.scanStatusPassed")
+						: s.status === "failed"
+							? t("detail.scanStatusFailed")
+							: t("detail.scanStatusUnknown");
 				return (
 					<li key={s.id} className="finding">
 						<div className="finding-head">
-							<Badge value={kind} label={s.status} />
+							<Badge value={kind} label={statusLabel} />
 							<code>{s.commitSha.slice(0, 12)}</code>
 						</div>
-						<p>scanner {s.scannerVersion} · {s.completedAt ?? s.startedAt}</p>
-						{s.errorCode && <p>error: {s.errorCode}</p>}
+						<p>{t("detail.scanRow", { ver: s.scannerVersion, at: s.completedAt ?? s.startedAt })}</p>
+						{s.errorCode && <p>{t("detail.scanError", { code: s.errorCode })}</p>}
 					</li>
 				);
 			})}
@@ -69,6 +78,7 @@ function ScansList({ scans }: { scans: ScanRow[] }) {
 }
 
 export default function PluginDetail({ owner, repo }: { owner: string; repo: string }) {
+	const { t } = useI18n();
 	const [detail, setDetail] = useState<Detail | null>(null);
 	const [scans, setScans] = useState<ScanRow[]>([]);
 	const [error, setError] = useState<string | null>(null);
@@ -102,8 +112,8 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 		};
 	}, [owner, repo]);
 
-	if (error) return <p className="error">Failed to load plugin: {error}</p>;
-	if (!detail) return <p className="empty">Loading…</p>;
+	if (error) return <p className="error">{t("detail.loadError", { msg: error })}</p>;
+	if (!detail) return <p className="empty">{t("common.loading")}</p>;
 
 	const metadata = parseMetadata(detail.metadataJson);
 
@@ -111,9 +121,9 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 		<section className="detail-layout">
 			<div className="detail-main">
 				<h1>{detail.fullName}</h1>
-				<p className="plugin-desc">{detail.description ?? "No description."}</p>
+				<p className="plugin-desc">{detail.description ?? t("common.noDescription")}</p>
 				<p className="hint">
-					by <a href={"#/publisher/" + detail.owner}>{detail.owner}</a>
+					{t("detail.by")} <a href={"#/publisher/" + detail.owner}>{detail.owner}</a>
 				</p>
 				<div className="detail-badges">
 					<Badge value={detail.verificationStatus} />
@@ -122,27 +132,27 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 					<Badge value={detail.maintenanceStatus} />
 				</div>
 				<div className="tabs">
-					<button className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
-					<button className={tab === "compatibility" ? "active" : ""} onClick={() => setTab("compatibility")}>Compatibility</button>
-					<button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>Security</button>
-					<button className={tab === "versions" ? "active" : ""} onClick={() => setTab("versions")}>Versions</button>
+					<button className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>{t("detail.overview")}</button>
+					<button className={tab === "compatibility" ? "active" : ""} onClick={() => setTab("compatibility")}>{t("detail.compatibility")}</button>
+					<button className={tab === "security" ? "active" : ""} onClick={() => setTab("security")}>{t("detail.security")}</button>
+					<button className={tab === "versions" ? "active" : ""} onClick={() => setTab("versions")}>{t("detail.versions")}</button>
 				</div>
 				{tab === "overview" && (
 					<div className="overview">
 						{metadata && (
 							<dl className="meta-rows">
-								{metadata.packageName && <><dt>Package</dt><dd>{metadata.packageName}{metadata.packageVersion ? " @" + metadata.packageVersion : ""}</dd></>}
-								{metadata.cordisRange && <><dt>Cordis</dt><dd>{metadata.cordisRange}</dd></>}
-								{metadata.nodeRange && <><dt>Node</dt><dd>{metadata.nodeRange}</dd></>}
-								{metadata.dshBundlePatch && <><dt>Bundle patch</dt><dd><code>{metadata.dshBundlePatch}</code></dd></>}
-								{(metadata.capabilities?.length ?? 0) > 0 && <><dt>Capabilities</dt><dd>{metadata.capabilities?.join(", ")}</dd></>}
-								{(metadata.pluginTypes?.length ?? 0) > 0 && <><dt>Types</dt><dd>{metadata.pluginTypes?.join(", ")}</dd></>}
-								{(metadata.installScripts?.length ?? 0) > 0 && <><dt>Install scripts</dt><dd>{metadata.installScripts?.join(", ")}</dd></>}
+								{metadata.packageName && <><dt>{t("detail.package")}</dt><dd>{metadata.packageName}{metadata.packageVersion ? " @" + metadata.packageVersion : ""}</dd></>}
+								{metadata.cordisRange && <><dt>{t("detail.cordis")}</dt><dd>{metadata.cordisRange}</dd></>}
+								{metadata.nodeRange && <><dt>{t("detail.node")}</dt><dd>{metadata.nodeRange}</dd></>}
+								{metadata.dshBundlePatch && <><dt>{t("detail.bundlePatch")}</dt><dd><code>{metadata.dshBundlePatch}</code></dd></>}
+								{(metadata.capabilities?.length ?? 0) > 0 && <><dt>{t("detail.capabilities")}</dt><dd>{metadata.capabilities?.join(", ")}</dd></>}
+								{(metadata.pluginTypes?.length ?? 0) > 0 && <><dt>{t("detail.types")}</dt><dd>{metadata.pluginTypes?.join(", ")}</dd></>}
+								{(metadata.installScripts?.length ?? 0) > 0 && <><dt>{t("detail.installScripts")}</dt><dd>{metadata.installScripts?.join(", ")}</dd></>}
 							</dl>
 						)}
 						{detail.latestCommitSha && (
 							<p className="hint">
-								Scanned commit <code>{detail.latestCommitSha}</code> · scanner {detail.scannerVersion} · {detail.scannedAt}
+								{t("detail.scannedAt", { sha: detail.latestCommitSha, ver: detail.scannerVersion ?? "", at: detail.scannedAt ?? "" })}
 							</p>
 						)}
 					</div>

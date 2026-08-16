@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { PluginCard } from "../components/PluginCard";
+import { useI18n } from "../lib/i18n";
 import { getCategories, listPlugins, type PluginListItem, type Sort } from "../lib/api";
 
 const COMPATIBILITY = ["COMPATIBLE", "LIKELY_COMPATIBLE", "OUTDATED", "INCOMPATIBLE", "UNKNOWN"];
 const RISK = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "UNKNOWN"];
 
 export default function Explore() {
+	const { t } = useI18n();
 	const [items, setItems] = useState<PluginListItem[] | null>(null);
 	const [q, setQ] = useState("");
 	const [verifiedOnly, setVerifiedOnly] = useState(false);
@@ -58,48 +60,48 @@ export default function Explore() {
 
 	return (
 		<section>
-			<h1>Explore plugins</h1>
+			<h1>{t("explore.title")}</h1>
 			<div className="controls">
-				<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search plugins…" />
+				<input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("explore.searchPlaceholder")} />
 				<label className="check">
 					<input type="checkbox" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
-					Verified only
+					{t("explore.verifiedOnly")}
 				</label>
 				<select value={capability} onChange={(e) => setCapability(e.target.value)}>
-					<option value="">All capabilities</option>
+					<option value="">{t("explore.allCapabilities")}</option>
 					{capabilities.map((c) => (
 						<option key={c} value={c}>{c.replace(/_/g, " ")}</option>
 					))}
 				</select>
 				<select value={pluginType} onChange={(e) => setPluginType(e.target.value)}>
-					<option value="">All types</option>
-					{pluginTypes.map((t) => (
-						<option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+					<option value="">{t("explore.allTypes")}</option>
+					{pluginTypes.map((pt) => (
+						<option key={pt} value={pt}>{pt.replace(/_/g, " ")}</option>
 					))}
 				</select>
 				<select value={compatibility} onChange={(e) => setCompatibility(e.target.value)}>
-					<option value="">Any compatibility</option>
+					<option value="">{t("explore.anyCompatibility")}</option>
 					{COMPATIBILITY.map((c) => (
 						<option key={c} value={c}>{c.replace(/_/g, " ")}</option>
 					))}
 				</select>
 				<select value={risk} onChange={(e) => setRisk(e.target.value)}>
-					<option value="">Any risk</option>
+					<option value="">{t("explore.anyRisk")}</option>
 					{RISK.map((r) => (
 						<option key={r} value={r}>{r}</option>
 					))}
 				</select>
 				<select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-					<option value="updated">Recently updated</option>
-					<option value="stars">Most stars</option>
-					<option value="new">Newest</option>
-					<option value="trending">Trending</option>
+					<option value="updated">{t("explore.sortUpdated")}</option>
+					<option value="stars">{t("explore.sortStars")}</option>
+					<option value="new">{t("explore.sortNew")}</option>
+					<option value="trending">{t("explore.sortTrending")}</option>
 				</select>
 			</div>
 			{loading ? (
-				<p className="empty">Loading…</p>
+				<p className="empty">{t("common.loading")}</p>
 			) : items.length === 0 ? (
-				<p className="empty">No plugins found.</p>
+				<p className="empty">{t("explore.empty")}</p>
 			) : (
 				<div className="plugin-grid">
 					{items.map((p) => (

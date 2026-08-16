@@ -1,3 +1,5 @@
+import { useI18n } from "../lib/i18n";
+
 const KIND: Record<string, string> = {
 	FORMAT_VERIFIED: "ok",
 	FEATURED: "accent",
@@ -22,6 +24,8 @@ const KIND: Record<string, string> = {
 };
 
 export function Badge({ value, label }: { value: string; label?: string }) {
+	const { t } = useI18n();
 	const kind = KIND[value] ?? "muted";
-	return <span className={"badge badge-" + kind}>{label ?? value.replace(/_/g, " ").toLowerCase()}</span>;
+	const text = label ?? t("badge." + value, undefined, value.replace(/_/g, " ").toLowerCase());
+	return <span className={"badge badge-" + kind}>{text}</span>;
 }

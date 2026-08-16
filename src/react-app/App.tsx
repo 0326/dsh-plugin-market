@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import "./App.css";
+import { useI18n } from "./lib/i18n";
 import Explore from "./pages/Explore";
 import Home from "./pages/Home";
 import PluginDetail from "./pages/PluginDetail";
@@ -40,15 +41,23 @@ function useHashRoute(): Route {
 
 function App() {
 	const route = useHashRoute();
+	const { t, toggleLang, lang } = useI18n();
 	return (
 		<div className="app">
 			<header className="topbar">
 				<a className="brand" href="#/">DS Plugin Market</a>
 				<nav>
-					<a href="#/">Home</a>
-					<a href="#/plugins">Explore</a>
-					<a href="#/submit">Submit</a>
+					<a href="#/">{t("nav.home")}</a>
+					<a href="#/plugins">{t("nav.explore")}</a>
+					<a href="#/submit">{t("nav.submit")}</a>
 				</nav>
+				<button
+					className="lang-switch"
+					onClick={toggleLang}
+					aria-label={lang === "zh" ? "Switch to English" : "切换到中文"}
+				>
+					{t("langSwitch")}
+				</button>
 			</header>
 			<main className="content">
 				{route.name === "home" && <Home />}
@@ -58,7 +67,7 @@ function App() {
 				{route.name === "submit" && <Submit />}
 			</main>
 			<footer className="footer">
-				<p>DS Plugin Market is a community project — not an official DeepSeek product. Format Verified ≠ Safe.</p>
+				<p>{t("footer")}</p>
 			</footer>
 		</div>
 	);
