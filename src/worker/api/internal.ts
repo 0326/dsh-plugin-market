@@ -1,0 +1,34 @@
+import { Hono } from "hono";
+import { getRepositoryByFullName } from "../db/repository";
+import type { Env } from "../env";
+import { GithubClient } from "../github/client";
+import { runDiscovery } from "../github/discovery";
+import { processScanJob, TransientScanError } from "../queue/scan";
+
+export const internal = new Hono<{ Bindings: Env }>();
+
+internal.use("*", async (c, next) => {
+	const secret = c.req.header("x-internal-secret");
+	if (!secret || secret !== c.env.INTERNAL_API_SECRET) return c.json({ error: "unauthorized" }, 401);
+	await next();
+});
+
+internal.post("/discovery/run", async (c) => {
+	const client = new GithubClient(c.env.GITHUB_TOKEN);
+	const run = await runDiscovery(client, c.env.DB, c.env.SCAN_QUEUE);
+	return c.json(run);
+});
+
+internal.post("/scan/:owner/:repo", async (c) => {
+	const owner = c.req.param("owner");
+	const repo = c.req.param("repo");
+	const row = await getRepositoryByFullName(c.env.DB, owner + "/" + repo);
+	if (!row) return c.json({ error: "not_found" }, 404);
+	try {
+		await processScanJob(c.env, { repositoryId: row.id, owner, repo, reason: "MANUAL" });
+	} catch (err) {
+		if (err instanceof TransientScanError) return c.json({ error: "rate_limited" }, 503);
+		throw err;
+	}
+	return c.json({ owner, repo, status: "scanned" });
+});

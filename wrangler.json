@@ -11,5 +11,20 @@
 	"assets": {
 		"directory": "./dist/client",
 		"not_found_handling": "single-page-application"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "dsh-plugin-market",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "migrations"
+		}
+	],
+	"queues": {
+		"producers": [{ "binding": "SCAN_QUEUE", "queue": "dsh-plugin-scan" }],
+		"consumers": [{ "queue": "dsh-plugin-scan" }]
+	},
+	"triggers": {
+		"crons": ["0 * * * *"]
 	}
 }

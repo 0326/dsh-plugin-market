@@ -1,0 +1,3 @@
+# Copy to .dev.vars and fill in real values (never commit .dev.vars).
+GITHUB_TOKEN=
+INTERNAL_API_SECRET=dev-internal-secret

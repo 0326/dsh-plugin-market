@@ -1,65 +1,62 @@
-// src/App.tsx
-
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import cloudflareLogo from "./assets/Cloudflare_Logo.svg";
-import honoLogo from "./assets/hono.svg";
+import { useSyncExternalStore } from "react";
 import "./App.css";
+import Explore from "./pages/Explore";
+import Home from "./pages/Home";
+import PluginDetail from "./pages/PluginDetail";
+import Submit from "./pages/Submit";
+
+type Route =
+	| { name: "home" }
+	| { name: "explore" }
+	| { name: "plugin"; owner: string; repo: string }
+	| { name: "submit" };
+
+function parseRoute(hash: string): Route {
+	const path = hash.replace(/^#/, "") || "/";
+	const segments = path.split("/").filter(Boolean);
+	if (segments.length === 0) return { name: "home" };
+	if (segments[0] === "plugins") return { name: "explore" };
+	if (segments[0] === "plugin" && segments[1] && segments[2]) return { name: "plugin", owner: segments[1], repo: segments[2] };
+	if (segments[0] === "submit") return { name: "submit" };
+	return { name: "home" };
+}
+
+function subscribe(callback: () => void): () => void {
+	window.addEventListener("hashchange", callback);
+	return () => window.removeEventListener("hashchange", callback);
+}
+
+function getSnapshot(): string {
+	return window.location.hash || "#/";
+}
+
+function useHashRoute(): Route {
+	const hash = useSyncExternalStore(subscribe, getSnapshot);
+	return parseRoute(hash);
+}
 
 function App() {
-	const [count, setCount] = useState(0);
-	const [name, setName] = useState("unknown");
-
+	const route = useHashRoute();
 	return (
-		<>
-			<div>
-				<a href="https://vite.dev" target="_blank">
-					<img src={viteLogo} className="logo" alt="Vite logo" />
-				</a>
-				<a href="https://react.dev" target="_blank">
-					<img src={reactLogo} className="logo react" alt="React logo" />
-				</a>
-				<a href="https://hono.dev/" target="_blank">
-					<img src={honoLogo} className="logo cloudflare" alt="Hono logo" />
-				</a>
-				<a href="https://workers.cloudflare.com/" target="_blank">
-					<img
-						src={cloudflareLogo}
-						className="logo cloudflare"
-						alt="Cloudflare logo"
-					/>
-				</a>
-			</div>
-			<h1>Vite + React + Hono + Cloudflare</h1>
-			<div className="card">
-				<button
-					onClick={() => setCount((count) => count + 1)}
-					aria-label="increment"
-				>
-					count is {count}
-				</button>
-				<p>
-					Edit <code>src/App.tsx</code> and save to test HMR
-				</p>
-			</div>
-			<div className="card">
-				<button
-					onClick={() => {
-						fetch("/api/")
-							.then((res) => res.json() as Promise<{ name: string }>)
-							.then((data) => setName(data.name));
-					}}
-					aria-label="get name"
-				>
-					Name from API is: {name}
-				</button>
-				<p>
-					Edit <code>worker/index.ts</code> to change the name
-				</p>
-			</div>
-			<p className="read-the-docs">Click on the logos to learn more</p>
-		</>
+		<div className="app">
+			<header className="topbar">
+				<a className="brand" href="#/">DS Plugin Market</a>
+				<nav>
+					<a href="#/">Home</a>
+					<a href="#/plugins">Explore</a>
+					<a href="#/submit">Submit</a>
+				</nav>
+			</header>
+			<main className="content">
+				{route.name === "home" && <Home />}
+				{route.name === "explore" && <Explore />}
+				{route.name === "plugin" && <PluginDetail owner={route.owner} repo={route.repo} />}
+				{route.name === "submit" && <Submit />}
+			</main>
+			<footer className="footer">
+				<p>DS Plugin Market is a community project — not an official DeepSeek product. Format Verified ≠ Safe.</p>
+			</footer>
+		</div>
 	);
 }
 

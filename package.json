@@ -1,6 +1,6 @@
 {
 	"name": "dsh-plugin-market",
-	"description": "A template for building a React application with Vite, Hono, and Cloudflare Workers",
+	"description": "DS Plugin Market — a trusted plugin registry for the DeepSeek Harness ecosystem",
 	"cloudflare": {
 		"label": "Vite React Template",
 		"products": [
@@ -30,6 +30,7 @@
 		"typescript": "5.9.3",
 		"typescript-eslint": "8.48.0",
 		"vite": "^7.0.0",
+		"vitest": "^4.1.10",
 		"wrangler": "4.88.0"
 	},
 	"private": true,
@@ -40,7 +41,9 @@
 		"deploy": "wrangler deploy",
 		"dev": "vite",
 		"lint": "eslint .",
-		"preview": "npm run build && vite preview"
+		"preview": "npm run build && vite preview",
+		"test": "vitest run",
+		"test:watch": "vitest"
 	},
 	"type": "module"
 }
