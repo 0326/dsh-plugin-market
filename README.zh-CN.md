@@ -264,24 +264,60 @@ GitHub REST API
 
 ## 开发
 
+安装依赖：
+
 ```bash
 npm install
+```
+
+配置本地 secret（仅浏览可省略；发现/扫描需要）：
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
+创建并迁移本地 D1 数据库：
+
+```bash
+wrangler d1 migrations apply DB --local
+```
+
+本地启动：
+
+```bash
 npm run dev
 ```
 
-构建：
+常用脚本：
 
 ```bash
-npm run build
+npm run build        # tsc -b && vite build
+npm run check        # 类型检查 + 构建 + wrangler deploy --dry-run
+npm run lint         # eslint
+npm test             # vitest（scanner 单测）
+npm run cf-typegen   # 修改绑定后重新生成 worker-configuration.d.ts
+npm run deploy       # 部署到 Cloudflare Workers
 ```
 
-部署到 Cloudflare Workers：
+> `GITHUB_TOKEN` 与 `INTERNAL_API_SECRET` 为 Worker secret（本地可用 `.dev.vars`），禁止提交到仓库或暴露给前端。发现与扫描需要 GitHub Token；仅浏览注册表只需要 D1 数据库。
+
+## 部署（GitHub Actions）
+
+推送到 `main` 会通过 `.github/workflows/deploy.yml` 自动部署。该 workflow 会
+幂等地创建 Cloudflare Queue 与 D1 数据库、应用 D1 迁移，并执行 `wrangler deploy`。
+
+需要的 GitHub 仓库 secret：
+
+- `CLOUDFLARE_API_TOKEN` — 一个具有 **Workers Scripts: Edit**、**D1: Edit**、
+  **Workers Queues: Edit** 权限的 Cloudflare API Token。
+- `CLOUDFLARE_ACCOUNT_ID` — 你的 Cloudflare 账户 ID。
+
+Worker 运行时 secret（一次性配置，禁止提交）：
 
 ```bash
-npm run deploy
+wrangler secret put GITHUB_TOKEN        # worker 调用 GitHub API 所用的 GitHub PAT
+wrangler secret put INTERNAL_API_SECRET # 守卫 /api/internal/* 接口
 ```
-
-> GitHub Token、D1、Queue 和 Cron 配置会随着 Registry MVP 实现逐步接入。GitHub Token 必须以 Cloudflare Secret 存储，禁止写入前端代码或仓库。
 
 ## 核心原则
 

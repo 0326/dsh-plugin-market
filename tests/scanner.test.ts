@@ -18,7 +18,7 @@ function dshBundlePackage(overrides: Record<string, unknown> = {}): ParsedPackag
 		license: "MIT",
 		engines: { node: ">=18" },
 		scripts: { prepare: "tsc" },
-		dependencies: { "@deepseek-ai/cordis": "^0.1.0-rc.4" },
+		dependencies: { "@deepseek-ai/cordis": "^4.0.0" },
 		dsh: { bundle: { patch: "./cordis.patch.yml" } },
 		...overrides,
 	};
@@ -97,7 +97,7 @@ describe("bundle", () => {
 
 describe("compatibility", () => {
 	it("marks an older prerelease as OUTDATED", () => {
-		const v = classifyConstraint("@deepseek-ai/cordis", "^0.1.0-rc.4", DEFAULT_BASELINE);
+		const v = classifyConstraint("@deepseek-ai/dsh", "^0.1.0-rc.4", DEFAULT_BASELINE);
 		expect(v.status).toBe("OUTDATED");
 	});
 
@@ -165,7 +165,7 @@ describe("scanRepository", () => {
 			maintenance: { archived: false, disabled: false, lastPushAt: "2026-08-01T00:00:00Z", stars: 10, forks: 2 },
 		});
 		expect(result.verificationStatus).toBe("FORMAT_VERIFIED");
-		expect(result.compatibilityStatus).toBe("OUTDATED");
+		expect(result.compatibilityStatus).toBe("COMPATIBLE");
 		expect(result.securityStatus).toBe("REVIEW");
 		expect(result.metadata.packageName).toBe("my-plugin");
 		expect(result.metadata.dshBundlePatch).toBe("cordis.patch.yml");

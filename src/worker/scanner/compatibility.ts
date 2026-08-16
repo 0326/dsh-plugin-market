@@ -9,12 +9,16 @@ export interface CompatibilityBaseline {
 }
 
 /**
- * Placeholder baseline. Milestone 2 syncs this from npm / the official DeepSeek
- * Harness repository into D1 instead of hardcoding it.
+ * Fallback baseline used when D1 has no synced baseline yet.
+ *
+ * Versions reflect the latest published packages at calibration time:
+ *   @deepseek-ai/dsh     -> 0.1.0-rc.6
+ *   @deepseek-ai/cordis  -> 4.0.1
+ * The authoritative values are synced from npm (src/worker/npm/baseline.ts).
  */
 export const DEFAULT_BASELINE: CompatibilityBaseline = {
 	dshVersion: "0.1.0-rc.6",
-	cordisVersion: "0.1.0-rc.6",
+	cordisVersion: "4.0.1",
 	checkedAt: "2026-08-16T00:00:00.000Z",
 };
 

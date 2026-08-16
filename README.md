@@ -270,25 +270,55 @@ Install dependencies:
 npm install
 ```
 
+Configure local secrets (optional for browsing; required for discovery/scan):
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
+Create and migrate the local D1 database:
+
+```bash
+wrangler d1 migrations apply DB --local
+```
+
 Start locally:
 
 ```bash
 npm run dev
 ```
 
-Build:
+Common scripts:
 
 ```bash
-npm run build
+npm run build        # tsc -b && vite build
+npm run check        # type-check + build + wrangler deploy --dry-run
+npm run lint         # eslint
+npm test             # vitest (scanner unit tests)
+npm run cf-typegen   # regenerate worker-configuration.d.ts after binding changes
+npm run deploy       # deploy to Cloudflare Workers
 ```
 
-Deploy to Cloudflare Workers:
+> `GITHUB_TOKEN` and `INTERNAL_API_SECRET` are Worker secrets (or local `.dev.vars`), and must never be committed or exposed to frontend code. Discovery and scanning require a GitHub token; browsing the registry only needs the D1 database.
+
+## Deployment (GitHub Actions)
+
+Pushing to `main` auto-deploys via `.github/workflows/deploy.yml`. The workflow
+provisions the Cloudflare Queue and D1 database (idempotently), applies D1
+migrations, and runs `wrangler deploy`.
+
+Required GitHub repository secrets:
+
+- `CLOUDFLARE_API_TOKEN` — a Cloudflare API token with **Workers Scripts: Edit**,
+  **D1: Edit**, and **Workers Queues: Edit** permissions.
+- `CLOUDFLARE_ACCOUNT_ID` — your Cloudflare account ID.
+
+Worker runtime secrets (set once, never committed):
 
 ```bash
-npm run deploy
+wrangler secret put GITHUB_TOKEN        # GitHub PAT the worker uses to call the GitHub API
+wrangler secret put INTERNAL_API_SECRET # guards /api/internal/* endpoints
 ```
-
-> GitHub credentials, D1, Queue, and Cron bindings will be introduced as the Registry MVP is implemented. GitHub credentials must be stored as Cloudflare Secrets and must never be exposed to frontend code or committed to the repository.
 
 ## Core principle
 
