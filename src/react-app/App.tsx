@@ -4,6 +4,7 @@ import { Icon } from "./components/Icon";
 import { Kun } from "./components/Kun";
 import { useI18n } from "./lib/i18n";
 import { navigate, useRoute } from "./lib/router";
+import { useSeo } from "./lib/seo";
 import { useTheme } from "./lib/theme";
 import About from "./pages/About";
 import Explore from "./pages/Explore";
@@ -20,6 +21,7 @@ function App() {
 	const route = useRoute();
 	const { t, toggleLang, lang } = useI18n();
 	const { theme, toggleTheme } = useTheme();
+	useSeo(route, lang);
 
 	// Intercept in-app link clicks so path-based navigation stays in the SPA
 	// (no full reload). External links and new-tab clicks are left untouched.
