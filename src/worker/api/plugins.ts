@@ -4,6 +4,7 @@ import { CAPABILITY, PLUGIN_TYPE } from "../domain/plugin";
 import { SCANNER_VERSION } from "../domain/scan";
 import type { Env } from "../env";
 import { GithubClient, GithubError, type GithubRepo } from "../github/client";
+import { resolveReadmePath, type ReadmeLanguage } from "../github/readme";
 
 export const api = new Hono<{ Bindings: Env }>();
 
@@ -38,6 +39,10 @@ function parseRepoUrl(input: string | undefined): { owner: string; repo: string 
 	return normalizedRepo ? { owner, repo: normalizedRepo } : null;
 }
 
+function encodeGithubPath(path: string): string {
+	return path.split("/").map(encodeURIComponent).join("/");
+}
+
 api.get("/plugins", async (c) => {
 	const q = c.req.query();
 	const sort = q.sort === "stars" || q.sort === "new" || q.sort === "trending" ? q.sort : "updated";
@@ -55,6 +60,52 @@ api.get("/plugins", async (c) => {
 		offset: clampInt(q.offset, 0, 0, 100000),
 	});
 	return c.json({ items, count: items.length });
+});
+
+api.get("/plugins/:owner/:repo/readme", async (c) => {
+	const owner = c.req.param("owner");
+	const repo = c.req.param("repo");
+	const detail = await getPlugin(c.env.DB, owner, repo);
+	if (!detail) return c.json({ error: "not_found" }, 404);
+
+	const language: ReadmeLanguage = c.req.query("lang") === "en" ? "en" : "zh";
+	const client = new GithubClient(c.env.GITHUB_TOKEN);
+
+	try {
+		let ref = detail.latestCommitSha;
+		if (!ref) {
+			const githubRepo = await client.getRepo(owner, repo);
+			ref = await client.getBranchSha(owner, repo, githubRepo.default_branch);
+		}
+
+		const tree = await client.getTree(owner, repo, ref);
+		const resolved = resolveReadmePath(tree, language);
+		if (!resolved) return c.json({ error: "readme_not_found" }, 404);
+
+		const markdown = await client.getFile(owner, repo, resolved.path, ref);
+		if (!markdown) return c.json({ error: "readme_not_found" }, 404);
+		const html = await client.renderMarkdown(markdown);
+		const sourceUrl = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/blob/${encodeURIComponent(ref)}/${encodeGithubPath(resolved.path)}`;
+
+		c.header("Cache-Control", "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400");
+		return c.json({
+			owner,
+			repo,
+			path: resolved.path,
+			language: resolved.language,
+			fallback: resolved.fallback,
+			ref,
+			html,
+			sourceUrl,
+		});
+	} catch (err) {
+		if (err instanceof GithubError && err.rateLimited) {
+			if (err.retryAfterSeconds !== undefined) c.header("Retry-After", String(err.retryAfterSeconds));
+			return c.json({ error: "github_rate_limited" }, 503);
+		}
+		if (err instanceof GithubError && err.status === 404) return c.json({ error: "readme_not_found" }, 404);
+		throw err;
+	}
 });
 
 api.get("/plugins/:owner/:repo", async (c) => {
