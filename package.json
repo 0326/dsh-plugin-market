@@ -1,6 +1,6 @@
 {
 	"name": "dsh-plugin-market",
-	"description": "DS Plugin Market — a trusted plugin registry for the DeepSeek Harness ecosystem",
+	"description": "DSH Plugin Market — a trusted plugin registry for the DeepSeek Harness ecosystem",
 	"cloudflare": {
 		"label": "Vite React Template",
 		"products": [
