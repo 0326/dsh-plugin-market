@@ -7,6 +7,7 @@ import type { Env } from "./env";
 import { recomputeFeatured } from "./curation/featured";
 import { syncBaseline } from "./npm/baseline";
 import { enqueueRescanAll, processScanJob, TransientScanError } from "./queue/scan";
+import { isSeoPagePath, renderSeoPage, renderSitemap } from "./seo";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -66,11 +67,17 @@ async function queue(batch: MessageBatch<ScanJob>, env: Env): Promise<void> {
 	await Promise.all(Array.from({ length: Math.min(SCAN_CONCURRENCY, messages.length) }, () => worker()));
 }
 
+async function fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+	const url = new URL(request.url);
+	if (url.pathname === "/sitemap.xml") return renderSitemap(env.DB);
+	if (isSeoPagePath(url.pathname)) return renderSeoPage(request, env);
+	return app.fetch(request, env, ctx);
+}
+
 // Cloudflare Workers module format: every handler (fetch / scheduled / queue)
-// must be a property of the default export object. A top-level named export is
-// not recognized as a handler, which caused "Queue handler is missing" (11001).
+// must be a property of the default export object.
 export default {
-	fetch: app.fetch,
+	fetch,
 	scheduled,
 	queue,
 };

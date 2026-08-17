@@ -87,9 +87,16 @@ function getSeo(route: Route, lang: string): SeoSpec {
 export function useSeo(route: Route, lang: string): void {
 	useEffect(() => {
 		const spec = getSeo(route, lang);
+		document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+
+		// The Cloudflare Worker injects richer DB-backed metadata on the initial
+		// navigation request. Preserve it when it belongs to the current route.
+		// Client-side navigation still falls back to this generic metadata layer.
+		const edgePath = document.head.querySelector<HTMLMetaElement>('meta[name="dsh-edge-seo"]')?.content;
+		if (edgePath === spec.canonicalPath) return;
+
 		const canonical = `${SITE_URL}${spec.canonicalPath}`;
 		document.title = spec.title;
-		document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
 		setCanonical(canonical);
 		upsertMeta('meta[name="description"]', { name: "description", content: spec.description });
 		upsertMeta('meta[property="og:title"]', { property: "og:title", content: spec.title });

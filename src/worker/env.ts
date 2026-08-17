@@ -3,13 +3,12 @@ import type { ScanJob } from "./domain/scan";
 /**
  * Worker bindings and secrets.
  *
- * `DB` and `SCAN_QUEUE` are declared in `wrangler.json` and generated into
- * `worker-configuration.d.ts` by `npm run cf-typegen`. Secrets are set with
- * `wrangler secret put` (they are NOT part of wrangler.json) and are declared
- * by Wrangler type generation; never commit real values.
+ * `DB`, `SCAN_QUEUE`, and `ASSETS` are declared in `wrangler.json`. Secrets are
+ * set with `wrangler secret put` and are never committed.
  */
-export type Env = Omit<Cloudflare.Env, "SCAN_QUEUE"> & {
+export type Env = Omit<Cloudflare.Env, "SCAN_QUEUE" | "ASSETS"> & {
   SCAN_QUEUE: Queue<ScanJob>;
+  ASSETS: Fetcher;
   GITHUB_TOKEN: string;
   INTERNAL_API_SECRET: string;
   AUTO_FEATURE_MIN_STARS: string;
