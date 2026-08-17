@@ -81,6 +81,14 @@ function getSeo(route: Route, lang: string): SeoSpec {
 					: "Learn how DSH Plugin Market discovers, verifies and assesses DeepSeek Harness plugins and how to interpret its trust signals.",
 				canonicalPath: "/about",
 			};
+		case "trust":
+			return {
+				title: `How ${SITE_NAME} Verifies Plugins — Trust Model`,
+				description: zh
+					? "了解 DSH Plugin Market 如何进行格式验证、兼容性分析、安全信号扫描、维护状态判断，并将结果绑定到具体 commit。"
+					: "Learn how DSH Plugin Market verifies plugin format, checks compatibility, surfaces security and maintenance signals, and binds evidence to a concrete commit.",
+				canonicalPath: "/trust",
+			};
 	}
 }
 
@@ -88,10 +96,6 @@ export function useSeo(route: Route, lang: string): void {
 	useEffect(() => {
 		const spec = getSeo(route, lang);
 		document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
-
-		// The Cloudflare Worker injects richer DB-backed metadata on the initial
-		// navigation request. Preserve it when it belongs to the current route.
-		// Client-side navigation still falls back to this generic metadata layer.
 		const edgePath = document.head.querySelector<HTMLMetaElement>('meta[name="dsh-edge-seo"]')?.content;
 		if (edgePath === spec.canonicalPath) return;
 

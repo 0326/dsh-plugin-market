@@ -46,6 +46,18 @@ export interface RegistryStats {
 	lastScanAt: string | null;
 }
 
+export interface CompatibilityBaseline {
+	dshVersion: string;
+	cordisVersion: string;
+	checkedAt: string;
+}
+
+export interface RegistryContext {
+	stats: RegistryStats;
+	scannerVersion: string;
+	baseline: CompatibilityBaseline | null;
+}
+
 export interface ScanRow {
 	id: number;
 	commitSha: string;
@@ -114,6 +126,10 @@ export function getScans(owner: string, repo: string): Promise<{ scans: ScanRow[
 
 export function getStats(): Promise<RegistryStats> {
 	return get<RegistryStats>("/stats");
+}
+
+export function getRegistryContext(): Promise<RegistryContext> {
+	return get<RegistryContext>("/context");
 }
 
 export function getPublisher(owner: string): Promise<Publisher> {
