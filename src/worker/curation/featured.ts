@@ -55,6 +55,13 @@ export async function maybeAutoFeatureScan(
   repo: RepositoryRow,
   result: ScanResult,
 ): Promise<boolean> {
+  // A repository that is reclassified as a non-plugin candidate must not keep
+  // a stale featured flag from an earlier/manual classification.
+  if (result.verificationStatus === "CANDIDATE") {
+    await setFeatured(env.DB, repo.owner, repo.name, false);
+    return false;
+  }
+
   const minStars = parseAutoFeatureMinStars(env.AUTO_FEATURE_MIN_STARS);
   if (
     !shouldAutoFeature({
