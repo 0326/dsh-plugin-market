@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { getBaseline, getPlugin, getPublisher, getStats, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
+import { getBaseline, getPlugin, getPublisher, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
+import { getRegistryStats } from "../db/registry";
 import { CAPABILITY, PLUGIN_TYPE } from "../domain/plugin";
 import { SCANNER_VERSION } from "../domain/scan";
 import type { Env } from "../env";
@@ -125,10 +126,10 @@ api.get("/plugins/:owner/:repo/scans/latest", async (c) => {
 	return c.json({ commitSha: detail.latestCommitSha, scannerVersion: detail.scannerVersion, scannedAt: detail.scannedAt, findings: detail.findings });
 });
 
-api.get("/stats", async (c) => c.json(await getStats(c.env.DB)));
+api.get("/stats", async (c) => c.json(await getRegistryStats(c.env.DB)));
 
 api.get("/context", async (c) => {
-	const [stats, baseline] = await Promise.all([getStats(c.env.DB), getBaseline(c.env.DB)]);
+	const [stats, baseline] = await Promise.all([getRegistryStats(c.env.DB), getBaseline(c.env.DB)]);
 	return c.json({
 		stats,
 		scannerVersion: SCANNER_VERSION,
