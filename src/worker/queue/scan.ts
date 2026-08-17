@@ -1,5 +1,5 @@
 import { completeScan, createScan, getBaseline, getRepositoryById, updateRepositorySha } from "../db/repository";
-import { SCANNER_VERSION, type ScanJob } from "../domain/scan";
+import { SCANNER_VERSION, type RescanSweepJob, type ScanJob } from "../domain/scan";
 import type { Env } from "../env";
 import { GithubClient } from "../github/client";
 import { ensurePreviewImage } from "../github/discovery";
@@ -53,34 +53,59 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 	await maybeAutoFeatureScan(env, repo, result);
 }
 
-export interface RescanResult {
+/** Keep each sweep expansion small enough for Free-plan HTTP/queue CPU budgets. */
+export const RESCAN_SWEEP_PAGE_SIZE = 100;
+
+export interface RescanSweepResult {
 	enqueued: number;
+	nextAfterRepositoryId: number | null;
+	done: boolean;
+}
+
+/** Start a full stale-scanner rescan with a single lightweight queue write. */
+export async function startRescanSweep(env: Env): Promise<{ status: "started"; scannerVersion: string }> {
+	await env.SCAN_QUEUE.send({ type: "RESCAN_SWEEP", afterRepositoryId: 0 });
+	return { status: "started", scannerVersion: SCANNER_VERSION };
 }
 
 /**
- * Enqueue a scan for every repository that still needs one: either never
- * scanned (no plugins row), or last scanned with an older scanner version.
- * Idempotent: once a repo is scanned with the current version it is skipped
- * on the next run. Uses sendBatch to stay within subrequest budgets.
+ * Expand one page of a rescan sweep. The control message advances by repository
+ * id, so it never depends on earlier scan jobs finishing before the next page is
+ * discovered. Re-running the sweep is safe because current-version rows are
+ * filtered out by the query and completed scans are idempotent.
  */
-export async function enqueueRescanAll(env: Env): Promise<RescanResult> {
+export async function processRescanSweepJob(env: Env, job: RescanSweepJob): Promise<RescanSweepResult> {
 	const rows = await env.DB
 		.prepare(
 			`SELECT r.id AS id, r.owner AS owner, r.name AS name
 			FROM repositories r
 			LEFT JOIN plugins p ON p.repository_id = r.id
 			LEFT JOIN scans s ON s.id = p.latest_scan_id
-			WHERE p.id IS NULL OR s.scanner_version IS NULL OR s.scanner_version != ?`,
+			WHERE r.id > ?
+				AND (p.id IS NULL OR s.scanner_version IS NULL OR s.scanner_version != ?)
+			ORDER BY r.id ASC
+			LIMIT ?`,
 		)
-		.bind(SCANNER_VERSION)
+		.bind(job.afterRepositoryId, SCANNER_VERSION, RESCAN_SWEEP_PAGE_SIZE)
 		.all<{ id: number; owner: string; name: string }>();
 
-	const jobs: { body: ScanJob }[] = (rows.results ?? []).map((row) => ({
+	const page = rows.results ?? [];
+	if (page.length === 0) return { enqueued: 0, nextAfterRepositoryId: null, done: true };
+
+	const scanJobs: { body: ScanJob }[] = page.map((row) => ({
 		body: { repositoryId: row.id, owner: row.owner, repo: row.name, reason: "SCANNER_UPGRADE" },
 	}));
+	await env.SCAN_QUEUE.sendBatch(scanJobs);
 
-	for (let i = 0; i < jobs.length; i += 100) {
-		await env.SCAN_QUEUE.sendBatch(jobs.slice(i, i + 100));
+	const lastRepositoryId = page[page.length - 1].id;
+	const hasPotentialNextPage = page.length === RESCAN_SWEEP_PAGE_SIZE;
+	if (hasPotentialNextPage) {
+		await env.SCAN_QUEUE.send({ type: "RESCAN_SWEEP", afterRepositoryId: lastRepositoryId });
 	}
-	return { enqueued: jobs.length };
+
+	return {
+		enqueued: page.length,
+		nextAfterRepositoryId: hasPotentialNextPage ? lastRepositoryId : null,
+		done: !hasPotentialNextPage,
+	};
 }
