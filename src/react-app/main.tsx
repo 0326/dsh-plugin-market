@@ -13,6 +13,6 @@ createRoot(document.getElementById("root")!).render(
 			<LanguageProvider>
 				<App />
 			</LanguageProvider>
-	</ThemeProvider>
+		</ThemeProvider>
 	</StrictMode>,
 );
