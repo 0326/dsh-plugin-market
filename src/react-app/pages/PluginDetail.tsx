@@ -9,7 +9,13 @@ import { useI18n } from "../lib/i18n";
 import { getPlugin, getPluginReadme, getScans, type Finding, type PluginDetail as Detail, type PluginReadme, type ScanRow } from "../lib/api";
 
 type Tab = "readme" | "overview" | "compatibility" | "security" | "versions";
-type ReadmeState = "loading" | "available" | "missing" | "error";
+type ReadmeState = "available" | "missing" | "error";
+
+interface ReadmeResult {
+	key: string;
+	state: ReadmeState;
+	readme: PluginReadme | null;
+}
 
 interface CompatibilityVerdict {
 	packageName: string;
@@ -173,14 +179,9 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 	const { t, lang } = useI18n();
 	const [detail, setDetail] = useState<Detail | null>(null);
 	const [scans, setScans] = useState<ScanRow[]>([]);
-	const [readme, setReadme] = useState<PluginReadme | null>(null);
-	const [readmeState, setReadmeState] = useState<ReadmeState>("loading");
+	const [readmeResult, setReadmeResult] = useState<ReadmeResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [tab, setTab] = useState<Tab>("readme");
-
-	useEffect(() => {
-		setTab("readme");
-	}, [owner, repo]);
 
 	useEffect(() => {
 		let ignore = false;
@@ -196,23 +197,23 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 		};
 	}, [owner, repo]);
 
+	const readmeKey = `${owner}/${repo}:${lang}`;
+
 	useEffect(() => {
 		let ignore = false;
-		setReadmeState("loading");
-		setReadme(null);
+		const requestKey = `${owner}/${repo}:${lang}`;
 		getPluginReadme(owner, repo, lang)
 			.then((result) => {
 				if (ignore) return;
 				if (!result) {
-					setReadmeState("missing");
+					setReadmeResult({ key: requestKey, state: "missing", readme: null });
 					setTab((current) => (current === "readme" ? "overview" : current));
 					return;
 				}
-				setReadme(result);
-				setReadmeState("available");
+				setReadmeResult({ key: requestKey, state: "available", readme: result });
 			})
 			.catch(() => {
-				if (!ignore) setReadmeState("error");
+				if (!ignore) setReadmeResult({ key: requestKey, state: "error", readme: null });
 			});
 		return () => {
 			ignore = true;
@@ -237,6 +238,9 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 	if (!detail) return <PluginDetailSkeleton />;
 
 	const metadata = parseMetadata(detail.metadataJson);
+	const activeReadmeResult = readmeResult?.key === readmeKey ? readmeResult : null;
+	const readmeState = activeReadmeResult?.state ?? "loading";
+	const readme = activeReadmeResult?.readme ?? null;
 	const tabs: { key: Tab; label: string; icon: IconName }[] = [
 		...(readmeState === "missing" ? [] : [{ key: "readme" as const, label: "README", icon: "github" as const }]),
 		{ key: "overview", label: t("detail.overview"), icon: "layout" },
