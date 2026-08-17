@@ -21,7 +21,7 @@ Plugin / Publisher / Capability / Scanner Evidence
 
 ## 2. Sprint 1 — 首页实体建设 + Trust
 
-预计 2–3 天。
+**状态：已完成。**
 
 ### 首页新增 5 个知识模块
 
@@ -33,7 +33,7 @@ Plugin / Publisher / Capability / Scanner Evidence
 2. **What is a DSH Plugin?**
    - 解释 DSH Plugin 在 DeepSeek Harness 中的位置。
    - 用 Tools / Agents / Integrations / Runtime capabilities 做能力示意。
-   - Sprint 2 再链接独立 Guide。
+   - Sprint 2 链接独立 Guide。
 
 3. **How DSH Plugin Market works**
    - GitHub Repository → Discovery → Format Verification → Compatibility → Security Signals → Maintenance → Commit-bound Trust Profile。
@@ -90,19 +90,19 @@ Sprint 1 同步建设 Trust 页面，作为首页 Verified / Scanner 说明的�
 
 ### Sprint 1 验收
 
-- [ ] 首页 5 个知识模块完成
-- [ ] 首页 FAQ 完成
-- [ ] `/trust` 完成
-- [ ] 中英文完成
-- [ ] 延续现有 Design Language
-- [ ] 首页发现主路径不被内容区抢占
-- [ ] 真实 Registry / Scanner 数据进入内容区
-- [ ] `/trust` 纳入 Edge SEO 和 sitemap
-- [ ] lint / tests / build / Wrangler dry-run 全绿
+- [x] 首页 5 个知识模块完成
+- [x] 首页 FAQ 完成
+- [x] `/trust` 完成
+- [x] 中英文完成
+- [x] 延续现有 Design Language
+- [x] 首页发现主路径不被内容区抢占
+- [x] 真实 Registry / Scanner 数据进入内容区
+- [x] `/trust` 纳入 Edge SEO 和 sitemap
+- [x] lint / tests / build / Wrangler dry-run 全绿
 
 ## 3. Sprint 2 — Knowledge Layer
 
-预计 2–3 天。
+**状态：已开发完成，进入 PR Review。**
 
 新增：
 
@@ -112,9 +112,27 @@ Sprint 1 同步建设 Trust 页面，作为首页 Verified / Scanner 说明的�
 
 统一结构：Direct Answer → Key Facts → How it works → Evidence / Data → Example → Related concepts → Sources → Last updated。
 
-所有示例优先引用 Registry 中真实插件，避免虚构内容。
+所有示例引用 Registry 当前真实 Verified Plugin，避免虚构内容；安装示例直接基于真实 scanned commit 生成命令，不伪造 commit。
 
-SEO：Title / Description / Canonical / OpenGraph / WebPage JSON-LD / BreadcrumbList / dateModified，并纳入 Edge SEO 与 sitemap。
+SEO：Title / Description / Canonical / OpenGraph / WebPage JSON-LD / BreadcrumbList / dateModified，并纳入 Edge SEO 与 sitemap。未知 `/guide/*` 路径由 Worker 返回真实 `404 + noindex`。
+
+### Sprint 2 验收
+
+- [x] 3 个 Guide 页面完成
+- [x] 中英文内容完成
+- [x] Direct Answer / Key Facts / Guide Sections / Evidence / Related / Sources 完成
+- [x] 实时 Scanner / DSH / Cordis / Verified Plugin 数据接入
+- [x] 真实 Registry Plugin 示例接入
+- [x] 首页 → Guide 内链完成
+- [x] Trust → Guide 内链完成
+- [x] Guide 之间交叉内链完成
+- [x] Edge SEO / Canonical / OG / Twitter metadata 完成
+- [x] WebPage + BreadcrumbList JSON-LD 完成
+- [x] sitemap + `lastmod` 完成
+- [x] 未知 Guide 路径真实 404 / noindex 完成
+- [x] 路由精确匹配回归测试完成
+- [x] lint / tests / build / Wrangler dry-run 全绿
+- [x] 开发完成后 diff 自审完成并修复文案、状态色、内联代码、入口格式问题
 
 ## 4. Sprint 3 — Registry as Content
 
@@ -144,12 +162,12 @@ Direct Answer 使用 Structured Facts 模板化生成，不让 AI 自由编写�
 
 ### 静态知识
 
-优先代码管理，可放在：
+优先代码管理，当前落在：
 
 ```text
-src/content/
-  trust.ts
-  guides/
+src/react-app/content/
+  seo-content.ts
+  guide-content.ts
 ```
 
 不引入 CMS。
