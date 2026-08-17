@@ -21,7 +21,7 @@
 		grid-template-areas:
 			"copy stage"
 			"equation equation";
-		min-height: 690px;
+		min-height: 590px;
 		overflow: hidden;
 		border-bottom: 2px solid #0b0b0b;
 		background: #084db8;
@@ -140,7 +140,7 @@
 		grid-area: stage;
 		display: grid;
 		place-items: center;
-		min-height: 520px;
+		min-height: 430px;
 		padding: clamp(2rem, 5vw, 4rem);
 	}
 
@@ -233,7 +233,7 @@
 		position: relative;
 		z-index: 4;
 		grid-area: equation;
-		margin: 0 clamp(1.5rem, 5vw, 4.5rem) clamp(2rem, 4vw, 3.5rem);
+		margin: -0.5rem clamp(1.5rem, 5vw, 4.5rem) clamp(1.25rem, 3vw, 2rem);
 		padding: 1.15rem 1.35rem 1.25rem;
 		border: 2px solid #0b0b0b;
 		background: #f8f8f6;
@@ -485,6 +485,7 @@
 
 @media (max-width: 980px) {
 	.about-ocean-hero {
+		min-height: auto;
 		grid-template-columns: 1fr;
 		grid-template-areas:
 			"copy"

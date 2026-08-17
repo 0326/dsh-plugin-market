@@ -4,7 +4,7 @@ import { Icon, type IconName } from "../components/Icon";
 import { Kun } from "../components/Kun";
 import { PluginCard } from "../components/PluginCard";
 import { getContentSeoCopy } from "../content/seo-content";
-import { formatDateTime, useI18n } from "../lib/i18n";
+import { formatDateTime, useI18n, type Language } from "../lib/i18n";
 import { navigate } from "../lib/router";
 import { getCategories, getRegistryContext, listPlugins, type PluginListItem, type RegistryContext } from "../lib/api";
 
@@ -14,6 +14,19 @@ interface HomeData {
 	latest: PluginListItem[];
 	popular: PluginListItem[];
 	capabilities: string[];
+}
+
+const CATEGORY_LABELS: Record<string, Record<Language, string>> = {
+	DEVELOPMENT: { zh: "开发", en: "Development" }, GIT_GITHUB: { zh: "Git / GitHub", en: "Git / GitHub" },
+	BROWSER_WEB: { zh: "浏览器 / Web", en: "Browser / Web" }, DESIGN: { zh: "设计", en: "Design" },
+	VISION: { zh: "视觉", en: "Vision" }, SEARCH: { zh: "搜索", en: "Search" }, MEMORY: { zh: "记忆", en: "Memory" },
+	MCP_INTEGRATION: { zh: "MCP 集成", en: "MCP integration" }, AUTOMATION: { zh: "自动化", en: "Automation" },
+	DATA: { zh: "数据", en: "Data" }, PRODUCTIVITY: { zh: "效率工具", en: "Productivity" }, COMMUNICATION: { zh: "通信", en: "Communication" },
+	UI_THEMES: { zh: "UI 主题", en: "UI themes" }, AGENT_WORKFLOW: { zh: "Agent 工作流", en: "Agent workflow" }, SECURITY: { zh: "安全", en: "Security" },
+};
+
+function categoryLabel(value: string, lang: Language): string {
+	return CATEGORY_LABELS[value]?.[lang] ?? value.replace(/_/g, " ");
 }
 
 function Section({
@@ -157,7 +170,7 @@ export default function Home() {
 				<a className="active btn btn-sm" href="/plugins?featured=1">{t("home.featured")}</a>
 				<a className="btn btn-sm btn-ghost" href="/plugins?sort=new">{t("home.latest")}</a>
 				<a className="btn btn-sm btn-ghost" href="/plugins?sort=stars">{t("home.popular")}</a>
-				{data.capabilities.slice(0, 6).map((c) => <a key={c} className="btn btn-ghost btn-sm" href={"/plugins?capability=" + encodeURIComponent(c)}>{c.replace(/_/g, " ")}</a>)}
+				{data.capabilities.slice(0, 6).map((c) => <a key={c} className="btn btn-ghost btn-sm" href={"/plugins?capability=" + encodeURIComponent(c)}>{categoryLabel(c, lang)}</a>)}
 				<a className="btn btn-sm btn-ghost ml-auto" href="/plugins">{t("home.seeAll")} →</a>
 			</nav>
 
