@@ -18,9 +18,7 @@
 		min-height: 690px;
 		overflow: hidden;
 		border-bottom: 2px solid #0b0b0b;
-		background:
-			radial-gradient(circle at 72% 15%, rgb(126 211 255 / 44%) 0 8%, transparent 28%),
-			linear-gradient(150deg, #031a49 0%, #073786 42%, #0c64d8 72%, #42a9f5 100%);
+		background: #084db8;
 		color: #fff;
 		isolation: isolate;
 	}
@@ -28,25 +26,9 @@
 	.about-ocean-hero::before {
 		content: "";
 		position: absolute;
-		inset: 0;
+		inset: 0 0 0 56%;
 		z-index: -3;
-		background-image: radial-gradient(rgb(255 255 255 / 24%) 1px, transparent 1px);
-		background-size: 30px 30px;
-		mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 80%, transparent);
-		opacity: 0.35;
-	}
-
-	.about-ocean-glow {
-		position: absolute;
-		top: -22%;
-		right: 6%;
-		z-index: -2;
-		width: 46%;
-		aspect-ratio: 1;
-		border-radius: 999px;
-		background: rgb(140 220 255 / 20%);
-		filter: blur(18px);
-		animation: about-glow 7s ease-in-out infinite;
+		background: #0b5fd0;
 	}
 
 	.about-ocean-wave {
@@ -78,20 +60,22 @@
 	.about-brand-title {
 		margin: 1rem 0 0;
 		font-weight: 950;
-		letter-spacing: -0.075em;
-		line-height: 0.84;
+		letter-spacing: -0.06em;
+		line-height: 0.88;
 	}
 	.about-brand-title span {
 		display: block;
-		font-size: clamp(2.2rem, 5vw, 5rem);
+		white-space: nowrap;
+		font-size: clamp(1.8rem, 3.6vw, 3.7rem);
+		letter-spacing: -0.045em;
 	}
 	.about-brand-title strong {
 		display: inline-block;
-		margin-top: 0.18em;
+		margin-top: 0.2em;
 		padding: 0.08em 0.12em 0.12em;
 		background: #fff;
 		color: #0b0b0b;
-		font-size: clamp(3.25rem, 7vw, 7.2rem);
+		font-size: clamp(3rem, 6.4vw, 6.6rem);
 		letter-spacing: -0.07em;
 	}
 
@@ -176,22 +160,16 @@
 		position: relative;
 		z-index: 4;
 		grid-area: equation;
-		display: grid;
-		grid-template-columns: 190px minmax(0, 1fr);
-		align-items: stretch;
 		margin: 0 clamp(1.5rem, 5vw, 4.5rem) clamp(2rem, 4vw, 3.5rem);
+		padding: 1.15rem 1.35rem 1.25rem;
 		border: 2px solid #0b0b0b;
 		background: #f8f8f6;
 		color: #0b0b0b;
 		box-shadow: 8px 8px 0 rgb(0 20 60 / 25%);
 	}
 	.about-equation-label {
-		display: grid;
-		place-items: center start;
-		margin: 0;
-		padding: 1.1rem 1.25rem;
-		border-right: 2px solid #0b0b0b;
-		background: #ffc400;
+		margin: 0 0 0.8rem;
+		color: #9b6b00;
 		font: 950 0.75rem ui-monospace, SFMono-Regular, Menlo, monospace;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -199,25 +177,30 @@
 	.about-equation-track {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: stretch;
+		align-items: center;
+		gap: 0.5rem 0.75rem;
 	}
-	.about-equation-track > span {
-		display: flex;
-		align-items: stretch;
+	.about-equation-term {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.75rem;
 	}
-	.about-equation-track strong,
-	.about-equation-track b {
-		display: grid;
-		place-items: center;
-		min-height: 64px;
-		padding: 0.8rem 1rem;
+	.about-equation-term strong {
+		font-size: clamp(0.92rem, 1.5vw, 1.12rem);
+		font-weight: 950;
 	}
-	.about-equation-track strong { font-size: clamp(0.84rem, 1.35vw, 1.02rem); }
-	.about-equation-track b { color: #2848dd; font-size: 1.25rem; }
-	.about-equation-result strong {
-		background: #0b0b0b;
-		color: #fff;
-		font-size: 1.15rem;
+	.about-equation-term b {
+		color: #8a8f9d;
+		font-size: 1rem;
+		font-weight: 900;
+	}
+	.about-equation-term-1 strong { color: #2848dd; }
+	.about-equation-term-2 strong { color: #0074a8; }
+	.about-equation-term-3 strong { color: #ef781d; }
+	.about-equation-term-4 strong { color: #c63873; }
+	.about-equation-term-5 strong {
+		color: #0b0b0b;
+		font-size: clamp(1.05rem, 1.8vw, 1.28rem);
 		letter-spacing: 0.02em;
 	}
 
@@ -314,10 +297,6 @@
 	0%, 100% { transform: translateX(0) rotate(-3deg) scaleX(1); }
 	50% { transform: translateX(2.5%) rotate(1deg) scaleX(1.03); }
 }
-@keyframes about-glow {
-	0%, 100% { transform: scale(1); opacity: 0.72; }
-	50% { transform: scale(1.08); opacity: 1; }
-}
 
 @media (max-width: 980px) {
 	.about-ocean-hero {
@@ -327,15 +306,15 @@
 			"stage"
 			"equation";
 	}
+	.about-ocean-hero::before { content: none; }
 	.about-brand-copy { padding-bottom: 1rem; }
 	.about-kun-stage { min-height: 440px; }
-	.about-equation-panel { grid-template-columns: 1fr; }
-	.about-equation-label { border-right: 0; border-bottom: 2px solid #0b0b0b; }
 	.about-hobby-section { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {
 	.about-brand-page { margin-top: -2rem; }
+	.about-brand-title span { font-size: clamp(1.75rem, 9vw, 2.5rem); }
 	.about-brand-title strong { font-size: clamp(2.7rem, 14vw, 4.5rem); }
 	.about-kun-stage { min-height: 360px; padding: 1.25rem; }
 	.about-kun { width: min(94%, 520px); }
@@ -344,10 +323,9 @@
 	.about-orbit-music { top: 8%; left: 2%; }
 	.about-orbit-code { right: 1%; bottom: 14%; }
 	.about-orbit-ball { top: 6%; right: 2%; }
-	.about-equation-track { display: grid; grid-template-columns: 1fr; }
-	.about-equation-track > span { display: grid; grid-template-columns: 1fr; }
-	.about-equation-track b { min-height: 30px; padding: 0.15rem; border-top: 1px solid #0b0b0b; border-bottom: 1px solid #0b0b0b; }
-	.about-equation-track strong { min-height: 54px; }
+	.about-equation-panel { padding: 1rem; }
+	.about-equation-track { gap: 0.45rem 0.6rem; }
+	.about-equation-term { gap: 0.6rem; }
 	.about-hobby-grid { grid-template-columns: 1fr; }
 	.about-hobby-card { min-height: 210px; border-right: 0; border-bottom: 1px solid var(--color-base-content); }
 	.about-hobby-card:last-child { border-bottom: 0; }
@@ -356,7 +334,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.about-ocean-glow,
 	.about-ocean-wave,
 	.about-kun,
 	.about-orbit,
