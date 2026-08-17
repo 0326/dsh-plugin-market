@@ -113,7 +113,7 @@
 	}
 
 	.docs-content .trust-pillar:nth-child(even) { border-right: 0; }
-	.docs-content .trust-pillar:last-child { border-bottom: 0; }
+	.docs-content .trust-pillar:last-child { border-right: 0; border-bottom: 0; }
 
 	.docs-content .trust-unknown {
 		margin-bottom: clamp(3rem, 6vw, 5rem);
