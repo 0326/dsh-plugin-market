@@ -100,6 +100,17 @@ function staticSpec(pathname: string): SeoSpec | null {
 		const description = "Learn how DSH Plugin Market discovers, verifies and assesses DeepSeek Harness plugins and how to interpret its trust signals.";
 		return { title, description, canonicalPath: "/about", image: DEFAULT_IMAGE, robots: "index,follow", jsonLd: graph(webPageNode("/about", title, description)) };
 	}
+	if (pathname === "/trust") {
+		const title = `How ${SITE_NAME} Verifies Plugins — Trust Model`;
+		const description = "Learn how DSH Plugin Market verifies plugin format, checks compatibility, surfaces security and maintenance signals, and binds evidence to a concrete commit.";
+		const page = webPageNode("/trust", title, description);
+		page.about = [
+			{ "@type": "Thing", name: "DSH Plugin verification" },
+			{ "@type": "Thing", name: "DeepSeek Harness plugin compatibility" },
+			{ "@type": "Thing", name: "Plugin security signals" },
+		];
+		return { title, description, canonicalPath: "/trust", image: DEFAULT_IMAGE, robots: "index,follow,max-image-preview:large,max-snippet:-1", jsonLd: graph(page) };
+	}
 	return null;
 }
 
@@ -188,7 +199,7 @@ function notFoundSpec(pathname: string): SeoSpec {
 }
 
 export function isSeoPagePath(pathname: string): boolean {
-	return pathname === "/" || pathname === "/plugins" || pathname === "/submit" || pathname === "/about" || /^\/plugin\/[^/]+\/[^/]+\/?$/.test(pathname) || /^\/publisher\/[^/]+\/?$/.test(pathname);
+	return pathname === "/" || pathname === "/plugins" || pathname === "/submit" || pathname === "/about" || pathname === "/trust" || /^\/plugin\/[^/]+\/[^/]+\/?$/.test(pathname) || /^\/publisher\/[^/]+\/?$/.test(pathname);
 }
 
 export async function resolveSeoSpec(pathname: string, db: D1Database): Promise<SeoSpec> {
@@ -233,6 +244,7 @@ export function buildSitemapXml(items: PluginListItem[]): string {
 		{ loc: `${SITE_URL}/` },
 		{ loc: `${SITE_URL}/plugins` },
 		{ loc: `${SITE_URL}/about` },
+		{ loc: `${SITE_URL}/trust` },
 		{ loc: `${SITE_URL}/submit` },
 	];
 
