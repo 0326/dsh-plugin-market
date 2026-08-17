@@ -41,7 +41,7 @@ function App() {
 	}, []);
 
 	const isMarket = route.name === "explore" || route.name === "plugin" || route.name === "publisher";
-	const trustLabel = lang === "zh" ? "信任机制" : "Trust";
+	const trustLabel = lang === "zh" ? "机制" : "Trust";
 	const trustFooterLabel = lang === "zh" ? "信任机制" : "Trust Model";
 
 	return (
