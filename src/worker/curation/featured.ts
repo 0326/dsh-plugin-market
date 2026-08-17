@@ -28,11 +28,14 @@ function hasBlockingSecurityFinding(findings: Finding[]): boolean {
   );
 }
 
+function hasFeatureEligibleVerification(status: string): boolean {
+  return status === "FORMAT_VERIFIED" || status === "DETECTED";
+}
+
 /**
- * Auto-feature gate. A plugin is promoted to featured automatically only when
- * it is Format Verified, clears the star bar, and carries no blocking
- * (HIGH/CRITICAL) security finding. This keeps the homepage "featured" shelf
- * meaningful without requiring manual curation.
+ * Auto-feature gate. A plugin is promoted automatically when it is at least
+ * detected as a DSH plugin, clears the star bar, and carries no blocking
+ * (HIGH/CRITICAL) security finding. CANDIDATE repositories remain excluded.
  */
 export function shouldAutoFeature(opts: {
   stars: number;
@@ -41,7 +44,7 @@ export function shouldAutoFeature(opts: {
   minStars: number;
 }): boolean {
   if (opts.stars < opts.minStars) return false;
-  if (opts.verificationStatus !== "FORMAT_VERIFIED") return false;
+  if (!hasFeatureEligibleVerification(opts.verificationStatus)) return false;
   if (hasBlockingSecurityFinding(opts.findings)) return false;
   return true;
 }
@@ -105,7 +108,7 @@ export async function recomputeFeatured(
   for (const row of rows.results ?? []) {
     if (row.featured === 1) continue;
     if (row.stars < minStars) continue;
-    if (row.verificationStatus !== "FORMAT_VERIFIED") continue;
+    if (!hasFeatureEligibleVerification(row.verificationStatus)) continue;
     if (row.blockingSecurityCount > 0) continue;
     const ok = await setFeatured(env.DB, row.owner, row.name, true);
     if (ok) promoted++;
