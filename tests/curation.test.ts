@@ -28,16 +28,16 @@ describe("parseAutoFeatureMinStars", () => {
 describe("shouldAutoFeature", () => {
 	const base = { stars: 100, verificationStatus: "FORMAT_VERIFIED", findings: [] as Finding[], minStars: 50 };
 
-	it("features a qualifying plugin", () => {
+	it("features Format Verified and Detected plugins", () => {
 		expect(shouldAutoFeature(base)).toBe(true);
+		expect(shouldAutoFeature({ ...base, verificationStatus: "DETECTED" })).toBe(true);
 	});
 
 	it("rejects plugins below the star bar", () => {
 		expect(shouldAutoFeature({ ...base, stars: 49 })).toBe(false);
 	});
 
-	it("rejects plugins that are not Format Verified", () => {
-		expect(shouldAutoFeature({ ...base, verificationStatus: "DETECTED" })).toBe(false);
+	it("rejects Candidate repositories", () => {
 		expect(shouldAutoFeature({ ...base, verificationStatus: "CANDIDATE" })).toBe(false);
 	});
 
