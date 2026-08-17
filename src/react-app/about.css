@@ -1,0 +1,364 @@
+@layer components {
+	/* Basketball / code / music now belong to the About brand story. */
+	.home-hero .hero-basketball,
+	.home-hero .hero-music { display: none; }
+	.home-hero .hero-art::after { content: none; }
+
+	.about-brand-page {
+		margin: -2rem -1rem 0;
+	}
+
+	.about-ocean-hero {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 0.88fr) minmax(420px, 1.12fr);
+		grid-template-areas:
+			"copy stage"
+			"equation equation";
+		min-height: 690px;
+		overflow: hidden;
+		border-bottom: 2px solid #0b0b0b;
+		background:
+			radial-gradient(circle at 72% 15%, rgb(126 211 255 / 44%) 0 8%, transparent 28%),
+			linear-gradient(150deg, #031a49 0%, #073786 42%, #0c64d8 72%, #42a9f5 100%);
+		color: #fff;
+		isolation: isolate;
+	}
+
+	.about-ocean-hero::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: -3;
+		background-image: radial-gradient(rgb(255 255 255 / 24%) 1px, transparent 1px);
+		background-size: 30px 30px;
+		mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 80%, transparent);
+		opacity: 0.35;
+	}
+
+	.about-ocean-glow {
+		position: absolute;
+		top: -22%;
+		right: 6%;
+		z-index: -2;
+		width: 46%;
+		aspect-ratio: 1;
+		border-radius: 999px;
+		background: rgb(140 220 255 / 20%);
+		filter: blur(18px);
+		animation: about-glow 7s ease-in-out infinite;
+	}
+
+	.about-ocean-wave {
+		position: absolute;
+		left: -8%;
+		z-index: -1;
+		width: 116%;
+		height: 120px;
+		border: 2px solid rgb(255 255 255 / 18%);
+		border-radius: 50%;
+		transform: rotate(-3deg);
+	}
+	.about-ocean-wave-one { bottom: 18%; animation: about-wave 9s ease-in-out infinite; }
+	.about-ocean-wave-two { bottom: 6%; opacity: 0.55; animation: about-wave 11s ease-in-out -2s infinite reverse; }
+
+	.about-brand-copy {
+		grid-area: copy;
+		align-self: center;
+		padding: clamp(3rem, 7vw, 6rem) 1.5rem clamp(2rem, 5vw, 4rem) clamp(1.5rem, 5vw, 4.5rem);
+	}
+
+	.about-brand-kicker {
+		margin: 0;
+		color: #ffc400;
+		font: 900 0.72rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+		letter-spacing: 0.14em;
+	}
+
+	.about-brand-title {
+		margin: 1rem 0 0;
+		font-weight: 950;
+		letter-spacing: -0.075em;
+		line-height: 0.84;
+	}
+	.about-brand-title span {
+		display: block;
+		font-size: clamp(2.2rem, 5vw, 5rem);
+	}
+	.about-brand-title strong {
+		display: inline-block;
+		margin-top: 0.18em;
+		padding: 0.08em 0.12em 0.12em;
+		background: #fff;
+		color: #0b0b0b;
+		font-size: clamp(3.25rem, 7vw, 7.2rem);
+		letter-spacing: -0.07em;
+	}
+
+	.about-brand-tagline {
+		max-width: 18ch;
+		margin: 1.6rem 0 0;
+		font-size: clamp(1.55rem, 3vw, 2.9rem);
+		font-weight: 900;
+		letter-spacing: -0.05em;
+		line-height: 1.05;
+	}
+
+	.about-brand-intro {
+		max-width: 38rem;
+		margin: 1.2rem 0 0;
+		font-size: clamp(0.96rem, 1.35vw, 1.08rem);
+		line-height: 1.75;
+		color: rgb(255 255 255 / 78%);
+	}
+
+	.about-brand-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.7rem;
+		margin-top: 1.8rem;
+	}
+	.about-brand-actions .btn { border: 2px solid #fff; }
+	.about-btn-primary { background: #ffc400; color: #0b0b0b; border-color: #0b0b0b !important; }
+	.about-btn-secondary { background: transparent; color: #fff; }
+
+	.about-kun-stage {
+		position: relative;
+		grid-area: stage;
+		display: grid;
+		place-items: center;
+		min-height: 520px;
+		padding: clamp(2rem, 5vw, 4rem);
+	}
+
+	.about-kun {
+		position: relative;
+		z-index: 2;
+		width: min(92%, 660px);
+		filter:
+			drop-shadow(0 24px 24px rgb(0 20 60 / 24%))
+			drop-shadow(0 0 24px rgb(117 213 255 / 20%));
+		animation: about-kun-swim 6s ease-in-out infinite;
+	}
+
+	.about-orbit {
+		position: absolute;
+		z-index: 3;
+		display: grid;
+		grid-template-columns: auto auto;
+		align-items: center;
+		gap: 0.55rem;
+		padding: 0.7rem 0.85rem;
+		border: 2px solid #0b0b0b;
+		box-shadow: 5px 5px 0 rgb(11 11 11 / 28%);
+		color: #0b0b0b;
+		font-size: 0.82rem;
+		font-weight: 900;
+	}
+	.about-orbit-glyph { font: 950 1.25rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+	.about-orbit-music { top: 12%; left: 6%; background: #ffc400; animation: about-float-a 4.5s ease-in-out infinite; }
+	.about-orbit-code { right: 3%; bottom: 18%; background: #fff; animation: about-float-b 5.2s ease-in-out infinite; }
+	.about-orbit-ball { top: 8%; right: 7%; background: #ef781d; animation: about-float-c 4.8s ease-in-out infinite; }
+	.about-orbit-ball svg { filter: drop-shadow(2px 2px 0 rgb(11 11 11 / 28%)); }
+
+	.about-bubble {
+		position: absolute;
+		z-index: 0;
+		border: 2px solid rgb(255 255 255 / 38%);
+		border-radius: 999px;
+		background: rgb(255 255 255 / 6%);
+	}
+	.about-bubble-one { left: 18%; bottom: 12%; width: 24px; height: 24px; animation: about-bubble 5.5s ease-in-out infinite; }
+	.about-bubble-two { right: 19%; top: 34%; width: 13px; height: 13px; animation: about-bubble 4.8s ease-in-out -1.5s infinite; }
+	.about-bubble-three { left: 43%; top: 11%; width: 9px; height: 9px; animation: about-bubble 4.2s ease-in-out -2s infinite; }
+
+	.about-equation-panel {
+		position: relative;
+		z-index: 4;
+		grid-area: equation;
+		display: grid;
+		grid-template-columns: 190px minmax(0, 1fr);
+		align-items: stretch;
+		margin: 0 clamp(1.5rem, 5vw, 4.5rem) clamp(2rem, 4vw, 3.5rem);
+		border: 2px solid #0b0b0b;
+		background: #f8f8f6;
+		color: #0b0b0b;
+		box-shadow: 8px 8px 0 rgb(0 20 60 / 25%);
+	}
+	.about-equation-label {
+		display: grid;
+		place-items: center start;
+		margin: 0;
+		padding: 1.1rem 1.25rem;
+		border-right: 2px solid #0b0b0b;
+		background: #ffc400;
+		font: 950 0.75rem ui-monospace, SFMono-Regular, Menlo, monospace;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+	.about-equation-track {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: stretch;
+	}
+	.about-equation-track > span {
+		display: flex;
+		align-items: stretch;
+	}
+	.about-equation-track strong,
+	.about-equation-track b {
+		display: grid;
+		place-items: center;
+		min-height: 64px;
+		padding: 0.8rem 1rem;
+	}
+	.about-equation-track strong { font-size: clamp(0.84rem, 1.35vw, 1.02rem); }
+	.about-equation-track b { color: #2848dd; font-size: 1.25rem; }
+	.about-equation-result strong {
+		background: #0b0b0b;
+		color: #fff;
+		font-size: 1.15rem;
+		letter-spacing: 0.02em;
+	}
+
+	.about-hobby-section {
+		display: grid;
+		grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.28fr);
+		gap: clamp(2rem, 5vw, 5rem);
+		padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 5vw, 4.5rem);
+		border-bottom: 2px solid var(--color-base-content);
+	}
+	.about-hobby-copy h2 {
+		max-width: 13ch;
+		margin: 0.9rem 0 0;
+		font-size: clamp(2.1rem, 4.5vw, 4.2rem);
+		font-weight: 950;
+		letter-spacing: -0.07em;
+		line-height: 0.96;
+	}
+	.about-hobby-copy > p:not(.content-kicker) {
+		max-width: 38rem;
+		margin: 1.4rem 0 0;
+		line-height: 1.75;
+		opacity: 0.72;
+	}
+
+	.about-hobby-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		border: 2px solid var(--color-base-content);
+	}
+	.about-hobby-card {
+		position: relative;
+		display: flex;
+		min-height: 290px;
+		flex-direction: column;
+		padding: 1.25rem;
+		border-right: 1px solid var(--color-base-content);
+	}
+	.about-hobby-card:last-child { border-right: 0; }
+	.about-hobby-card > span { font: 900 0.7rem ui-monospace, monospace; opacity: 0.55; }
+	.about-hobby-icon {
+		display: grid;
+		place-items: center;
+		width: 86px;
+		height: 86px;
+		margin: auto 0 1.4rem;
+		border: 2px solid #0b0b0b;
+		background: #fff;
+		color: #0b0b0b;
+		font: 950 2rem ui-monospace, monospace;
+	}
+	.about-hobby-card > strong { font-size: clamp(1.15rem, 2vw, 1.55rem); font-weight: 950; letter-spacing: -0.04em; }
+	.about-hobby-card > small { margin-top: 0.35rem; font: 800 0.64rem ui-monospace, monospace; letter-spacing: 0.08em; opacity: 0.58; }
+	.about-hobby-music { background: var(--color-accent); color: var(--color-accent-content); }
+	.about-hobby-code { background: var(--color-base-100); }
+	.about-hobby-ball { background: #ef781d; color: #0b0b0b; }
+
+	.about-community-strip {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		margin: clamp(2rem, 4vw, 3.5rem) clamp(1.5rem, 5vw, 4.5rem) 0;
+		padding: 1.5rem;
+		border: 2px solid var(--color-base-content);
+		background: var(--color-neutral);
+		color: var(--color-neutral-content);
+	}
+	.about-community-strip h2 { margin: 0; font-size: clamp(1.35rem, 2.5vw, 2rem); font-weight: 950; letter-spacing: -0.04em; }
+	.about-community-strip p { margin: 0.45rem 0 0; opacity: 0.7; }
+}
+
+@keyframes about-kun-swim {
+	0%, 100% { transform: translate3d(0, 2px, 0) rotate(-1deg); }
+	50% { transform: translate3d(10px, -13px, 0) rotate(1deg); }
+}
+@keyframes about-float-a {
+	0%, 100% { transform: translate3d(0, 0, 0) rotate(-4deg); }
+	50% { transform: translate3d(7px, -12px, 0) rotate(3deg); }
+}
+@keyframes about-float-b {
+	0%, 100% { transform: translate3d(0, 0, 0) rotate(3deg); }
+	50% { transform: translate3d(-8px, -9px, 0) rotate(-3deg); }
+}
+@keyframes about-float-c {
+	0%, 100% { transform: translate3d(0, 0, 0) rotate(8deg); }
+	50% { transform: translate3d(-5px, 11px, 0) rotate(-7deg); }
+}
+@keyframes about-bubble {
+	0%, 100% { transform: translateY(12px); opacity: 0.35; }
+	50% { transform: translateY(-18px); opacity: 0.9; }
+}
+@keyframes about-wave {
+	0%, 100% { transform: translateX(0) rotate(-3deg) scaleX(1); }
+	50% { transform: translateX(2.5%) rotate(1deg) scaleX(1.03); }
+}
+@keyframes about-glow {
+	0%, 100% { transform: scale(1); opacity: 0.72; }
+	50% { transform: scale(1.08); opacity: 1; }
+}
+
+@media (max-width: 980px) {
+	.about-ocean-hero {
+		grid-template-columns: 1fr;
+		grid-template-areas:
+			"copy"
+			"stage"
+			"equation";
+	}
+	.about-brand-copy { padding-bottom: 1rem; }
+	.about-kun-stage { min-height: 440px; }
+	.about-equation-panel { grid-template-columns: 1fr; }
+	.about-equation-label { border-right: 0; border-bottom: 2px solid #0b0b0b; }
+	.about-hobby-section { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+	.about-brand-page { margin-top: -2rem; }
+	.about-brand-title strong { font-size: clamp(2.7rem, 14vw, 4.5rem); }
+	.about-kun-stage { min-height: 360px; padding: 1.25rem; }
+	.about-kun { width: min(94%, 520px); }
+	.about-orbit { padding: 0.5rem 0.6rem; font-size: 0.7rem; }
+	.about-orbit-ball svg { width: 38px; height: 38px; }
+	.about-orbit-music { top: 8%; left: 2%; }
+	.about-orbit-code { right: 1%; bottom: 14%; }
+	.about-orbit-ball { top: 6%; right: 2%; }
+	.about-equation-track { display: grid; grid-template-columns: 1fr; }
+	.about-equation-track > span { display: grid; grid-template-columns: 1fr; }
+	.about-equation-track b { min-height: 30px; padding: 0.15rem; border-top: 1px solid #0b0b0b; border-bottom: 1px solid #0b0b0b; }
+	.about-equation-track strong { min-height: 54px; }
+	.about-hobby-grid { grid-template-columns: 1fr; }
+	.about-hobby-card { min-height: 210px; border-right: 0; border-bottom: 1px solid var(--color-base-content); }
+	.about-hobby-card:last-child { border-bottom: 0; }
+	.about-community-strip { align-items: stretch; flex-direction: column; }
+	.about-community-strip .btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.about-ocean-glow,
+	.about-ocean-wave,
+	.about-kun,
+	.about-orbit,
+	.about-bubble { animation: none !important; }
+}
