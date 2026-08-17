@@ -1,4 +1,4 @@
-import type { ScanJob } from "../domain/scan";
+import type { ScanJob, ScanQueueJob } from "../domain/scan";
 import {
 	clearDiscoveryShards,
 	insertDiscoveryShards,
@@ -99,7 +99,7 @@ export async function collectShards(
 export async function runDiscovery(
 	client: GithubClient,
 	db: D1Database,
-	queue: Queue<ScanJob>,
+	queue: Queue<ScanQueueJob>,
 	maxReposPerRun: number = MAX_REPOS_PER_RUN,
 ): Promise<DiscoveryRun> {
 	// Persist the unfiltered GitHub topic count once per discovery run. Homepage

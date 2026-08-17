@@ -14,6 +14,18 @@ export interface ScanJob {
 	reason: ScanReason;
 }
 
+/** Control message that incrementally expands a full stale-scanner rescan. */
+export interface RescanSweepJob {
+	type: "RESCAN_SWEEP";
+	afterRepositoryId: number;
+}
+
+export type ScanQueueJob = ScanJob | RescanSweepJob;
+
+export function isRescanSweepJob(job: ScanQueueJob): job is RescanSweepJob {
+	return "type" in job && job.type === "RESCAN_SWEEP";
+}
+
 export type ScanFailureCode =
 	| "GITHUB_RATE_LIMITED"
 	| "REPO_NOT_FOUND"
