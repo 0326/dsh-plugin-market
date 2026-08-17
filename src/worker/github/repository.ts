@@ -3,17 +3,8 @@ import { parsePackageJson } from "../scanner/manifest";
 import type { RepoFile, RepoSnapshot } from "../scanner/snapshot";
 import { GithubError, type GithubClient } from "./client";
 
-const KEY_FILES = [
-	"package.json",
-	"cordis.patch.yml",
-	"cordis.patch.yaml",
-	"README.md",
-	"LICENSE",
-	"LICENSE.md",
-	"pnpm-lock.yaml",
-	"package-lock.json",
-	"yarn.lock",
-];
+/** Lockfiles are only checked for presence, never parsed — no content fetch. */
+const LOCKFILES = ["pnpm-lock.yaml", "package-lock.json", "yarn.lock"];
 
 export interface FetchSnapshotResult {
 	snapshot?: RepoSnapshot;
@@ -35,9 +26,13 @@ function mapGithubError(err: unknown): ScanJobError {
 
 /**
  * Fetch a repository snapshot at a specific commit without cloning or executing
- * any code. Only a small set of manifest/source files is read. A missing
- * package.json yields an empty snapshot (recorded as CANDIDATE) rather than an
- * error.
+ * any code.
+ *
+ * Uses the recursive Git Trees API (one request) to learn which files exist,
+ * then fetches only the files the scanner actually needs: package.json, the
+ * declared bundle patch, the entry module, and README. Lockfiles are recorded
+ * by presence only. This keeps the per-repo request count low (~5-6 instead of
+ * ~13) so scanning throughput is not dominated by probing absent files.
  */
 export async function fetchSnapshot(
 	client: GithubClient,
@@ -55,31 +50,42 @@ export async function fetchSnapshot(
 		}
 	}
 
-	const wanted = new Set<string>(KEY_FILES);
-	let pkgContent: string | undefined;
+	let treePaths: Set<string>;
 	try {
-		pkgContent = await client.getFile(owner, repo, "package.json", sha);
+		const tree = await client.getTree(owner, repo, sha);
+		treePaths = new Set(tree.filter((t) => t.type === "blob").map((t) => t.path));
 	} catch (err) {
 		return { error: mapGithubError(err) };
 	}
 
+	let pkgContent: string | undefined;
+	try {
+		pkgContent = treePaths.has("package.json") ? await client.getFile(owner, repo, "package.json", sha) : undefined;
+	} catch (err) {
+		return { error: mapGithubError(err) };
+	}
+
+	const toFetch = new Set<string>(["README.md"]);
 	if (pkgContent !== undefined) {
 		const parsed = parsePackageJson(pkgContent);
 		if (parsed.ok && parsed.manifest) {
 			const patch = parsed.manifest.dsh?.bundle?.patch;
-			if (typeof patch === "string" && patch) wanted.add(normalize(patch));
-			if (typeof parsed.manifest.main === "string" && parsed.manifest.main) wanted.add(normalize(parsed.manifest.main));
+			if (typeof patch === "string" && patch) toFetch.add(normalize(patch));
+			if (typeof parsed.manifest.main === "string" && parsed.manifest.main) toFetch.add(normalize(parsed.manifest.main));
 		}
 	}
 
 	const files: RepoFile[] = [];
-	for (const path of wanted) {
-		if (path === "package.json" && pkgContent !== undefined) {
-			files.push({ path, content: pkgContent });
-			continue;
-		}
+	if (pkgContent !== undefined) files.push({ path: "package.json", content: pkgContent });
+
+	for (const path of toFetch) {
+		if (path === "package.json" || !treePaths.has(path)) continue;
 		const content = await client.getFile(owner, repo, path, sha);
 		if (content !== undefined) files.push({ path, content });
+	}
+
+	for (const lf of LOCKFILES) {
+		if (treePaths.has(lf)) files.push({ path: lf });
 	}
 
 	return { snapshot: { owner, repo, defaultBranch, commitSha: sha, files } };

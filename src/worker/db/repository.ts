@@ -488,3 +488,40 @@ export async function getPublisher(db: D1Database, owner: string): Promise<Publi
 	const verifiedCount = repos.filter((p) => p.verificationStatus === "FORMAT_VERIFIED").length;
 	return { owner, repos, totalStars, verifiedCount };
 }
+
+// --- Discovery state (checkpointing) ---
+
+export interface DiscoveryShard {
+	id: number;
+	windowStart: string;
+	windowEnd: string;
+	page: number;
+}
+
+export async function listPendingDiscoveryShards(db: D1Database, source: string, query: string): Promise<DiscoveryShard[]> {
+	const res = await db
+		.prepare(
+			"SELECT id, window_start AS windowStart, window_end AS windowEnd, page FROM discovery_state WHERE source = ? AND query = ? AND status = 'pending' ORDER BY id",
+		)
+		.bind(source, query)
+		.all<DiscoveryShard>();
+	return res.results ?? [];
+}
+
+export async function insertDiscoveryShards(db: D1Database, source: string, query: string, windows: { start: string; end: string }[]): Promise<void> {
+	if (windows.length === 0) return;
+	const now = new Date().toISOString();
+	const stmt = db.prepare(
+		"INSERT INTO discovery_state (source, query, window_start, window_end, page, status, created_at, updated_at) VALUES (?, ?, ?, ?, 1, 'pending', ?, ?)",
+	);
+	await db.batch(windows.map((w) => stmt.bind(source, query, w.start, w.end, now, now)));
+}
+
+export async function clearDiscoveryShards(db: D1Database, source: string, query: string): Promise<void> {
+	await db.prepare("DELETE FROM discovery_state WHERE source = ? AND query = ?").bind(source, query).run();
+}
+
+export async function updateDiscoveryShard(db: D1Database, id: number, page: number, status: "pending" | "done"): Promise<void> {
+	const now = new Date().toISOString();
+	await db.prepare("UPDATE discovery_state SET page = ?, status = ?, updated_at = ?, last_run_at = ? WHERE id = ?").bind(page, status, now, now, id).run();
+}

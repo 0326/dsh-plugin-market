@@ -1,26 +1,41 @@
 import type { ScanJob } from "../domain/scan";
-import { updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
+import {
+	clearDiscoveryShards,
+	insertDiscoveryShards,
+	listPendingDiscoveryShards,
+	updateDiscoveryShard,
+	updateRepositoryPreviewImage,
+	upsertRepository,
+} from "../db/repository";
 import { extractReadmeImage } from "../scanner/readme-image";
 import { GithubError, type GithubClient, type GithubSearchReposResult } from "./client";
 
 const TOPIC_QUERY = "topic:dsh-plugin";
+const SOURCE = "github";
 const PER_PAGE = 100;
 const MAX_PAGES = 10; // GitHub Search API returns at most 1000 results per query.
 const SHARD_LIMIT = 1000; // Split a query window larger than this.
 const THROTTLE_MS = 2200; // Keep under the 30 search requests/min rate limit.
 const MIN_WINDOW_MS = 1000; // Stop splitting below 1 second.
 const MAX_RETRIES = 10;
+/**
+ * Fixed lower bound for the created-time window. The dsh-plugin topic cannot
+ * predate DeepSeek Harness (early 2026); a fixed floor avoids the (broken)
+ * sort=created probe that GitHub repository search silently ignores.
+ */
+const EARLIEST = "2025-01-01T00:00:00.000Z";
+/**
+ * Repos processed per cron run. Sized to the Workers free plan: 2 D1 queries
+ * per repo (~800 for 400 repos) + a few sendBatch + search calls stay under
+ * the 1000 Cloudflare-service and 50 external subrequest budgets.
+ */
+const MAX_REPOS_PER_RUN = 400;
 
 export interface DiscoveryRun {
 	reposSeen: number;
 	enqueued: number;
-	shards: number;
-}
-
-interface ShardResult {
-	reposSeen: number;
-	enqueued: number;
-	shards: number;
+	shardsProcessed: number;
+	pendingShards: number;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -51,86 +66,105 @@ async function searchThrottled(
 }
 
 /**
- * Discover every candidate repository under the dsh-plugin topic.
- *
- * The GitHub Search API caps a single query at 1000 results, so the topic is
- * sharded by creation-time windows (created:START..END) and a window larger
- * than the cap is recursively split in half (TECHNICAL_DESIGN.md §6.4).
+ * Recursively split the created-time window into shards, each with at most
+ * SHARD_LIMIT results, so every shard can be paginated within MAX_PAGES.
  */
-export async function runDiscovery(client: GithubClient, db: D1Database, queue: Queue<ScanJob>): Promise<DiscoveryRun> {
-	const earliest = await findEarliestDate(client);
-	if (!earliest) return { reposSeen: 0, enqueued: 0, shards: 0 };
-	const latest = new Date().toISOString();
-	return discoverWindow(client, db, queue, earliest, latest);
-}
-
-async function findEarliestDate(client: GithubClient): Promise<string | null> {
-	const res = await searchThrottled(client, TOPIC_QUERY, 1, 1, { sort: "created", order: "asc" });
-	return res.items[0]?.created_at ?? null;
-}
-
-async function discoverWindow(
+export async function collectShards(
 	client: GithubClient,
-	db: D1Database,
-	queue: Queue<ScanJob>,
 	start: string,
 	end: string,
-): Promise<ShardResult> {
+	out: { start: string; end: string }[],
+): Promise<void> {
 	const query = TOPIC_QUERY + " created:" + start + ".." + end;
 	const probe = await searchThrottled(client, query, 1, 1);
 	const startMs = Date.parse(start);
 	const endMs = Date.parse(end);
 	if (probe.total_count <= SHARD_LIMIT || endMs - startMs <= MIN_WINDOW_MS) {
-		return paginateShard(client, db, queue, query);
+		out.push({ start, end });
+		return;
 	}
 	const mid = new Date((startMs + endMs) / 2).toISOString();
-	const a = await discoverWindow(client, db, queue, start, mid);
-	const b = await discoverWindow(client, db, queue, mid, end);
-	return { reposSeen: a.reposSeen + b.reposSeen, enqueued: a.enqueued + b.enqueued, shards: a.shards + b.shards };
-}
-
-async function paginateShard(client: GithubClient, db: D1Database, queue: Queue<ScanJob>, query: string): Promise<ShardResult> {
-	let reposSeen = 0;
-	let enqueued = 0;
-	for (let page = 1; page <= MAX_PAGES; page++) {
-		const res = await searchThrottled(client, query, page, PER_PAGE);
-		for (const repo of res.items) {
-			reposSeen++;
-			const { id, changed } = await upsertRepository(db, repo);
-			if (changed) {
-				await queue.send({ repositoryId: id, owner: repo.owner.login, repo: repo.name, reason: "DISCOVERY" });
-				enqueued++;
-			}
-		}
-		await enrichPreviewImages(client, db, res.items);
-		if (res.items.length < PER_PAGE) break;
-	}
-	return { reposSeen, enqueued, shards: 1 };
+	await collectShards(client, start, mid, out);
+	await collectShards(client, mid, end, out);
 }
 
 /**
- * Populate `preview_image_url` from the GitHub social preview (Open Graph)
- * image. This is best-effort: a rate limit or GraphQL failure must never
- * abort discovery, so every error is logged and swallowed.
+ * Discover candidate repositories under the dsh-plugin topic, checkpointed
+ * across cron runs via the discovery_state table. Each run processes at most
+ * maxReposPerRun repos so a single Worker invocation never exceeds the free
+ * plan subrequest budgets (50 external + 1000 Cloudflare-service requests).
  */
-async function enrichPreviewImages(client: GithubClient, db: D1Database, repos: { owner: { login: string }; name: string; full_name: string }[]): Promise<void> {
-	if (repos.length === 0) return;
-	try {
-		const urls = await client.getOpenGraphImageUrls(repos.map((r) => ({ owner: r.owner.login, name: r.name })));
-		for (const repo of repos) {
-			const url = urls.get(repo.full_name);
-			if (url) await updateRepositoryPreviewImage(db, repo.full_name, url);
-		}
-	} catch (err) {
-		console.warn("preview image enrichment failed", err instanceof Error ? err.message : String(err));
+export async function runDiscovery(
+	client: GithubClient,
+	db: D1Database,
+	queue: Queue<ScanJob>,
+	maxReposPerRun: number = MAX_REPOS_PER_RUN,
+): Promise<DiscoveryRun> {
+	let pending = await listPendingDiscoveryShards(db, SOURCE, TOPIC_QUERY);
+	if (pending.length === 0) {
+		const windows: { start: string; end: string }[] = [];
+		await collectShards(client, EARLIEST, new Date().toISOString(), windows);
+		await clearDiscoveryShards(db, SOURCE, TOPIC_QUERY);
+		await insertDiscoveryShards(db, SOURCE, TOPIC_QUERY, windows);
+		pending = await listPendingDiscoveryShards(db, SOURCE, TOPIC_QUERY);
 	}
+
+	let reposSeen = 0;
+	let enqueued = 0;
+	let shardsProcessed = 0;
+	const jobs: ScanJob[] = [];
+
+	const flushJobs = async () => {
+		while (jobs.length > 0) {
+			const chunk = jobs.splice(0, 100).map((body) => ({ body }));
+			await queue.sendBatch(chunk);
+		}
+	};
+
+	for (const shard of pending) {
+		const query = TOPIC_QUERY + " created:" + shard.windowStart + ".." + shard.windowEnd;
+		let page = shard.page;
+		let done = false;
+
+		while (page <= MAX_PAGES && reposSeen < maxReposPerRun) {
+			const res = await searchThrottled(client, query, page, PER_PAGE);
+			const items = res.items ?? [];
+			for (const repo of items) {
+				reposSeen++;
+				const { id, changed } = await upsertRepository(db, repo);
+				if (changed) {
+					jobs.push({ repositoryId: id, owner: repo.owner.login, repo: repo.name, reason: "DISCOVERY" });
+					enqueued++;
+				}
+			}
+			await flushJobs();
+			if (items.length < PER_PAGE) {
+				done = true;
+				break;
+			}
+			page++;
+		}
+
+		if (done || page > MAX_PAGES) {
+			await updateDiscoveryShard(db, shard.id, page, "done");
+			shardsProcessed++;
+		} else {
+			await updateDiscoveryShard(db, shard.id, page, "pending");
+		}
+		if (reposSeen >= maxReposPerRun) break;
+	}
+
+	await flushJobs();
+
+	const remaining = (await listPendingDiscoveryShards(db, SOURCE, TOPIC_QUERY)).length;
+	return { reposSeen, enqueued, shardsProcessed, pendingShards: remaining };
 }
 
 /**
  * Backfill a repository's preview image when it has none yet: prefer the
- * GitHub social preview (Open Graph), then fall back to the first
- * presentable image found in the README (pinned to the scanned commit).
- * Best-effort — failures never abort a scan.
+ * GitHub social preview (Open Graph), then fall back to the first presentable
+ * image found in the README (pinned to the scanned commit). Best-effort —
+ * failures never abort a scan.
  */
 export async function ensurePreviewImage(
 	client: GithubClient,

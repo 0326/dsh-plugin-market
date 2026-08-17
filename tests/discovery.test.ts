@@ -9,10 +9,14 @@ vi.spyOn(globalThis, "setTimeout").mockImplementation(((fn: () => void) => {
 vi.mock("../src/worker/db/repository", () => ({
 	upsertRepository: vi.fn(async (_db: unknown, repo: { id: number }) => ({ id: repo.id, changed: true })),
 	updateRepositoryPreviewImage: vi.fn(async () => {}),
+	listPendingDiscoveryShards: vi.fn(async () => []),
+	clearDiscoveryShards: vi.fn(async () => {}),
+	insertDiscoveryShards: vi.fn(async () => {}),
+	updateDiscoveryShard: vi.fn(async () => {}),
 }));
 
-import { ensurePreviewImage, runDiscovery } from "../src/worker/github/discovery";
-import { updateRepositoryPreviewImage } from "../src/worker/db/repository";
+import { collectShards, ensurePreviewImage, runDiscovery } from "../src/worker/github/discovery";
+import { listPendingDiscoveryShards, updateDiscoveryShard, updateRepositoryPreviewImage } from "../src/worker/db/repository";
 
 function makeRepo(i: number, secondOfDay: number) {
 	const created = new Date(Date.UTC(2026, 0, 1, 0, 0, secondOfDay)).toISOString();
@@ -35,50 +39,61 @@ function makeRepo(i: number, secondOfDay: number) {
 	};
 }
 
-describe("runDiscovery sharding", () => {
+describe("collectShards", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it("captures all repos when the window is under the search cap", async () => {
-		const repos = Array.from({ length: 5 }, (_, i) => makeRepo(i, i));
-		const client = {
-			searchRepos: vi.fn(async (query: string, page: number, perPage: number, opts?: { sort?: string; order?: string }) => {
-				if (opts?.sort === "created") return { total_count: repos.length, items: [repos[0]], incomplete_results: false };
-				return { total_count: repos.length, items: repos.slice((page - 1) * perPage, page * perPage), incomplete_results: false };
-			}),
-			getOpenGraphImageUrls: vi.fn(async () => new Map<string, string | null>()),
-		};
-		const queue = { send: vi.fn(async () => {}) };
-		const result = await runDiscovery(client as never, {} as never, queue as never);
-		expect(result.reposSeen).toBe(5);
-		expect(result.enqueued).toBe(5);
-	});
-
-	it("splits an oversized window and still captures every repo", async () => {
+	it("splits an oversized window into ordered, non-overlapping shards", async () => {
 		const N = 2500;
 		const repos = Array.from({ length: N }, (_, i) => makeRepo(i, i % 86400)); // spread over one day
 		repos.sort((a, b) => a.created_at.localeCompare(b.created_at));
 
 		const client = {
-			searchRepos: vi.fn(async (query: string, page: number, perPage: number, opts?: { sort?: string; order?: string }) => {
-				if (opts?.sort === "created" && opts.order === "asc") {
-					return { total_count: N, items: [repos[0]], incomplete_results: false };
-				}
+			searchRepos: vi.fn(async (query: string) => {
 				const m = /created:([^\s]+)\.\.([^\s]+)/.exec(query);
 				let items = repos;
 				if (m) items = repos.filter((r) => r.created_at >= m[1] && r.created_at <= m[2]);
-				const total = items.length;
-				return { total_count: total, items: items.slice((page - 1) * perPage, page * perPage), incomplete_results: false };
+				return { total_count: items.length, items: [], incomplete_results: false };
 			}),
-			getOpenGraphImageUrls: vi.fn(async () => new Map<string, string | null>()),
 		};
-		const queue = { send: vi.fn(async () => {}) };
+
+		const out: { start: string; end: string }[] = [];
+		await collectShards(client as never, "2025-01-01T00:00:00.000Z", "2026-08-17T00:00:00.000Z", out);
+
+		expect(out.length).toBeGreaterThanOrEqual(3); // 2500 repos need at least 3 shards of <=1000
+		for (let i = 1; i < out.length; i++) {
+			expect(out[i].start).toBe(out[i - 1].end); // ordered and contiguous
+		}
+	});
+});
+
+describe("runDiscovery", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("processes a pending shard, upserts repos, and enqueues via sendBatch", async () => {
+		const repos = Array.from({ length: 5 }, (_, i) => makeRepo(i, i));
+		vi.mocked(listPendingDiscoveryShards).mockResolvedValue([
+			{ id: 1, windowStart: "2025-01-01T00:00:00.000Z", windowEnd: "2026-08-17T00:00:00.000Z", page: 1 },
+		]);
+
+		const client = {
+			searchRepos: vi.fn(async () => ({ total_count: repos.length, items: repos, incomplete_results: false })),
+		};
+		const sendBatch = vi.fn(async () => {});
+		const queue = { sendBatch };
+
 		const result = await runDiscovery(client as never, {} as never, queue as never);
 
-		expect(result.reposSeen).toBe(N);
-		expect(result.enqueued).toBe(N);
-		expect(result.shards).toBeGreaterThan(1); // proves the recursion split happened
+		expect(result.reposSeen).toBe(5);
+		expect(result.enqueued).toBe(5);
+		expect(sendBatch).toHaveBeenCalledTimes(1);
+		const bodies = sendBatch.mock.calls[0][0] as Array<{ body: { repositoryId: number } }>;
+		expect(bodies).toHaveLength(5);
+		expect(bodies[0].body.repositoryId).toBe(0);
+		expect(vi.mocked(updateDiscoveryShard)).toHaveBeenCalledWith({}, 1, 1, "done");
 	});
 });
 

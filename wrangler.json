@@ -16,12 +16,20 @@
     {
       "binding": "DB",
       "database_name": "dsh-plugin-market",
+      "database_id": "6795368a-e2e3-485d-aadf-acc04f92561a",
       "migrations_dir": "migrations"
     }
   ],
   "queues": {
     "producers": [{ "binding": "SCAN_QUEUE", "queue": "dsh-plugin-scan" }],
-    "consumers": [{ "queue": "dsh-plugin-scan" }]
+    "consumers": [
+      {
+        "queue": "dsh-plugin-scan",
+        "max_batch_size": 5,
+        "max_concurrency": 5,
+        "max_retries": 5
+      }
+    ]
   },
   "vars": {
     "AUTO_FEATURE_MIN_STARS": "1000"

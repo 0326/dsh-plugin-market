@@ -38,21 +38,32 @@ async function scheduled(controller: ScheduledController, env: Env, ctx: Executi
 	);
 }
 
+/** Number of scan jobs processed concurrently within a single batch. */
+const SCAN_CONCURRENCY = 3;
+
 async function queue(batch: MessageBatch<ScanJob>, env: Env): Promise<void> {
-	for (const message of batch.messages) {
-		try {
-			await processScanJob(env, message.body);
-			message.ack();
-		} catch (err) {
-			if (err instanceof TransientScanError) {
-				if (message.attempts < 3) message.retry({ delaySeconds: 30 * (message.attempts + 1) });
-				else message.ack();
-			} else {
-				console.error(JSON.stringify({ message: "scan job error", error: err instanceof Error ? err.message : String(err), repositoryId: message.body.repositoryId }));
+	const messages = [...batch.messages];
+	let cursor = 0;
+
+	async function worker(): Promise<void> {
+		while (cursor < messages.length) {
+			const message = messages[cursor++];
+			try {
+				await processScanJob(env, message.body);
 				message.ack();
+			} catch (err) {
+				if (err instanceof TransientScanError) {
+					if (message.attempts < 5) message.retry({ delaySeconds: 30 * (message.attempts + 1) });
+					else message.ack();
+				} else {
+					console.error(JSON.stringify({ message: "scan job error", error: err instanceof Error ? err.message : String(err), repositoryId: message.body.repositoryId }));
+					message.ack();
+				}
 			}
 		}
 	}
+
+	await Promise.all(Array.from({ length: Math.min(SCAN_CONCURRENCY, messages.length) }, () => worker()));
 }
 
 // Cloudflare Workers module format: every handler (fetch / scheduled / queue)

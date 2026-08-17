@@ -35,6 +35,12 @@ export interface GithubBranch {
 	commit: { sha: string };
 }
 
+export interface GithubTreeEntry {
+	path: string;
+	type: "blob" | "tree";
+	size?: number;
+}
+
 export interface GithubSearchReposResult {
 	total_count: number;
 	incomplete_results: boolean;
@@ -167,6 +173,14 @@ export class GithubClient {
 	async getBranchSha(owner: string, repo: string, branch: string): Promise<string> {
 		const res = await this.get<GithubBranch>("/repos/" + encodePath(owner) + "/" + encodePath(repo) + "/branches/" + encodePath(branch));
 		return res.data.commit.sha;
+	}
+
+	/** Fetch the recursive git tree for a commit in a single request. */
+	async getTree(owner: string, repo: string, sha: string): Promise<GithubTreeEntry[]> {
+		const res = await this.get<{ tree: GithubTreeEntry[]; truncated: boolean }>(
+			"/repos/" + encodePath(owner) + "/" + encodePath(repo) + "/git/trees/" + encodeURIComponent(sha) + "?recursive=1",
+		);
+		return res.data.tree ?? [];
 	}
 
 	async searchRepos(

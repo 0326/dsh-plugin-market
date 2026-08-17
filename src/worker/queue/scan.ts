@@ -58,26 +58,29 @@ export interface RescanResult {
 }
 
 /**
- * Enqueue a re-scan for every repository whose latest scan predates the
- * current scanner version (i.e. a scanner upgrade). Idempotent: once a repo
- * is re-scanned with the current version it is skipped on subsequent runs.
+ * Enqueue a scan for every repository that still needs one: either never
+ * scanned (no plugins row), or last scanned with an older scanner version.
+ * Idempotent: once a repo is scanned with the current version it is skipped
+ * on the next run. Uses sendBatch to stay within subrequest budgets.
  */
 export async function enqueueRescanAll(env: Env): Promise<RescanResult> {
 	const rows = await env.DB
 		.prepare(
 			`SELECT r.id AS id, r.owner AS owner, r.name AS name
 			FROM repositories r
-			JOIN plugins p ON p.repository_id = r.id
-			WHERE p.latest_scan_id IS NOT NULL
-				AND (SELECT s.scanner_version FROM scans s WHERE s.id = p.latest_scan_id) != ?`,
+			LEFT JOIN plugins p ON p.repository_id = r.id
+			LEFT JOIN scans s ON s.id = p.latest_scan_id
+			WHERE p.id IS NULL OR s.scanner_version IS NULL OR s.scanner_version != ?`,
 		)
 		.bind(SCANNER_VERSION)
 		.all<{ id: number; owner: string; name: string }>();
 
-	let enqueued = 0;
-	for (const row of rows.results ?? []) {
-		await env.SCAN_QUEUE.send({ repositoryId: row.id, owner: row.owner, repo: row.name, reason: "SCANNER_UPGRADE" });
-		enqueued++;
+	const jobs: { body: ScanJob }[] = (rows.results ?? []).map((row) => ({
+		body: { repositoryId: row.id, owner: row.owner, repo: row.name, reason: "SCANNER_UPGRADE" },
+	}));
+
+	for (let i = 0; i < jobs.length; i += 100) {
+		await env.SCAN_QUEUE.sendBatch(jobs.slice(i, i + 100));
 	}
-	return { enqueued };
+	return { enqueued: jobs.length };
 }
