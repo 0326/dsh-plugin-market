@@ -4,6 +4,7 @@ export interface RegistryStats {
 	githubTotal: number | null;
 	discovered: number;
 	scanned: number;
+	/** Repositories recognized as at least DETECTED, including FORMAT_VERIFIED. */
 	detected: number;
 	verified: number;
 	featured: number;
@@ -38,7 +39,7 @@ export async function getRegistryStats(db: D1Database): Promise<RegistryStats> {
 				(SELECT total_count FROM discovery_summary WHERE source = 'github' AND query = 'topic:dsh-plugin') AS githubTotal,
 				(SELECT COUNT(*) FROM repositories) AS discovered,
 				(SELECT COUNT(DISTINCT repository_id) FROM scans WHERE status = 'completed') AS scanned,
-				(SELECT COUNT(*) FROM plugins WHERE verification_status = 'DETECTED') AS detected,
+				(SELECT COUNT(*) FROM plugins WHERE verification_status IN ('DETECTED', 'FORMAT_VERIFIED')) AS detected,
 				(SELECT COUNT(*) FROM plugins WHERE verification_status = 'FORMAT_VERIFIED') AS verified,
 				(SELECT COUNT(*) FROM plugins WHERE featured = 1) AS featured,
 				(SELECT COUNT(*) FROM repositories WHERE github_pushed_at >= ?) AS updatedThisWeek,
