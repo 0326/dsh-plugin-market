@@ -47,7 +47,7 @@ const TRUST_ITEMS: DocsNavItem[] = [
 function DocsNavGroup({ title, items, route, lang }: { title: string; items: DocsNavItem[]; route: DocsLayoutProps["route"]; lang: string }) {
 	return (
 		<section className="docs-nav-group">
-			<h2>{title}</h2>
+			<p className="docs-nav-heading">{title}</p>
 			<nav aria-label={title}>
 				{items.map((item) => {
 					const active = item.active(route);
@@ -74,7 +74,7 @@ export function DocsLayout({ route, children }: DocsLayoutProps) {
 			<aside className="docs-sidebar" aria-label={docsLabel}>
 				<div className="docs-sidebar-heading">
 					<p>DSH PLUGIN MARKET</p>
-					<h1>{docsLabel}</h1>
+					<div className="docs-sidebar-title">{docsLabel}</div>
 				</div>
 				<DocsNavGroup title={guideLabel} items={GUIDE_ITEMS} route={route} lang={lang} />
 				<DocsNavGroup title={trustLabel} items={TRUST_ITEMS} route={route} lang={lang} />
