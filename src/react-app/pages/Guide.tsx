@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { FactList, LastUpdated, RelatedLinks } from "../components/ContentBlocks";
 import { getGuideCopy, type GuideExampleMode, type GuideSlug } from "../content/guide-content";
 import { getRegistryContext, installCommand, listPlugins, type PluginListItem, type RegistryContext } from "../lib/api";
@@ -7,9 +7,19 @@ import { useI18n } from "../lib/i18n";
 function signalTone(value: string): string {
 	const normalized = value.toUpperCase();
 	if (["FORMAT_VERIFIED", "COMPATIBLE", "PASS", "PASSED", "ACTIVE", "LOW"].includes(normalized)) return "guide-signal guide-signal-good";
-	if (["LIKELY_COMPATIBLE", "REVIEW", "MEDIUM", "UNKNOWN"].includes(normalized)) return "guide-signal guide-signal-review";
-	if (["INCOMPATIBLE", "FAILED", "HIGH", "CRITICAL", "ARCHIVED"].includes(normalized)) return "guide-signal guide-signal-stop";
+	if (["LIKELY_COMPATIBLE", "REVIEW", "OUTDATED", "INACTIVE", "MEDIUM", "UNKNOWN"].includes(normalized)) return "guide-signal guide-signal-review";
+	if (["INCOMPATIBLE", "FAILED", "REJECTED", "HIGH", "CRITICAL", "ARCHIVED"].includes(normalized)) return "guide-signal guide-signal-stop";
 	return "guide-signal";
+}
+
+function InlineText({ text }: { text: string }): ReactNode {
+	const parts = text.split(/(`[^`]+`)/g);
+	return parts.map((part, index) => {
+		if (part.startsWith("`") && part.endsWith("`") && part.length > 2) {
+			return <code className="guide-inline-code" key={index}>{part.slice(1, -1)}</code>;
+		}
+		return part;
+	});
 }
 
 function PluginExample({ plugin, mode, lang }: { plugin: PluginListItem; mode: GuideExampleMode; lang: string }) {
@@ -36,7 +46,7 @@ function PluginExample({ plugin, mode, lang }: { plugin: PluginListItem; mode: G
 
 			{mode === "install" && (
 				<div className="guide-example-command">
-					<span>{plugin.latestCommitSha ? (lang === "zh" ? "固定到已扫描 commit" : "Pinned to scanned commit") : (lang === "zh" ? "暂无线性 scanned commit" : "No scanned commit available")}</span>
+					<span>{plugin.latestCommitSha ? (lang === "zh" ? "固定到已扫描 commit" : "Pinned to scanned commit") : (lang === "zh" ? "暂无 scanned commit" : "No scanned commit available")}</span>
 					<code>{installCommand(plugin.owner, plugin.repo, plugin.latestCommitSha)}</code>
 				</div>
 			)}
@@ -100,8 +110,8 @@ export default function Guide({ slug }: { slug: GuideSlug }) {
 				<div className="guide-hero-copy">
 					<p className="content-kicker">{copy.kicker}</p>
 					<h1>{copy.title}</h1>
-					<p className="guide-direct-answer">{copy.directAnswer}</p>
-					<p className="guide-intro">{copy.intro}</p>
+					<p className="guide-direct-answer"><InlineText text={copy.directAnswer} /></p>
+					<p className="guide-intro"><InlineText text={copy.intro} /></p>
 				</div>
 				<div className="guide-live-facts">
 					<p className="content-kicker">LIVE REGISTRY CONTEXT</p>
@@ -117,12 +127,12 @@ export default function Guide({ slug }: { slug: GuideSlug }) {
 						<div className="guide-section-copy">
 							<p className="content-kicker">{section.kicker}</p>
 							<h2>{section.title}</h2>
-							{section.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+							{section.body.map((paragraph) => <p key={paragraph}><InlineText text={paragraph} /></p>)}
 
 							{section.bullets && (
 								<div className="guide-bullet-grid">
 									{section.bullets.map((bullet) => (
-										<div key={bullet.title}><strong>{bullet.title}</strong><p>{bullet.text}</p></div>
+										<div key={bullet.title}><strong>{bullet.title}</strong><p><InlineText text={bullet.text} /></p></div>
 									))}
 								</div>
 							)}
@@ -133,7 +143,7 @@ export default function Guide({ slug }: { slug: GuideSlug }) {
 								</div>
 							)}
 
-							{section.note && <aside className="guide-note"><strong>{section.note.label}</strong><p>{section.note.text}</p></aside>}
+							{section.note && <aside className="guide-note"><strong>{section.note.label}</strong><p><InlineText text={section.note.text} /></p></aside>}
 						</div>
 					</section>
 				))}
@@ -143,7 +153,7 @@ export default function Guide({ slug }: { slug: GuideSlug }) {
 				<div>
 					<p className="content-kicker">REGISTRY EVIDENCE</p>
 					<h2>{copy.examplesTitle}</h2>
-					<p>{copy.examplesIntro}</p>
+					<p><InlineText text={copy.examplesIntro} /></p>
 				</div>
 				<div className="guide-example-grid">
 					{!loaded && <p className="guide-examples-empty">{t("common.loading")}</p>}
