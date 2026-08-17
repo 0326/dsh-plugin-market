@@ -68,28 +68,6 @@ export interface ListPluginsOptions {
 	offset?: number;
 }
 
-function pluginFilterSql(opts: ListPluginsOptions): { whereSql: string; params: unknown[] } {
-	const where: string[] = [];
-	const params: unknown[] = [];
-	if (opts.verifiedOnly) where.push("p.verification_status = 'FORMAT_VERIFIED'");
-	if (opts.status) { where.push("p.verification_status = ?"); params.push(opts.status); }
-	if (opts.featured) where.push("p.featured = 1");
-	if (opts.compatibility) { where.push("p.compatibility_status = ?"); params.push(opts.compatibility); }
-	if (opts.risk) { where.push("p.risk_level = ?"); params.push(opts.risk); }
-	if (opts.capability) { where.push("p.capabilities_json LIKE ?"); params.push('%"' + opts.capability + '"%'); }
-	if (opts.pluginType) { where.push("p.plugin_types_json LIKE ?"); params.push('%"' + opts.pluginType + '"%'); }
-	if (opts.owner) { where.push("r.owner = ?"); params.push(opts.owner); }
-	if (opts.q) { where.push("(r.full_name LIKE ? OR r.description LIKE ? OR p.package_name LIKE ?)"); const like = "%" + opts.q + "%"; params.push(like, like, like); }
-	if (opts.sort === "trending") { where.push("r.github_pushed_at >= ?"); params.push(new Date(Date.now() - 90 * 86_400_000).toISOString()); }
-	return { whereSql: where.length ? "WHERE " + where.join(" AND ") : "", params };
-}
-
-export async function countPlugins(db: D1Database, opts: ListPluginsOptions = {}): Promise<number> {
-	const { whereSql, params } = pluginFilterSql(opts);
-	const row = await db.prepare(`SELECT COUNT(*) AS total FROM plugins p JOIN repositories r ON r.id = p.repository_id ${whereSql}`).bind(...params).first<{ total: number }>();
-	return row?.total ?? 0;
-}
-
 export async function upsertRepository(db: D1Database, repo: GithubRepo): Promise<{ id: number; changed: boolean }> {
 	const now = new Date().toISOString();
 	const existing = await db
@@ -110,19 +88,19 @@ export async function upsertRepository(db: D1Database, repo: GithubRepo): Promis
 			.bind(
 					repo.owner.login,
 					repo.name,
-				repo.full_name,
-				repo.html_url,
-				repo.description,
-				repo.default_branch,
-				repo.stargazers_count,
-				repo.forks_count,
-				repo.license?.spdx_id ?? null,
-				repo.archived ? 1 : 0,
-				repo.updated_at,
-				repo.pushed_at,
-				now,
-				now,
-				existing.id,
+					repo.full_name,
+					repo.html_url,
+					repo.description,
+					repo.default_branch,
+					repo.stargazers_count,
+					repo.forks_count,
+					repo.license?.spdx_id ?? null,
+					repo.archived ? 1 : 0,
+					repo.updated_at,
+					repo.pushed_at,
+					now,
+					now,
+					existing.id,
 			)
 			.run();
 		return { id: existing.id, changed };
@@ -183,17 +161,60 @@ export async function updateRepositoryPreviewImage(db: D1Database, fullName: str
 		.run();
 }
 
+function splitFacetFilter(raw: string | undefined): string[] {
+	if (!raw) return [];
+	return [...new Set(raw.split(",").map((value) => value.trim()).filter(Boolean))].slice(0, 32);
+}
+
 export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {}): Promise<PluginListItem[]> {
 	const limit = opts.limit ?? 50;
 	const offset = opts.offset ?? 0;
-	const { whereSql, params } = pluginFilterSql(opts);
+	const where: string[] = [];
+	const params: unknown[] = [];
+	if (opts.verifiedOnly) where.push("p.verification_status = 'FORMAT_VERIFIED'");
+	if (opts.status) {
+		where.push("p.verification_status = ?");
+		params.push(opts.status);
+	}
+	if (opts.featured) where.push("p.featured = 1");
+	if (opts.compatibility) {
+		where.push("p.compatibility_status = ?");
+		params.push(opts.compatibility);
+	}
+	if (opts.risk) {
+		where.push("p.risk_level = ?");
+		params.push(opts.risk);
+	}
+	const capabilityFilters = splitFacetFilter(opts.capability);
+	if (capabilityFilters.length > 0) {
+		where.push("(" + capabilityFilters.map(() => "p.capabilities_json LIKE ?").join(" OR ") + ")");
+		params.push(...capabilityFilters.map((value) => '%"' + value + '"%'));
+	}
+	const pluginTypeFilters = splitFacetFilter(opts.pluginType);
+	if (pluginTypeFilters.length > 0) {
+		where.push("(" + pluginTypeFilters.map(() => "p.plugin_types_json LIKE ?").join(" OR ") + ")");
+		params.push(...pluginTypeFilters.map((value) => '%"' + value + '"%'));
+	}
+	if (opts.owner) {
+		where.push("r.owner = ?");
+		params.push(opts.owner);
+	}
+	if (opts.q) {
+		where.push("(r.full_name LIKE ? OR r.description LIKE ? OR p.package_name LIKE ?)");
+		const like = "%" + opts.q + "%";
+		params.push(like, like, like);
+	}
 
 	let orderBy = "r.updated_at DESC";
 	if (opts.sort === "stars") orderBy = "r.stars DESC";
 	else if (opts.sort === "new") orderBy = "r.discovered_at DESC";
 	else if (opts.sort === "trending") {
+		where.push("r.github_pushed_at >= ?");
+		params.push(new Date(Date.now() - 90 * 86_400_000).toISOString());
 		orderBy = "r.stars DESC";
 	}
+
+	const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
 	const sql =
 		`SELECT r.owner, r.name AS repo, r.full_name AS fullName, r.description, r.stars,
 			p.verification_status AS verificationStatus, p.compatibility_status AS compatibilityStatus,
@@ -208,6 +229,25 @@ export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {})
 		LIMIT ? OFFSET ?`;
 	const res = await db.prepare(sql).bind(...params, limit, offset).all<PluginListItem>();
 	return res.results ?? [];
+}
+
+export async function countPlugins(db: D1Database, opts: ListPluginsOptions = {}): Promise<number> {
+	const where: string[] = [];
+	const params: unknown[] = [];
+	if (opts.verifiedOnly) where.push("p.verification_status = 'FORMAT_VERIFIED'");
+	if (opts.status) { where.push("p.verification_status = ?"); params.push(opts.status); }
+	if (opts.featured) where.push("p.featured = 1");
+	if (opts.compatibility) { where.push("p.compatibility_status = ?"); params.push(opts.compatibility); }
+	if (opts.risk) { where.push("p.risk_level = ?"); params.push(opts.risk); }
+	const capabilities = splitFacetFilter(opts.capability);
+	if (capabilities.length) { where.push("(" + capabilities.map(() => "p.capabilities_json LIKE ?").join(" OR ") + ")"); params.push(...capabilities.map((v) => '%"' + v + '"%')); }
+	const types = splitFacetFilter(opts.pluginType);
+	if (types.length) { where.push("(" + types.map(() => "p.plugin_types_json LIKE ?").join(" OR ") + ")"); params.push(...types.map((v) => '%"' + v + '"%')); }
+	if (opts.owner) { where.push("r.owner = ?"); params.push(opts.owner); }
+	if (opts.q) { where.push("(r.full_name LIKE ? OR r.description LIKE ? OR p.package_name LIKE ?)"); const like = "%" + opts.q + "%"; params.push(like, like, like); }
+	if (opts.sort === "trending") { where.push("r.github_pushed_at >= ?"); params.push(new Date(Date.now() - 90 * 86_400_000).toISOString()); }
+	const row = await db.prepare(`SELECT COUNT(*) AS total FROM plugins p JOIN repositories r ON r.id = p.repository_id ${where.length ? "WHERE " + where.join(" AND ") : ""}`).bind(...params).first<{ total: number }>();
+	return row?.total ?? 0;
 }
 
 export async function getPlugin(db: D1Database, owner: string, repo: string): Promise<PluginDetail | null> {
@@ -468,14 +508,14 @@ export interface PublisherInfo {
 }
 
 export async function getPublisher(db: D1Database, owner: string): Promise<PublisherInfo | null> {
-	const [repos, aggregates] = await Promise.all([
+	const [repos, aggregate] = await Promise.all([
 		listPlugins(db, { owner, limit: 100 }),
 		db.prepare(`SELECT COUNT(*) AS total, COALESCE(SUM(r.stars), 0) AS stars,
 			SUM(CASE WHEN p.verification_status = 'FORMAT_VERIFIED' THEN 1 ELSE 0 END) AS verified
 			FROM plugins p JOIN repositories r ON r.id = p.repository_id WHERE r.owner = ?`).bind(owner).first<{ total: number; stars: number; verified: number }>(),
 	]);
 	if (repos.length === 0) return null;
-	return { owner, repos, totalStars: aggregates?.stars ?? 0, verifiedCount: aggregates?.verified ?? 0 };
+	return { owner, repos, totalStars: aggregate?.stars ?? 0, verifiedCount: aggregate?.verified ?? 0 };
 }
 
 // --- Discovery state (checkpointing) ---
