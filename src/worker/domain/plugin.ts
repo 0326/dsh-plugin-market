@@ -37,6 +37,7 @@ export const PLUGIN_TYPE = [
 	"INTEGRATION",
 	"THEME",
 	"BUNDLE",
+	"NON_PLUGIN",
 	"UNKNOWN",
 ] as const;
 export type PluginType = (typeof PLUGIN_TYPE)[number];
