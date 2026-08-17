@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PluginDetail, PluginListItem } from "../src/worker/db/repository";
-import { buildPluginJsonLd, buildSitemapXml } from "../src/worker/seo";
+import { buildPluginJsonLd, buildSitemapXml, isSeoPagePath, resolveSeoSpec } from "../src/worker/seo";
 
 function plugin(overrides: Partial<PluginListItem> = {}): PluginListItem {
 	return {
@@ -24,11 +24,14 @@ function plugin(overrides: Partial<PluginListItem> = {}): PluginListItem {
 }
 
 describe("buildSitemapXml", () => {
-	it("includes static, trust, plugin, and publisher URLs with lastmod", () => {
+	it("includes static, guide, plugin, and publisher URLs with lastmod", () => {
 		const xml = buildSitemapXml([plugin()]);
 		expect(xml).toContain("https://dsh-plugin.market/");
 		expect(xml).toContain("https://dsh-plugin.market/plugins");
 		expect(xml).toContain("https://dsh-plugin.market/trust");
+		expect(xml).toContain("https://dsh-plugin.market/guide/what-is-dsh-plugin");
+		expect(xml).toContain("https://dsh-plugin.market/guide/install-dsh-plugin");
+		expect(xml).toContain("https://dsh-plugin.market/guide/choose-dsh-plugin");
 		expect(xml).toContain("https://dsh-plugin.market/plugin/acme/dsh-demo");
 		expect(xml).toContain("https://dsh-plugin.market/publisher/acme");
 		expect(xml).toContain("2026-08-17T06:00:00.000Z");
@@ -38,6 +41,31 @@ describe("buildSitemapXml", () => {
 		const xml = buildSitemapXml([plugin({ owner: "acme team", repo: "plugin one" })]);
 		expect(xml).toContain("/plugin/acme%20team/plugin%20one");
 		expect(xml).toContain("/publisher/acme%20team");
+	});
+});
+
+describe("guide SEO", () => {
+	it("serves all supported guides through the SEO worker", () => {
+		expect(isSeoPagePath("/guide/what-is-dsh-plugin")).toBe(true);
+		expect(isSeoPagePath("/guide/install-dsh-plugin")).toBe(true);
+		expect(isSeoPagePath("/guide/choose-dsh-plugin")).toBe(true);
+		expect(isSeoPagePath("/guide/not-a-guide")).toBe(true);
+	});
+
+	it("returns indexable metadata and BreadcrumbList for a supported guide", async () => {
+		const spec = await resolveSeoSpec("/guide/install-dsh-plugin", {} as D1Database);
+		expect(spec.status).toBeUndefined();
+		expect(spec.canonicalPath).toBe("/guide/install-dsh-plugin");
+		expect(spec.robots).toContain("index,follow");
+		expect(spec.title).toContain("Install a DSH Plugin");
+		expect(JSON.stringify(spec.jsonLd)).toContain("BreadcrumbList");
+		expect(JSON.stringify(spec.jsonLd)).toContain("DeepSeek Harness");
+	});
+
+	it("returns a real noindex 404 spec for unknown guide paths", async () => {
+		const spec = await resolveSeoSpec("/guide/not-a-guide", {} as D1Database);
+		expect(spec.status).toBe(404);
+		expect(spec.robots).toBe("noindex,nofollow");
 	});
 });
 
