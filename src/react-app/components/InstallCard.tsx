@@ -4,9 +4,29 @@ import { useI18n } from "../lib/i18n";
 import { Icon } from "./Icon";
 
 export function InstallCard({ plugin }: { plugin: PluginDetail }) {
-	const { t } = useI18n();
+	const { t, lang } = useI18n();
 	const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 	const cmd = installCommand(plugin.owner, plugin.repo, plugin.latestCommitSha);
+	const nonPlugin = plugin.verificationStatus === "CANDIDATE";
+
+	if (nonPlugin) {
+		return (
+			<section className="install-panel border-2 border-base-content bg-base-100 p-4 md:p-5">
+				<div className="flex flex-col gap-2">
+					<h2 className="text-sm font-extrabold uppercase tracking-widest">{lang === "zh" ? "非插件" : "Not a plugin"}</h2>
+					<p className="text-sm opacity-70">
+						{lang === "zh"
+							? "当前扫描未发现 DSH Bundle 或 Cordis 插件信号，因此该仓库按非插件分类，不提供 DSH 安装命令。"
+							: "No DSH Bundle or Cordis plugin signal was detected, so this repository is classified as not a plugin and no DSH install command is offered."}
+					</p>
+					<a className="btn btn-outline mt-1 w-fit" href={plugin.htmlUrl} target="_blank" rel="noreferrer">
+						<Icon name="github" size={17} stroke={2} />{t("install.source")}
+					</a>
+				</div>
+			</section>
+		);
+	}
+
 	async function copyCommand() {
 		try {
 			if (!navigator.clipboard) throw new Error("clipboard unavailable");
