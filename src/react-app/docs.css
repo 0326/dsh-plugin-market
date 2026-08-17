@@ -29,7 +29,7 @@
 		letter-spacing: 0.11em;
 	}
 
-	.docs-sidebar-heading h1 {
+	.docs-sidebar-title {
 		margin: 0.45rem 0 0;
 		font-size: 1.65rem;
 		font-weight: 900;
@@ -40,7 +40,7 @@
 		border-bottom: 1px solid var(--color-base-content);
 	}
 
-	.docs-nav-group h2 {
+	.docs-nav-heading {
 		margin: 0;
 		padding: 0.8rem 1.25rem;
 		border-bottom: 1px solid var(--color-base-300);
