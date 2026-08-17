@@ -19,6 +19,8 @@
       "/plugins/*",
       "/plugin/*",
       "/publisher/*",
+      "/guide",
+      "/guide/*",
       "/submit",
       "/submit/*",
       "/about",
