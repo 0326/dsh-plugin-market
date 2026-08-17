@@ -30,6 +30,34 @@ function setCanonical(url: string): void {
 	link.href = url;
 }
 
+function guideSeo(slug: Extract<Route, { name: "guide" }>['slug'], zh: boolean): SeoSpec {
+	if (slug === "what-is-dsh-plugin") {
+		return {
+			title: zh ? `什么是 DSH Plugin？— ${SITE_NAME}` : `What is a DSH Plugin? — ${SITE_NAME}`,
+			description: zh
+				? "了解 DSH Plugin 在 DeepSeek Harness 中的作用、插件结构、发现与验证方式，以及安装前应该检查的关键信号。"
+				: "Learn what a DSH Plugin is, how it extends DeepSeek Harness, how plugins are discovered and verified, and what to check before installation.",
+			canonicalPath: "/guide/what-is-dsh-plugin",
+		};
+	}
+	if (slug === "install-dsh-plugin") {
+		return {
+			title: zh ? `如何安装 DSH Plugin — ${SITE_NAME}` : `How to Install a DSH Plugin — ${SITE_NAME}`,
+			description: zh
+				? "使用 DeepSeek Harness 从 GitHub 安装 DSH Plugin，并理解 pinned commit、兼容性检查和安装脚本风险。"
+				: "Install a DSH Plugin from GitHub with DeepSeek Harness and understand pinned commits, compatibility checks, and install-script risks.",
+			canonicalPath: "/guide/install-dsh-plugin",
+		};
+	}
+	return {
+		title: zh ? `如何评估和选择 DSH Plugin — ${SITE_NAME}` : `How to Evaluate and Choose a DSH Plugin — ${SITE_NAME}`,
+		description: zh
+			? "基于格式、兼容性、安全、维护、发布者和 scanned commit 六组信号评估 DSH Plugin，不把单个 Verified Badge 当成安全结论。"
+			: "Evaluate DSH Plugins using format, compatibility, security, maintenance, publisher, and scanned-commit signals instead of relying on one badge.",
+		canonicalPath: "/guide/choose-dsh-plugin",
+	};
+}
+
 function getSeo(route: Route, lang: string): SeoSpec {
 	const zh = lang === "zh";
 	switch (route.name) {
@@ -65,6 +93,8 @@ function getSeo(route: Route, lang: string): SeoSpec {
 					: `Explore DeepSeek Harness plugins and trust signals from publisher ${route.owner}.`,
 				canonicalPath: `/publisher/${encodeURIComponent(route.owner)}`,
 			};
+		case "guide":
+			return guideSeo(route.slug, zh);
 		case "submit":
 			return {
 				title: `Submit a DSH Plugin — ${SITE_NAME}`,
