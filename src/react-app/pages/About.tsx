@@ -52,7 +52,6 @@ export default function About() {
 	return (
 		<section className="about-brand-page">
 			<section className="about-ocean-hero">
-				<div className="about-ocean-glow" aria-hidden="true" />
 				<div className="about-ocean-wave about-ocean-wave-one" aria-hidden="true" />
 				<div className="about-ocean-wave about-ocean-wave-two" aria-hidden="true" />
 
@@ -95,7 +94,7 @@ export default function About() {
 					<p className="about-equation-label">{copy.equationLabel}</p>
 					<div className="about-equation-track" aria-label={copy.equation.join(" equals ")}>
 						{copy.equation.map((item, index) => (
-							<span className={index === copy.equation.length - 1 ? "about-equation-result" : ""} key={item}>
+							<span className={`about-equation-term about-equation-term-${index + 1}`} key={item}>
 								<strong>{item}</strong>
 								{index < copy.equation.length - 1 && <b aria-hidden="true">=</b>}
 							</span>
