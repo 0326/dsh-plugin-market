@@ -1,0 +1,89 @@
+.plugin-preview-shell {
+	position: relative;
+	isolation: isolate;
+}
+
+.plugin-preview-badges {
+	position: absolute;
+	left: 0.75rem;
+	bottom: 0.75rem;
+	z-index: 2;
+	display: flex;
+	max-width: calc(100% - 1.5rem);
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.plugin-preview-badges .badge {
+	border: 1px solid color-mix(in srgb, var(--color-base-content) 18%, transparent);
+	box-shadow: 0 1px 2px rgb(0 0 0 / 16%);
+	font-weight: 700;
+}
+
+.github-star-chip {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	z-index: 2;
+	display: inline-flex;
+	min-height: 1.8rem;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0 0.55rem;
+	border: 1px solid #d0d7de;
+	background: #f6f8fa;
+	box-shadow: 0 1px 0 rgb(31 35 40 / 4%);
+	color: #1f2328;
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1;
+}
+
+.plugin-card:hover .github-star-chip {
+	background: #f3f4f6;
+	border-color: #afb8c1;
+}
+
+.github-star-chip strong {
+	padding-left: 0.35rem;
+	border-left: 1px solid #d0d7de;
+	font-weight: 600;
+}
+
+.plugin-card-title {
+	letter-spacing: -0.02em;
+}
+
+.plugin-card-meta {
+	min-width: 0;
+	border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+[data-theme="dark"] .github-star-chip {
+	border-color: #30363d;
+	background: #21262d;
+	box-shadow: 0 1px 0 rgb(1 4 9 / 40%);
+	color: #f0f6fc;
+}
+
+[data-theme="dark"] .plugin-card:hover .github-star-chip {
+	border-color: #8b949e;
+	background: #30363d;
+}
+
+[data-theme="dark"] .github-star-chip strong {
+	border-left-color: #30363d;
+}
+
+@media (max-width: 420px) {
+	.plugin-preview-badges {
+		left: 0.6rem;
+		bottom: 0.6rem;
+		max-width: calc(100% - 1.2rem);
+	}
+
+	.github-star-chip {
+		top: 0.6rem;
+		right: 0.6rem;
+	}
+}
