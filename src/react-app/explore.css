@@ -1,0 +1,209 @@
+.explore-market-layout {
+	display: grid;
+	grid-template-columns: 220px minmax(0, 1fr);
+	align-items: start;
+	gap: 1rem;
+}
+
+.explore-sidebar {
+	position: sticky;
+	top: 96px;
+	max-height: calc(100vh - 116px);
+	overflow-y: auto;
+	border: 2px solid var(--color-base-content);
+	background: var(--color-base-100);
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-base-300) transparent;
+}
+
+.explore-sidebar-kicker {
+	padding: 0.65rem 0.75rem;
+	border-bottom: 2px solid var(--color-base-content);
+	background: var(--color-base-content);
+	color: var(--color-base-100);
+	font-size: 0.68rem;
+	font-weight: 900;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.explore-facet-group + .explore-facet-group {
+	border-top: 2px solid var(--color-base-content);
+}
+
+.explore-facet-parent {
+	display: flex;
+	min-height: 2.6rem;
+	align-items: center;
+	gap: 0.55rem;
+	padding: 0.6rem 0.7rem;
+	background: var(--color-base-200);
+	font-size: 0.82rem;
+	font-weight: 850;
+	cursor: pointer;
+}
+
+.explore-facet-parent .checkbox,
+.explore-facet-option .checkbox {
+	flex: 0 0 auto;
+}
+
+.explore-facet-count {
+	display: inline-grid;
+	min-width: 1.3rem;
+	height: 1.3rem;
+	margin-left: auto;
+	place-items: center;
+	background: var(--color-secondary);
+	color: var(--color-secondary-content);
+	font-size: 0.68rem;
+	font-weight: 900;
+}
+
+.explore-facet-children {
+	margin: 0.45rem 0.55rem 0.65rem 1rem;
+	padding-left: 0.7rem;
+	border-left: 1px solid var(--color-base-300);
+}
+
+.explore-facet-option {
+	position: relative;
+	display: flex;
+	min-height: 1.9rem;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.25rem 0.25rem 0.25rem 0;
+	font-size: 0.76rem;
+	line-height: 1.2;
+	cursor: pointer;
+}
+
+.explore-facet-option::before {
+	content: "";
+	position: absolute;
+	left: -0.7rem;
+	top: 50%;
+	width: 0.42rem;
+	border-top: 1px solid var(--color-base-300);
+}
+
+.explore-facet-option:hover span {
+	color: var(--color-secondary);
+}
+
+.explore-results {
+	min-width: 0;
+}
+
+.explore-results .explore-filters-scroll {
+	margin-bottom: 1rem;
+}
+
+.explore-results .explore-filters {
+	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+	min-width: 700px;
+}
+
+.explore-results-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.85rem;
+}
+
+.explore-results-grid .plugin-card .card-body {
+	gap: 0.55rem;
+	padding: 0.8rem;
+}
+
+.explore-results-grid .plugin-card-title {
+	font-size: 0.9rem;
+}
+
+.explore-results-grid .plugin-card .line-clamp-2 {
+	font-size: 0.76rem;
+	line-height: 1.35;
+}
+
+.explore-results-grid .plugin-card-meta {
+	padding-top: 0.5rem;
+	font-size: 0.68rem;
+}
+
+.explore-results-grid .plugin-preview-badges {
+	left: 0.55rem;
+	bottom: 1rem;
+	max-width: calc(100% - 1.1rem);
+	gap: 0.25rem;
+}
+
+.explore-results-grid .plugin-preview-badges .badge {
+	height: 1.25rem;
+	padding-inline: 0.38rem;
+	font-size: 0.61rem;
+}
+
+.explore-results-grid .github-star-chip {
+	top: 0.55rem;
+	left: 0.55rem;
+	min-height: 1.55rem;
+	gap: 0.22rem;
+	padding-inline: 0.42rem;
+	font-size: 0.68rem;
+}
+
+@media (max-width: 1100px) {
+	.explore-market-layout {
+		grid-template-columns: 200px minmax(0, 1fr);
+		gap: 0.8rem;
+	}
+
+	.explore-results-grid {
+		gap: 0.7rem;
+	}
+
+	.explore-results-grid .plugin-card .card-body {
+		padding: 0.7rem;
+	}
+}
+
+@media (max-width: 959px) {
+	.explore-market-layout {
+		display: block;
+	}
+
+	.explore-sidebar {
+		position: static;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		max-height: none;
+		margin-bottom: 1rem;
+	}
+
+	.explore-sidebar-kicker {
+		grid-column: 1 / -1;
+	}
+
+	.explore-facet-group + .explore-facet-group {
+		border-top: 0;
+		border-left: 2px solid var(--color-base-content);
+	}
+
+	.explore-results-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 640px) {
+	.explore-sidebar {
+		display: block;
+	}
+
+	.explore-facet-group + .explore-facet-group {
+		border-top: 2px solid var(--color-base-content);
+		border-left: 0;
+	}
+
+	.explore-results-grid {
+		grid-template-columns: 1fr;
+	}
+}

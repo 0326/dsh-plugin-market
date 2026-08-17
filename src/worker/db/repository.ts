@@ -88,19 +88,19 @@ export async function upsertRepository(db: D1Database, repo: GithubRepo): Promis
 			.bind(
 					repo.owner.login,
 					repo.name,
-				repo.full_name,
-				repo.html_url,
-				repo.description,
-				repo.default_branch,
-				repo.stargazers_count,
-				repo.forks_count,
-				repo.license?.spdx_id ?? null,
-				repo.archived ? 1 : 0,
-				repo.updated_at,
-				repo.pushed_at,
-				now,
-				now,
-				existing.id,
+					repo.full_name,
+					repo.html_url,
+					repo.description,
+					repo.default_branch,
+					repo.stargazers_count,
+					repo.forks_count,
+					repo.license?.spdx_id ?? null,
+					repo.archived ? 1 : 0,
+					repo.updated_at,
+					repo.pushed_at,
+					now,
+					now,
+					existing.id,
 			)
 			.run();
 		return { id: existing.id, changed };
@@ -161,6 +161,11 @@ export async function updateRepositoryPreviewImage(db: D1Database, fullName: str
 		.run();
 }
 
+function splitFacetFilter(raw: string | undefined): string[] {
+	if (!raw) return [];
+	return [...new Set(raw.split(",").map((value) => value.trim()).filter(Boolean))].slice(0, 32);
+}
+
 export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {}): Promise<PluginListItem[]> {
 	const limit = opts.limit ?? 50;
 	const offset = opts.offset ?? 0;
@@ -180,13 +185,15 @@ export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {})
 		where.push("p.risk_level = ?");
 		params.push(opts.risk);
 	}
-	if (opts.capability) {
-		where.push("p.capabilities_json LIKE ?");
-		params.push('%"' + opts.capability + '"%');
+	const capabilityFilters = splitFacetFilter(opts.capability);
+	if (capabilityFilters.length > 0) {
+		where.push("(" + capabilityFilters.map(() => "p.capabilities_json LIKE ?").join(" OR ") + ")");
+		params.push(...capabilityFilters.map((value) => '%"' + value + '"%'));
 	}
-	if (opts.pluginType) {
-		where.push("p.plugin_types_json LIKE ?");
-		params.push('%"' + opts.pluginType + '"%');
+	const pluginTypeFilters = splitFacetFilter(opts.pluginType);
+	if (pluginTypeFilters.length > 0) {
+		where.push("(" + pluginTypeFilters.map(() => "p.plugin_types_json LIKE ?").join(" OR ") + ")");
+		params.push(...pluginTypeFilters.map((value) => '%"' + value + '"%'));
 	}
 	if (opts.owner) {
 		where.push("r.owner = ?");
