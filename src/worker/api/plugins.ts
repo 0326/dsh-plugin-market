@@ -1,6 +1,7 @@
 import { Hono } from "hono";
-import { getPlugin, getPublisher, getStats, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
+import { getBaseline, getPlugin, getPublisher, getStats, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
 import { CAPABILITY, PLUGIN_TYPE } from "../domain/plugin";
+import { SCANNER_VERSION } from "../domain/scan";
 import type { Env } from "../env";
 import { GithubClient, GithubError, type GithubRepo } from "../github/client";
 
@@ -74,6 +75,15 @@ api.get("/plugins/:owner/:repo/scans/latest", async (c) => {
 });
 
 api.get("/stats", async (c) => c.json(await getStats(c.env.DB)));
+
+api.get("/context", async (c) => {
+	const [stats, baseline] = await Promise.all([getStats(c.env.DB), getBaseline(c.env.DB)]);
+	return c.json({
+		stats,
+		scannerVersion: SCANNER_VERSION,
+		baseline,
+	});
+});
 
 api.get("/categories", (c) => c.json({ capabilities: CAPABILITY, pluginTypes: PLUGIN_TYPE }));
 
