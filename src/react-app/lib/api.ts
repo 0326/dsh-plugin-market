@@ -38,6 +38,17 @@ export interface PluginDetail extends PluginListItem {
 	findings: Finding[];
 }
 
+export interface PluginReadme {
+	owner: string;
+	repo: string;
+	path: string;
+	language: "zh" | "en" | "unknown";
+	fallback: boolean;
+	ref: string;
+	html: string;
+	sourceUrl: string;
+}
+
 export interface RegistryStats {
 	total: number;
 	verified: number;
@@ -118,6 +129,14 @@ export function listPlugins(opts: ListPluginsOptions = {}): Promise<{ items: Plu
 
 export function getPlugin(owner: string, repo: string): Promise<PluginDetail> {
 	return get<PluginDetail>("/plugins/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo));
+}
+
+export async function getPluginReadme(owner: string, repo: string, lang: "zh" | "en"): Promise<PluginReadme | null> {
+	const path = "/plugins/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo) + "/readme?lang=" + encodeURIComponent(lang);
+	const res = await fetch(API + path);
+	if (res.status === 404) return null;
+	if (!res.ok) throw new Error("API error " + res.status);
+	return (await res.json()) as PluginReadme;
 }
 
 export function getScans(owner: string, repo: string): Promise<{ scans: ScanRow[] }> {

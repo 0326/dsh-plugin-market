@@ -94,27 +94,33 @@ export class GithubClient {
 
 	constructor(private readonly token: string) {}
 
-	async get<T>(path: string, etag?: string): Promise<GithubResponse<T>> {
+	private headers(accept = "application/vnd.github+json"): Headers {
 		const headers = new Headers({
-			Accept: "application/vnd.github+json",
+			Accept: accept,
 			"X-GitHub-Api-Version": "2022-11-28",
 			"User-Agent": "dsh-plugin-market",
 		});
 		if (this.token) headers.set("Authorization", "Bearer " + this.token);
+		return headers;
+	}
+
+	private githubError(res: Response, remaining?: number): GithubError {
+		const reset = res.headers.get("X-RateLimit-Reset");
+		const retryAfter = parseRetryAfter(res.headers.get("Retry-After"), reset);
+		if (res.status === 404) return new GithubError("not found", 404, undefined, false);
+		if (res.status === 429 || (res.status === 403 && remaining === 0)) return new GithubError("rate limited", res.status, retryAfter, true);
+		if (res.status === 403) return new GithubError("forbidden", 403, undefined, false);
+		return new GithubError("github error " + res.status, res.status, undefined, false);
+	}
+
+	async get<T>(path: string, etag?: string): Promise<GithubResponse<T>> {
+		const headers = this.headers();
 		if (etag) headers.set("If-None-Match", etag);
 
 		const res = await fetch(this.base + path, { headers });
 		const remaining = parseNumber(res.headers.get("X-RateLimit-Remaining"));
-		const reset = res.headers.get("X-RateLimit-Reset");
-		const retryAfter = parseRetryAfter(res.headers.get("Retry-After"), reset);
-
 		if (res.status === 304) throw new GithubError("not modified", 304, undefined, false);
-		if (res.status === 404) throw new GithubError("not found", 404, undefined, false);
-		if (res.status === 429 || (res.status === 403 && remaining === 0)) {
-			throw new GithubError("rate limited", res.status, retryAfter, true);
-		}
-		if (res.status === 403) throw new GithubError("forbidden", 403, undefined, false);
-		if (res.status >= 400) throw new GithubError("github error " + res.status, res.status, undefined, false);
+		if (res.status >= 400) throw this.githubError(res, remaining);
 
 		const data = (await res.json()) as T;
 		return { data, etag: res.headers.get("ETag") ?? undefined, remaining };
@@ -126,27 +132,36 @@ export class GithubClient {
 	}
 
 	private async graphql<T>(query: string): Promise<T> {
-		const headers = new Headers({
-			Accept: "application/vnd.github+json",
-			"X-GitHub-Api-Version": "2022-11-28",
-			"User-Agent": "dsh-plugin-market",
-			"Content-Type": "application/json",
-		});
-		if (this.token) headers.set("Authorization", "Bearer " + this.token);
+		const headers = this.headers();
+		headers.set("Content-Type", "application/json");
 
 		const res = await fetch("https://api.github.com/graphql", {
 			method: "POST",
 			headers,
 			body: JSON.stringify({ query }),
 		});
-		if (res.status === 429) throw new GithubError("rate limited", 429, undefined, true);
+		const remaining = parseNumber(res.headers.get("X-RateLimit-Remaining"));
 		if (res.status === 401) throw new GithubError("unauthorized", 401, undefined, false);
-		if (res.status >= 400) throw new GithubError("github error " + res.status, res.status, undefined, false);
+		if (res.status >= 400) throw this.githubError(res, remaining);
 
 		const body = (await res.json()) as GithubGraphqlResponse<T>;
 		if (body.errors?.length) throw new GithubError("graphql error: " + body.errors[0].message, 200, undefined, false);
 		if (!body.data) throw new GithubError("graphql returned no data", 200, undefined, false);
 		return body.data;
+	}
+
+	/** Render trusted-by-GitHub GFM HTML. Repository-relative URLs are intentionally left for the client to resolve against the scanned ref. */
+	async renderMarkdown(markdown: string): Promise<string> {
+		const headers = this.headers("text/html");
+		headers.set("Content-Type", "application/json");
+		const res = await fetch(this.base + "/markdown", {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ text: markdown, mode: "gfm" }),
+		});
+		const remaining = parseNumber(res.headers.get("X-RateLimit-Remaining"));
+		if (res.status >= 400) throw this.githubError(res, remaining);
+		return res.text();
 	}
 
 	/**

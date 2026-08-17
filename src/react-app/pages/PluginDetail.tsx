@@ -3,11 +3,19 @@ import { Badge } from "../components/Badge";
 import { Icon, type IconName } from "../components/Icon";
 import { InstallCard } from "../components/InstallCard";
 import { PluginPreview } from "../components/PluginPreview";
+import { ReadmeContent } from "../components/ReadmeContent";
 import { PluginDetailSkeleton } from "../components/Skeletons";
 import { useI18n } from "../lib/i18n";
-import { getPlugin, getScans, type Finding, type PluginDetail as Detail, type ScanRow } from "../lib/api";
+import { getPlugin, getPluginReadme, getScans, type Finding, type PluginDetail as Detail, type PluginReadme, type ScanRow } from "../lib/api";
 
-type Tab = "overview" | "compatibility" | "security" | "versions";
+type Tab = "readme" | "overview" | "compatibility" | "security" | "versions";
+type ReadmeState = "available" | "missing" | "error";
+
+interface ReadmeResult {
+	key: string;
+	state: ReadmeState;
+	readme: PluginReadme | null;
+}
 
 interface CompatibilityVerdict {
 	packageName: string;
@@ -168,11 +176,12 @@ function ScansList({ scans }: { scans: ScanRow[] }) {
 }
 
 export default function PluginDetail({ owner, repo }: { owner: string; repo: string }) {
-	const { t } = useI18n();
+	const { t, lang } = useI18n();
 	const [detail, setDetail] = useState<Detail | null>(null);
 	const [scans, setScans] = useState<ScanRow[]>([]);
+	const [readmeResult, setReadmeResult] = useState<ReadmeResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [tab, setTab] = useState<Tab>("overview");
+	const [tab, setTab] = useState<Tab>("readme");
 
 	useEffect(() => {
 		let ignore = false;
@@ -187,6 +196,29 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 			ignore = true;
 		};
 	}, [owner, repo]);
+
+	const readmeKey = `${owner}/${repo}:${lang}`;
+
+	useEffect(() => {
+		let ignore = false;
+		const requestKey = `${owner}/${repo}:${lang}`;
+		getPluginReadme(owner, repo, lang)
+			.then((result) => {
+				if (ignore) return;
+				if (!result) {
+					setReadmeResult({ key: requestKey, state: "missing", readme: null });
+					setTab((current) => (current === "readme" ? "overview" : current));
+					return;
+				}
+				setReadmeResult({ key: requestKey, state: "available", readme: result });
+			})
+			.catch(() => {
+				if (!ignore) setReadmeResult({ key: requestKey, state: "error", readme: null });
+			});
+		return () => {
+			ignore = true;
+		};
+	}, [owner, repo, lang]);
 
 	useEffect(() => {
 		let ignore = false;
@@ -206,7 +238,11 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 	if (!detail) return <PluginDetailSkeleton />;
 
 	const metadata = parseMetadata(detail.metadataJson);
+	const activeReadmeResult = readmeResult?.key === readmeKey ? readmeResult : null;
+	const readmeState = activeReadmeResult?.state ?? "loading";
+	const readme = activeReadmeResult?.readme ?? null;
 	const tabs: { key: Tab; label: string; icon: IconName }[] = [
+		...(readmeState === "missing" ? [] : [{ key: "readme" as const, label: "README", icon: "github" as const }]),
 		{ key: "overview", label: t("detail.overview"), icon: "layout" },
 		{ key: "compatibility", label: t("detail.compatibility"), icon: "exchange" },
 		{ key: "security", label: t("detail.security"), icon: "shield" },
@@ -254,6 +290,14 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 						</button>
 					))}
 				</div>
+
+				{tab === "readme" && readmeState === "loading" && <div className="py-12 text-center text-sm opacity-60">{t("common.loading")}</div>}
+				{tab === "readme" && readmeState === "error" && (
+					<div className="border border-error/30 bg-error/5 p-4 text-sm text-error">
+						{lang === "zh" ? "README 暂时加载失败，请稍后重试。" : "README could not be loaded. Please try again later."}
+					</div>
+				)}
+				{tab === "readme" && readmeState === "available" && readme && <ReadmeContent readme={readme} />}
 
 				{tab === "overview" && (
 					<div>
