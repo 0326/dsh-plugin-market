@@ -1,4 +1,4 @@
-# DS Plugin Market
+# DSH Plugin Market
 
 **English** | [简体中文](README.md)
 
@@ -6,9 +6,9 @@
 >
 > A trustworthy plugin registry, discovery, and installation platform for the DeepSeek Harness ecosystem.
 
-🌐 **https://ds-plugin.market**
+🌐 **https://dsh-plugin.market**
 
-![DS Plugin Market](screenshot.png)
+![DSH Plugin Market](screenshot.png)
 
 ![Runtime](https://img.shields.io/badge/Runtime-Cloudflare%20Workers-orange)
 ![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript-61dafb)
@@ -37,7 +37,7 @@ It cannot answer the questions that matter before you install:
 - What **security and supply-chain risks** should I care about?
 - Which version / commit should I install to match the code the market scanned?
 
-**DS Plugin Market is not just a view on top of the GitHub topic. It converts candidate repositories into a structured, verifiable, and traceable Plugin Registry.**
+**DSH Plugin Market is not just a view on top of the GitHub topic. It converts candidate repositories into a structured, verifiable, and traceable Plugin Registry.**
 
 ## Core value
 
@@ -130,7 +130,7 @@ dsh plugin --profile web add github:owner/repo
 
 For Git dependencies that require a build step, authors often use a `prepare` script to generate artifacts. Allowing that script means third-party code executes during install.
 
-That's why DS Plugin Market surfaces the following as first-class information:
+That's why DSH Plugin Market surfaces the following as first-class information:
 
 ```text
 Install scripts
@@ -209,7 +209,7 @@ Metadata              Files
       Cloudflare D1 Registry
               │
               ▼
-        ds-plugin.market
+        dsh-plugin.market
 ```
 
 Automatic update pipeline:
@@ -339,17 +339,17 @@ Core principle:
 ```text
 GitHub = Source of Truth for Code
 
-DS Plugin Market
+DSH Plugin Market
 = Source of Truth for Plugin Metadata & Trust Signals
 ```
 
 We don't host plugins, duplicate third-party publishing systems, or try to replace GitHub / npm. Our job is:
 
-> **GitHub tells you which repos claim to be DSH Plugins; DS Plugin Market tells you what they really are, whether they are compatible, and what you should know before installing.**
+> **GitHub tells you which repos claim to be DSH Plugins; DSH Plugin Market tells you what they really are, whether they are compatible, and what you should know before installing.**
 
 ## Disclaimer
 
-DS Plugin Market is a community project. It is not an official DeepSeek product and does not represent DeepSeek's review or endorsement of third-party plugins.
+DSH Plugin Market is a community project. It is not an official DeepSeek product and does not represent DeepSeek's review or endorsement of third-party plugins.
 
 All Verification, Compatibility, and Security results are automated analyses tied to a specific scanner version, time, and commit. They are auxiliary information for installation decisions and do not replace source review or other security measures.
 
