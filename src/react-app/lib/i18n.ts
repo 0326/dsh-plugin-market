@@ -2,6 +2,13 @@ import { createContext, useContext } from "react";
 
 export type Language = "zh" | "en";
 
+export function formatDateTime(value: string | null | undefined, lang: Language): string {
+	if (!value) return "—";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return "—";
+	return new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
 const STORAGE_KEY = "dsh-market-lang";
 
 export type Dict = { [key: string]: string | Dict };
@@ -90,6 +97,8 @@ const zh: Dict = {
     sortStars: "最多 Star",
     sortNew: "最新",
     sortTrending: "趋势",
+    loadMore: "加载更多",
+    resultCount: "共 {count} 个插件",
     empty: "未找到插件。",
   },
   submit: {
@@ -276,6 +285,8 @@ const en: Dict = {
     sortStars: "Most stars",
     sortNew: "Newest",
     sortTrending: "Trending",
+    loadMore: "Load more",
+    resultCount: "{count} plugins",
     empty: "No plugins found.",
   },
   submit: {

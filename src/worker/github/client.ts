@@ -12,6 +12,8 @@ export class GithubError extends Error {
 	}
 }
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 export interface GithubRepo {
 	id: number;
 	owner: { login: string };
@@ -117,7 +119,17 @@ export class GithubClient {
 		const headers = this.headers();
 		if (etag) headers.set("If-None-Match", etag);
 
-		const res = await fetch(this.base + path, { headers });
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+		let res: Response;
+		try {
+			res = await fetch(this.base + path, { headers, signal: controller.signal });
+		} catch (err) {
+			if (err instanceof DOMException && err.name === "AbortError") throw new GithubError("github request timeout", 408, undefined, true);
+			throw err;
+		} finally {
+			clearTimeout(timeout);
+		}
 		const remaining = parseNumber(res.headers.get("X-RateLimit-Remaining"));
 		if (res.status === 304) throw new GithubError("not modified", 304, undefined, false);
 		if (res.status >= 400) throw this.githubError(res, remaining);
@@ -135,11 +147,22 @@ export class GithubClient {
 		const headers = this.headers();
 		headers.set("Content-Type", "application/json");
 
-		const res = await fetch("https://api.github.com/graphql", {
-			method: "POST",
-			headers,
-			body: JSON.stringify({ query }),
-		});
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+		let res: Response;
+		try {
+			res = await fetch("https://api.github.com/graphql", {
+				method: "POST",
+				headers,
+				body: JSON.stringify({ query }),
+				signal: controller.signal,
+			});
+		} catch (err) {
+			if (err instanceof DOMException && err.name === "AbortError") throw new GithubError("github request timeout", 408, undefined, true);
+			throw err;
+		} finally {
+			clearTimeout(timeout);
+		}
 		const remaining = parseNumber(res.headers.get("X-RateLimit-Remaining"));
 		if (res.status === 401) throw new GithubError("unauthorized", 401, undefined, false);
 		if (res.status >= 400) throw this.githubError(res, remaining);

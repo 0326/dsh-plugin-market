@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { DocsLayout } from "./components/DocsLayout";
 import { GitHubStar } from "./components/GitHubStar";
 import { Icon } from "./components/Icon";
@@ -7,14 +7,14 @@ import { useI18n } from "./lib/i18n";
 import { navigate, useRoute } from "./lib/router";
 import { useSeo } from "./lib/seo";
 import { useTheme } from "./lib/theme";
-import About from "./pages/About";
-import Explore from "./pages/Explore";
-import Guide from "./pages/Guide";
 import Home from "./pages/Home";
-import PluginDetail from "./pages/PluginDetail";
-import Publisher from "./pages/Publisher";
-import Submit from "./pages/Submit";
-import Trust from "./pages/Trust";
+const About = lazy(() => import("./pages/About"));
+const Explore = lazy(() => import("./pages/Explore"));
+const Guide = lazy(() => import("./pages/Guide"));
+const PluginDetail = lazy(() => import("./pages/PluginDetail"));
+const Publisher = lazy(() => import("./pages/Publisher"));
+const Submit = lazy(() => import("./pages/Submit"));
+const Trust = lazy(() => import("./pages/Trust"));
 
 function navClass(active: boolean): string {
 	return "btn btn-sm " + (active ? "bg-neutral text-neutral-content" : "btn-ghost");
@@ -86,6 +86,7 @@ function App() {
 			</header>
 
 			<main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-6">
+				<Suspense fallback={<div className="min-h-[40vh] animate-pulse border border-base-300 bg-base-200/40" aria-label="Loading" />}>
 				{route.name === "home" && <Home />}
 				{route.name === "explore" && <Explore key={route.query} query={route.query} />}
 				{route.name === "plugin" && <PluginDetail key={route.owner + "/" + route.repo} owner={route.owner} repo={route.repo} />}
@@ -102,6 +103,7 @@ function App() {
 					</DocsLayout>
 				)}
 				{route.name === "about" && <About />}
+				</Suspense>
 			</main>
 
 			<footer className="site-footer bg-neutral p-8 text-neutral-content md:p-10">

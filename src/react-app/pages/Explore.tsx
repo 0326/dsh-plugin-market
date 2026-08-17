@@ -47,7 +47,8 @@ function taxonomyLabel(value: string, lang: Language, labels: Record<string, Rec
 export default function Explore({ query = "" }: { query?: string }) {
 	const { t, lang } = useI18n();
 	const params = useMemo(() => new URLSearchParams(query), [query]);
-	const [result, setResult] = useState<{ key: string; items: PluginListItem[] } | null>(null);
+	const [result, setResult] = useState<{ key: string; items: PluginListItem[]; total: number; hasMore: boolean } | null>(null);
+	const [offset, setOffset] = useState(0);
 	const [q, setQ] = useState(params.get("q") ?? "");
 	const [featuredOnly, setFeaturedOnly] = useState(params.get("featured") === "1");
 	const [verifiedOnly, setVerifiedOnly] = useState(params.get("verified") === "1");
@@ -58,7 +59,8 @@ export default function Explore({ query = "" }: { query?: string }) {
 	const [sort, setSort] = useState<Sort>((params.get("sort") as Sort) ?? "updated");
 	const [capabilities, setCapabilities] = useState<string[]>([]);
 	const [pluginTypes, setPluginTypes] = useState<string[]>([]);
-	const requestKey = JSON.stringify({ q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort });
+	const filterKey = JSON.stringify({ q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort });
+	const requestKey = JSON.stringify({ filterKey, offset });
 	const anyRiskLabel = lang === "zh" ? "任意安全风险" : "Any security risk";
 
 	useEffect(() => {
@@ -87,23 +89,25 @@ export default function Explore({ query = "" }: { query?: string }) {
 				pluginType: pluginType || undefined,
 				compatibility: compatibility || undefined,
 				risk: risk || undefined,
-				sort,
-			})
+					sort,
+					offset,
+				})
 				.then((res) => {
-					if (!ignore) setResult({ key: requestKey, items: res.items });
+					if (!ignore) setResult((current) => ({ key: requestKey, items: offset ? [...(current?.items ?? []), ...res.items] : res.items, total: res.total, hasMore: res.hasMore }));
 				})
 				.catch(() => {
-					if (!ignore) setResult({ key: requestKey, items: [] });
+					if (!ignore) setResult({ key: requestKey, items: [], total: 0, hasMore: false });
 				});
 		}, 250);
 		return () => {
 			ignore = true;
 			window.clearTimeout(timer);
 		};
-	}, [q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort, requestKey]);
+	}, [q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort, offset, requestKey]);
 
 	const loading = result?.key !== requestKey;
 	const items = result?.items ?? [];
+	const changeFilter = <T,>(setter: (value: T) => void, value: T) => { setOffset(0); setter(value); };
 
 	return (
 		<section>
@@ -117,7 +121,7 @@ export default function Explore({ query = "" }: { query?: string }) {
 					<input
 						className="grow border-0 bg-transparent outline-none"
 						value={q}
-						onChange={(e) => setQ(e.target.value)}
+						onChange={(e) => changeFilter(setQ, e.target.value)}
 						placeholder={t("explore.searchPlaceholder")}
 						aria-label={t("explore.searchPlaceholder")}
 					/>
@@ -126,31 +130,31 @@ export default function Explore({ query = "" }: { query?: string }) {
 
 			<div className="explore-filters-scroll mb-8">
 			<div className="explore-filters">
-				<select aria-label={t("explore.allCapabilities")} className="select select-sm" value={capability} onChange={(e) => setCapability(e.target.value)}>
+				<select aria-label={t("explore.allCapabilities")} className="select select-sm" value={capability} onChange={(e) => changeFilter(setCapability, e.target.value)}>
 					<option value="">{t("explore.allCapabilities")}</option>
 					{capabilities.map((c) => (
 						<option key={c} value={c}>{taxonomyLabel(c, lang, CAPABILITY_LABELS)}</option>
 					))}
 				</select>
-				<select aria-label={t("explore.allTypes")} className="select select-sm" value={pluginType} onChange={(e) => setPluginType(e.target.value)}>
+				<select aria-label={t("explore.allTypes")} className="select select-sm" value={pluginType} onChange={(e) => changeFilter(setPluginType, e.target.value)}>
 					<option value="">{t("explore.allTypes")}</option>
 					{pluginTypes.map((pt) => (
 						<option key={pt} value={pt}>{taxonomyLabel(pt, lang, PLUGIN_TYPE_LABELS)}</option>
 					))}
 				</select>
-				<select aria-label={t("explore.anyCompatibility")} className="select select-sm" value={compatibility} onChange={(e) => setCompatibility(e.target.value)}>
+				<select aria-label={t("explore.anyCompatibility")} className="select select-sm" value={compatibility} onChange={(e) => changeFilter(setCompatibility, e.target.value)}>
 					<option value="">{t("explore.anyCompatibility")}</option>
 					{COMPATIBILITY.map((c) => (
 						<option key={c} value={c}>{t("badge." + c)}</option>
 					))}
 				</select>
-				<select aria-label={anyRiskLabel} className="select select-sm" value={risk} onChange={(e) => setRisk(e.target.value)}>
+				<select aria-label={anyRiskLabel} className="select select-sm" value={risk} onChange={(e) => changeFilter(setRisk, e.target.value)}>
 					<option value="">{anyRiskLabel}</option>
 					{RISK.map((r) => (
 						<option key={r} value={r}>{t("badge." + r)}</option>
 					))}
 				</select>
-				<select aria-label={t("explore.sortUpdated")} className="select select-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+				<select aria-label={t("explore.sortUpdated")} className="select select-sm" value={sort} onChange={(e) => changeFilter(setSort, e.target.value as Sort)}>
 					<option value="updated">{t("explore.sortUpdated")}</option>
 					<option value="stars">{t("explore.sortStars")}</option>
 					<option value="new">{t("explore.sortNew")}</option>
@@ -158,11 +162,11 @@ export default function Explore({ query = "" }: { query?: string }) {
 				</select>
 				<div className="explore-checks">
 					<label className="label cursor-pointer gap-2">
-						<input type="checkbox" className="checkbox checkbox-sm" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
+						<input type="checkbox" className="checkbox checkbox-sm" checked={featuredOnly} onChange={(e) => changeFilter(setFeaturedOnly, e.target.checked)} />
 						<span>{t("explore.featuredOnly")}</span>
 					</label>
 					<label className="label cursor-pointer gap-2">
-						<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
+						<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => changeFilter(setVerifiedOnly, e.target.checked)} />
 						<span>{t("explore.verifiedOnly")}</span>
 					</label>
 				</div>
@@ -174,11 +178,15 @@ export default function Explore({ query = "" }: { query?: string }) {
 			) : items.length === 0 ? (
 				<p className="text-base-content/60">{t("explore.empty")}</p>
 			) : (
-				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				<>
+					<p className="mb-3 text-sm opacity-60">{t("explore.resultCount", { count: result?.total ?? items.length })}</p>
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{items.map((p) => (
 						<PluginCard key={p.fullName} p={p} />
 					))}
-				</div>
+					</div>
+					{result?.hasMore && <button type="button" className="btn btn-outline mx-auto mt-6 block" onClick={() => setOffset((value) => value + 50)}>{t("explore.loadMore")}</button>}
+				</>
 			)}
 		</section>
 	);

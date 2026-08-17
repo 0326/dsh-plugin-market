@@ -4,6 +4,8 @@ import {
 	insertDiscoveryShards,
 	listPendingDiscoveryShards,
 	updateDiscoveryShard,
+	acquireDiscoveryLease,
+	releaseDiscoveryLease,
 	updateRepositoryPreviewImage,
 	upsertRepository,
 } from "../db/repository";
@@ -102,6 +104,11 @@ export async function runDiscovery(
 	queue: Queue<ScanQueueJob>,
 	maxReposPerRun: number = MAX_REPOS_PER_RUN,
 ): Promise<DiscoveryRun> {
+	const leaseOwner = crypto.randomUUID();
+	if (!(await acquireDiscoveryLease(db, leaseOwner))) {
+		return { githubTotal: 0, reposSeen: 0, enqueued: 0, shardsProcessed: 0, pendingShards: (await listPendingDiscoveryShards(db, SOURCE, TOPIC_QUERY)).length };
+	}
+	try {
 	// Persist the unfiltered GitHub topic count once per discovery run. Homepage
 	// requests read this cached D1 value instead of spending GitHub API quota.
 	const totalProbe = await searchThrottled(client, TOPIC_QUERY, 1, 1);
@@ -165,6 +172,9 @@ export async function runDiscovery(
 
 	const remaining = (await listPendingDiscoveryShards(db, SOURCE, TOPIC_QUERY)).length;
 	return { githubTotal: totalProbe.total_count, reposSeen, enqueued, shardsProcessed, pendingShards: remaining };
+	} finally {
+		await releaseDiscoveryLease(db, leaseOwner);
+	}
 }
 
 /**

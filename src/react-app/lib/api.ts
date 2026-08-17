@@ -96,7 +96,11 @@ const API = "/api";
 
 async function get<T>(path: string): Promise<T> {
 	const res = await fetch(API + path);
-	if (!res.ok) throw new Error("API error " + res.status);
+	if (!res.ok) {
+		let code = "api_error";
+		try { code = ((await res.json()) as { error?: string }).error ?? code; } catch { /* non-JSON upstream response */ }
+		throw new Error(code);
+	}
 	return (await res.json()) as T;
 }
 
@@ -116,7 +120,9 @@ export interface ListPluginsOptions {
 	offset?: number;
 }
 
-export function listPlugins(opts: ListPluginsOptions = {}): Promise<{ items: PluginListItem[]; count: number }> {
+export interface PluginListResponse { items: PluginListItem[]; total: number; limit: number; offset: number; hasMore: boolean }
+
+export function listPlugins(opts: ListPluginsOptions = {}): Promise<PluginListResponse> {
 	const params = new URLSearchParams();
 	if (opts.q) params.set("q", opts.q);
 	if (opts.verified) params.set("verified", "1");
@@ -130,7 +136,7 @@ export function listPlugins(opts: ListPluginsOptions = {}): Promise<{ items: Plu
 	if (opts.limit !== undefined) params.set("limit", String(opts.limit));
 	if (opts.offset !== undefined) params.set("offset", String(opts.offset));
 	const qs = params.toString();
-	return get<{ items: PluginListItem[]; count: number }>("/plugins" + (qs ? "?" + qs : ""));
+	return get<PluginListResponse>("/plugins" + (qs ? "?" + qs : ""));
 }
 
 export function getPlugin(owner: string, repo: string): Promise<PluginDetail> {
@@ -141,7 +147,12 @@ export async function getPluginReadme(owner: string, repo: string, lang: "zh" | 
 	const path = "/plugins/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo) + "/readme?lang=" + encodeURIComponent(lang);
 	const res = await fetch(API + path);
 	if (res.status === 404) return null;
-	if (!res.ok) throw new Error("API error " + res.status);
+	if (!res.ok) {
+		if (res.status === 404) return null;
+		let code = "api_error";
+		try { code = ((await res.json()) as { error?: string }).error ?? code; } catch { /* non-JSON upstream response */ }
+		throw new Error(code);
+	}
 	return (await res.json()) as PluginReadme;
 }
 

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getBaseline, getPlugin, getPublisher, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
+import { countPlugins, getBaseline, getPlugin, getPublisher, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
 import { getRegistryStats } from "../db/registry";
 import { CAPABILITY, PLUGIN_TYPE } from "../domain/plugin";
 import { SCANNER_VERSION } from "../domain/scan";
@@ -46,8 +46,8 @@ function encodeGithubPath(path: string): string {
 
 api.get("/plugins", async (c) => {
 	const q = c.req.query();
-	const sort = q.sort === "stars" || q.sort === "new" || q.sort === "trending" ? q.sort : "updated";
-	const items = await listPlugins(c.env.DB, {
+	const sort: "updated" | "stars" | "new" | "trending" = q.sort === "stars" || q.sort === "new" || q.sort === "trending" ? q.sort : "updated";
+	const options = {
 		q: q.q,
 		verifiedOnly: q.verified === "1" || q.verified === "true",
 		featured: q.featured === "1" || q.featured === "true",
@@ -59,17 +59,20 @@ api.get("/plugins", async (c) => {
 		sort,
 		limit: clampInt(q.limit, 50, 1, 100),
 		offset: clampInt(q.offset, 0, 0, 100000),
-	});
-	return c.json({ items, count: items.length });
+	};
+	const [items, total] = await Promise.all([listPlugins(c.env.DB, options), countPlugins(c.env.DB, options)]);
+	return c.json({ items, total, limit: options.limit, offset: options.offset, hasMore: options.offset + items.length < total });
 });
 
 api.get("/plugins/:owner/:repo/readme", async (c) => {
 	const owner = c.req.param("owner");
 	const repo = c.req.param("repo");
+	const language: ReadmeLanguage = c.req.query("lang") === "en" ? "en" : "zh";
+	const cacheKey = new Request(new URL(`/api/plugins/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme?lang=${language}`, c.req.url).toString());
+	const cached = await caches.default.match(cacheKey);
+	if (cached) return cached;
 	const detail = await getPlugin(c.env.DB, owner, repo);
 	if (!detail) return c.json({ error: "not_found" }, 404);
-
-	const language: ReadmeLanguage = c.req.query("lang") === "en" ? "en" : "zh";
 	const client = new GithubClient(c.env.GITHUB_TOKEN);
 
 	try {
@@ -89,7 +92,7 @@ api.get("/plugins/:owner/:repo/readme", async (c) => {
 		const sourceUrl = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/blob/${encodeURIComponent(ref)}/${encodeGithubPath(resolved.path)}`;
 
 		c.header("Cache-Control", "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400");
-		return c.json({
+		const response = c.json({
 			owner,
 			repo,
 			path: resolved.path,
@@ -99,6 +102,8 @@ api.get("/plugins/:owner/:repo/readme", async (c) => {
 			html,
 			sourceUrl,
 		});
+		c.executionCtx.waitUntil(caches.default.put(cacheKey, response.clone()));
+		return response;
 	} catch (err) {
 		if (err instanceof GithubError && err.rateLimited) {
 			if (err.retryAfterSeconds !== undefined) c.header("Retry-After", String(err.retryAfterSeconds));
@@ -147,9 +152,10 @@ api.get("/publishers/:owner", async (c) => {
 
 api.get("/search", async (c) => {
 	const q = c.req.query("q");
-	if (!q) return c.json({ items: [], count: 0 });
-	const items = await listPlugins(c.env.DB, { q, limit: 50 });
-	return c.json({ items, count: items.length });
+	if (!q) return c.json({ items: [], total: 0, limit: 50, offset: 0, hasMore: false });
+	const options = { q, limit: 50, offset: 0 };
+	const [items, total] = await Promise.all([listPlugins(c.env.DB, options), countPlugins(c.env.DB, options)]);
+	return c.json({ items, total, limit: 50, offset: 0, hasMore: items.length < total });
 });
 
 api.post("/submit", async (c) => {

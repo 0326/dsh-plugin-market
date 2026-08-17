@@ -4,7 +4,7 @@ import { Icon, type IconName } from "../components/Icon";
 import { InstallCard } from "../components/InstallCard";
 import { ReadmeContent } from "../components/ReadmeContent";
 import { PluginDetailSkeleton } from "../components/Skeletons";
-import { useI18n } from "../lib/i18n";
+import { formatDateTime, useI18n } from "../lib/i18n";
 import { getPlugin, getPluginReadme, getScans, type Finding, type PluginDetail as Detail, type PluginReadme, type ScanRow } from "../lib/api";
 
 type Tab = "readme" | "overview" | "compatibility" | "security" | "versions";
@@ -94,7 +94,7 @@ function FindingsList({ findings }: { findings: Finding[] }) {
 }
 
 function CompatibilityInfo({ metadata }: { metadata: Metadata | null }) {
-	const { t } = useI18n();
+	const { t, lang } = useI18n();
 	const baseline = metadata?.compatibilityBaseline;
 	const verdicts = metadata?.compatibilityVerdicts ?? [];
 	return (
@@ -113,7 +113,7 @@ function CompatibilityInfo({ metadata }: { metadata: Metadata | null }) {
 						</div>
 						<div>
 							<span className="text-xs opacity-60">{t("detail.baselineCheckedAt")}</span>
-							<p className="text-sm">{new Date(baseline.checkedAt).toLocaleString()}</p>
+							<p className="text-sm">{formatDateTime(baseline.checkedAt, lang)}</p>
 						</div>
 					</div>
 				</div>

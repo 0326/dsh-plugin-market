@@ -13,6 +13,8 @@ vi.mock("../src/worker/db/repository", () => ({
 	clearDiscoveryShards: vi.fn(async () => {}),
 	insertDiscoveryShards: vi.fn(async () => {}),
 	updateDiscoveryShard: vi.fn(async () => {}),
+	acquireDiscoveryLease: vi.fn(async () => true),
+	releaseDiscoveryLease: vi.fn(async () => {}),
 }));
 
 vi.mock("../src/worker/db/registry", () => ({

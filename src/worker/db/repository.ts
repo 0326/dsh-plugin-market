@@ -68,6 +68,28 @@ export interface ListPluginsOptions {
 	offset?: number;
 }
 
+function pluginFilterSql(opts: ListPluginsOptions): { whereSql: string; params: unknown[] } {
+	const where: string[] = [];
+	const params: unknown[] = [];
+	if (opts.verifiedOnly) where.push("p.verification_status = 'FORMAT_VERIFIED'");
+	if (opts.status) { where.push("p.verification_status = ?"); params.push(opts.status); }
+	if (opts.featured) where.push("p.featured = 1");
+	if (opts.compatibility) { where.push("p.compatibility_status = ?"); params.push(opts.compatibility); }
+	if (opts.risk) { where.push("p.risk_level = ?"); params.push(opts.risk); }
+	if (opts.capability) { where.push("p.capabilities_json LIKE ?"); params.push('%"' + opts.capability + '"%'); }
+	if (opts.pluginType) { where.push("p.plugin_types_json LIKE ?"); params.push('%"' + opts.pluginType + '"%'); }
+	if (opts.owner) { where.push("r.owner = ?"); params.push(opts.owner); }
+	if (opts.q) { where.push("(r.full_name LIKE ? OR r.description LIKE ? OR p.package_name LIKE ?)"); const like = "%" + opts.q + "%"; params.push(like, like, like); }
+	if (opts.sort === "trending") { where.push("r.github_pushed_at >= ?"); params.push(new Date(Date.now() - 90 * 86_400_000).toISOString()); }
+	return { whereSql: where.length ? "WHERE " + where.join(" AND ") : "", params };
+}
+
+export async function countPlugins(db: D1Database, opts: ListPluginsOptions = {}): Promise<number> {
+	const { whereSql, params } = pluginFilterSql(opts);
+	const row = await db.prepare(`SELECT COUNT(*) AS total FROM plugins p JOIN repositories r ON r.id = p.repository_id ${whereSql}`).bind(...params).first<{ total: number }>();
+	return row?.total ?? 0;
+}
+
 export async function upsertRepository(db: D1Database, repo: GithubRepo): Promise<{ id: number; changed: boolean }> {
 	const now = new Date().toISOString();
 	const existing = await db
@@ -164,50 +186,14 @@ export async function updateRepositoryPreviewImage(db: D1Database, fullName: str
 export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {}): Promise<PluginListItem[]> {
 	const limit = opts.limit ?? 50;
 	const offset = opts.offset ?? 0;
-	const where: string[] = [];
-	const params: unknown[] = [];
-	if (opts.verifiedOnly) where.push("p.verification_status = 'FORMAT_VERIFIED'");
-	if (opts.status) {
-		where.push("p.verification_status = ?");
-		params.push(opts.status);
-	}
-	if (opts.featured) where.push("p.featured = 1");
-	if (opts.compatibility) {
-		where.push("p.compatibility_status = ?");
-		params.push(opts.compatibility);
-	}
-	if (opts.risk) {
-		where.push("p.risk_level = ?");
-		params.push(opts.risk);
-	}
-	if (opts.capability) {
-		where.push("p.capabilities_json LIKE ?");
-		params.push('%"' + opts.capability + '"%');
-	}
-	if (opts.pluginType) {
-		where.push("p.plugin_types_json LIKE ?");
-		params.push('%"' + opts.pluginType + '"%');
-	}
-	if (opts.owner) {
-		where.push("r.owner = ?");
-		params.push(opts.owner);
-	}
-	if (opts.q) {
-		where.push("(r.full_name LIKE ? OR r.description LIKE ? OR p.package_name LIKE ?)");
-		const like = "%" + opts.q + "%";
-		params.push(like, like, like);
-	}
+	const { whereSql, params } = pluginFilterSql(opts);
 
 	let orderBy = "r.updated_at DESC";
 	if (opts.sort === "stars") orderBy = "r.stars DESC";
 	else if (opts.sort === "new") orderBy = "r.discovered_at DESC";
 	else if (opts.sort === "trending") {
-		where.push("r.github_pushed_at >= ?");
-		params.push(new Date(Date.now() - 90 * 86_400_000).toISOString());
 		orderBy = "r.stars DESC";
 	}
-
-	const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
 	const sql =
 		`SELECT r.owner, r.name AS repo, r.full_name AS fullName, r.description, r.stars,
 			p.verification_status AS verificationStatus, p.compatibility_status AS compatibilityStatus,
@@ -482,11 +468,14 @@ export interface PublisherInfo {
 }
 
 export async function getPublisher(db: D1Database, owner: string): Promise<PublisherInfo | null> {
-	const repos = await listPlugins(db, { owner, limit: 100 });
+	const [repos, aggregates] = await Promise.all([
+		listPlugins(db, { owner, limit: 100 }),
+		db.prepare(`SELECT COUNT(*) AS total, COALESCE(SUM(r.stars), 0) AS stars,
+			SUM(CASE WHEN p.verification_status = 'FORMAT_VERIFIED' THEN 1 ELSE 0 END) AS verified
+			FROM plugins p JOIN repositories r ON r.id = p.repository_id WHERE r.owner = ?`).bind(owner).first<{ total: number; stars: number; verified: number }>(),
+	]);
 	if (repos.length === 0) return null;
-	const totalStars = repos.reduce((sum, p) => sum + p.stars, 0);
-	const verifiedCount = repos.filter((p) => p.verificationStatus === "FORMAT_VERIFIED").length;
-	return { owner, repos, totalStars, verifiedCount };
+	return { owner, repos, totalStars: aggregates?.stars ?? 0, verifiedCount: aggregates?.verified ?? 0 };
 }
 
 // --- Discovery state (checkpointing) ---
@@ -519,6 +508,19 @@ export async function insertDiscoveryShards(db: D1Database, source: string, quer
 
 export async function clearDiscoveryShards(db: D1Database, source: string, query: string): Promise<void> {
 	await db.prepare("DELETE FROM discovery_state WHERE source = ? AND query = ?").bind(source, query).run();
+}
+
+export async function acquireDiscoveryLease(db: D1Database, owner: string, leaseMs = 10 * 60_000): Promise<boolean> {
+	const now = new Date().toISOString();
+	const until = new Date(Date.now() + leaseMs).toISOString();
+	const res = await db.prepare(`INSERT INTO discovery_lock (name, owner, lease_until, updated_at) VALUES ('github', ?, ?, ?)
+		ON CONFLICT(name) DO UPDATE SET owner = excluded.owner, lease_until = excluded.lease_until, updated_at = excluded.updated_at
+		WHERE discovery_lock.lease_until < ? OR discovery_lock.owner = ?`).bind(owner, until, now, now, owner).run();
+	return res.meta.changes > 0;
+}
+
+export async function releaseDiscoveryLease(db: D1Database, owner: string): Promise<void> {
+	await db.prepare("DELETE FROM discovery_lock WHERE name = 'github' AND owner = ?").bind(owner).run();
 }
 
 export async function updateDiscoveryShard(db: D1Database, id: number, page: number, status: "pending" | "done"): Promise<void> {
