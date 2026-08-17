@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { SCANNER_VERSION } from "../src/worker/domain/scan";
 import { RESCAN_SWEEP_PAGE_SIZE, processRescanSweepJob, startRescanSweep } from "../src/worker/queue/scan";
 
 describe("rescan sweep", () => {
@@ -8,7 +9,7 @@ describe("rescan sweep", () => {
 
 		const result = await startRescanSweep(env);
 
-		expect(result).toEqual({ status: "started", scannerVersion: "0.3.0" });
+		expect(result).toEqual({ status: "started", scannerVersion: SCANNER_VERSION });
 		expect(send).toHaveBeenCalledTimes(1);
 		expect(send).toHaveBeenCalledWith({ type: "RESCAN_SWEEP", afterRepositoryId: 0 });
 	});
@@ -26,7 +27,7 @@ describe("rescan sweep", () => {
 
 		const result = await processRescanSweepJob(env, { type: "RESCAN_SWEEP", afterRepositoryId: 10 });
 
-		expect(bind).toHaveBeenCalledWith(10, "0.3.0", RESCAN_SWEEP_PAGE_SIZE);
+		expect(bind).toHaveBeenCalledWith(10, SCANNER_VERSION, RESCAN_SWEEP_PAGE_SIZE);
 		expect(sendBatch).toHaveBeenCalledTimes(1);
 		const batch = sendBatch.mock.calls[0][0] as Array<{ body: { repositoryId: number; owner: string; repo: string; reason: string } }>;
 		expect(batch).toHaveLength(2);

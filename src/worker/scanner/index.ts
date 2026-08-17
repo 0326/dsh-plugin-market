@@ -57,17 +57,18 @@ export function scanRepository(input: ScanInput): ScanResult {
 	const maintenance = analyzeMaintenance(input.maintenance);
 
 	const verificationStatus = deriveVerification(bundle);
-	const metadata = buildMetadata(manifest, security, bundle, getFileContent(snapshot, "README.md"), compatibility, input.baseline ?? DEFAULT_BASELINE);
+	const isPlugin = verificationStatus !== "CANDIDATE";
+	const metadata = buildMetadata(manifest, security, bundle, getFileContent(snapshot, "README.md"), compatibility, input.baseline ?? DEFAULT_BASELINE, isPlugin);
 	const findings = [...bundle.findings, ...compatibility.findings, ...security.findings, ...maintenance.findings];
 
-		return {
+	return {
 		scannerVersion: SCANNER_VERSION,
 		commitSha: snapshot.commitSha,
 		verificationStatus,
-		compatibilityStatus: compatibility.status,
-		securityStatus: security.status,
+		compatibilityStatus: isPlugin ? compatibility.status : "UNKNOWN",
+		securityStatus: isPlugin ? security.status : "UNKNOWN",
 		maintenanceStatus: maintenance.status,
-		riskLevel: deriveRiskLevel(findings),
+		riskLevel: isPlugin ? deriveRiskLevel(findings) : "UNKNOWN",
 		findings,
 		metadata,
 	};
@@ -79,7 +80,15 @@ function deriveVerification(bundle: BundleAnalysis): VerificationStatus {
 	return "CANDIDATE";
 }
 
-function buildMetadata(manifest: ParsedPackageJson, security: SecurityAnalysis, bundle: BundleAnalysis, readme: string | undefined, compatibility: CompatibilityAnalysis, baseline: CompatibilityBaseline): PluginMetadata {
+function buildMetadata(
+	manifest: ParsedPackageJson,
+	security: SecurityAnalysis,
+	bundle: BundleAnalysis,
+	readme: string | undefined,
+	compatibility: CompatibilityAnalysis,
+	baseline: CompatibilityBaseline,
+	isPlugin: boolean,
+): PluginMetadata {
 	const dshDependencyRanges: Record<string, string> = {};
 	for (const [name, spec] of Object.entries({ ...(manifest.peerDependencies ?? {}), ...(manifest.dependencies ?? {}) })) {
 		if (name === "cordis" || name.startsWith("@deepseek-ai/")) dshDependencyRanges[name] = spec;
@@ -98,8 +107,8 @@ function buildMetadata(manifest: ParsedPackageJson, security: SecurityAnalysis, 
 		dshBundlePatch: bundle.patchPath,
 		clientPlatform: manifest.dsh?.client?.platform,
 		installScripts: security.installScripts,
-		capabilities: detectCapabilities(manifest, readme),
-		pluginTypes: detectPluginTypes(manifest),
+		capabilities: isPlugin ? detectCapabilities(manifest, readme) : [],
+		pluginTypes: detectPluginTypes(manifest, isPlugin),
 		compatibilityBaseline: {
 			dshVersion: baseline.dshVersion,
 			cordisVersion: baseline.cordisVersion,
@@ -127,13 +136,13 @@ function buildFailure(snapshot: RepoSnapshot, maintenance: MaintenanceInput, err
 		compatibilityStatus: "UNKNOWN",
 		securityStatus: "UNKNOWN",
 		maintenanceStatus: maintenanceAnalysis.status,
-			riskLevel: deriveRiskLevel(findings),
+		riskLevel: "UNKNOWN",
 		findings: [...findings, ...maintenanceAnalysis.findings],
 		metadata: {
 			dshDependencyRanges: {},
 			installScripts: [],
 			capabilities: [],
-			pluginTypes: ["UNKNOWN"],
+			pluginTypes: ["NON_PLUGIN"],
 		},
 	};
 }

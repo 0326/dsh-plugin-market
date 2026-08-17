@@ -33,8 +33,9 @@ export function detectCapabilities(manifest: ParsedPackageJson, readme?: string)
 	return out;
 }
 
-/** Rule-based plugin type detection (refined in M3). */
-export function detectPluginTypes(manifest: ParsedPackageJson): PluginType[] {
+/** Rule-based plugin type detection. Non-plugin repositories stay visible as their own market type. */
+export function detectPluginTypes(manifest: ParsedPackageJson, isPlugin: boolean = true): PluginType[] {
+	if (!isPlugin) return ["NON_PLUGIN"];
 	const types: PluginType[] = [];
 	if (manifest.dsh?.bundle?.patch) types.push("BUNDLE");
 	if (manifest.dsh?.client) types.push("CLIENT_UI");

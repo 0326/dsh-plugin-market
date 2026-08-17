@@ -29,8 +29,13 @@ export function PluginCard({
 	p: PluginListItem;
 	featured?: boolean;
 }) {
-	const { t } = useI18n();
+	const { t, lang } = useI18n();
 	const dateStr = formatDate(p.updatedAt);
+	const nonPlugin = p.verificationStatus === "CANDIDATE";
+	const nonPluginLabel = lang === "zh" ? "非插件" : "Not a plugin";
+	const securityRiskLabel = lang === "zh"
+		? `安全风险 ${t("badge." + p.riskLevel)}`
+		: `security risk ${t("badge." + p.riskLevel)}`;
 
 	return (
 		<a
@@ -43,10 +48,16 @@ export function PluginCard({
 			<div className="plugin-preview-shell">
 				<PluginPreview src={p.previewImageUrl} alt={p.fullName} />
 				<div className="plugin-preview-badges">
-					{featured && <Badge value="FEATURED" />}
-					<Badge value={p.verificationStatus} />
-					<Badge value={p.compatibilityStatus} />
-					<Badge value={p.riskLevel} label={t("riskLabel", { level: t("badge." + p.riskLevel) })} />
+					{nonPlugin ? (
+						<Badge value="NON_PLUGIN" label={nonPluginLabel} />
+					) : (
+						<>
+							{featured && <Badge value="FEATURED" />}
+							<Badge value={p.verificationStatus} />
+							<Badge value={p.compatibilityStatus} />
+							<Badge value={p.riskLevel} label={securityRiskLabel} />
+						</>
+					)}
 				</div>
 				<span className="github-star-chip" aria-label={`GitHub stars: ${p.stars}`}>
 					<Icon name="star" size={14} stroke={1.8} />

@@ -216,12 +216,16 @@ describe("scanRepository", () => {
 		expect(result.metadata.dshBundlePatch).toBe("cordis.patch.yml");
 	});
 
-	it("classifies a repo with no DSH signals as CANDIDATE", () => {
+	it("classifies a repo with no DSH signals as a visible NON_PLUGIN candidate", () => {
 		const result = scanRepository({
 			snapshot: snapshotFor({ name: "not-a-plugin", version: "1.0.0" }),
 			maintenance: { archived: false, disabled: false, stars: 0, forks: 0 },
 		});
 		expect(result.verificationStatus).toBe("CANDIDATE");
+		expect(result.metadata.pluginTypes).toEqual(["NON_PLUGIN"]);
+		expect(result.compatibilityStatus).toBe("UNKNOWN");
+		expect(result.securityStatus).toBe("UNKNOWN");
+		expect(result.riskLevel).toBe("UNKNOWN");
 	});
 
 	it("classifies a cordis-only repo as DETECTED", () => {
@@ -233,6 +237,28 @@ describe("scanRepository", () => {
 		expect(result.verificationStatus).toBe("DETECTED");
 	});
 
+	it("does not turn compatibility failures into security risk", () => {
+		const pkg = dshBundlePackage({ scripts: {}, dependencies: { "@deepseek-ai/cordis": "^2.0.0" } });
+		const result = scanRepository({
+			snapshot: snapshotFor(pkg),
+			maintenance: { archived: false, disabled: false, stars: 0, forks: 0 },
+		});
+		expect(result.compatibilityStatus).toBe("INCOMPATIBLE");
+		expect(result.securityStatus).toBe("PASSED");
+		expect(result.riskLevel).toBe("LOW");
+	});
+
+	it("keeps real high-severity security signals as HIGH risk", () => {
+		const pkg = dshBundlePackage({ scripts: {} });
+		const snap = snapshotFor(pkg, [{ path: "src/runtime.js", content: "const fn = new Function('return 1'); fn();" }]);
+		const result = scanRepository({
+			snapshot: snap,
+			maintenance: { archived: false, disabled: false, stars: 0, forks: 0 },
+		});
+		expect(result.securityStatus).toBe("REVIEW");
+		expect(result.riskLevel).toBe("HIGH");
+	});
+
 	it("records a MANIFEST_INVALID finding when package.json is missing", () => {
 		const result = scanRepository({
 			snapshot: { owner: "a", repo: "b", defaultBranch: "main", commitSha: "x", files: [] },
@@ -240,6 +266,7 @@ describe("scanRepository", () => {
 		});
 		expect(result.verificationStatus).toBe("CANDIDATE");
 		expect(result.findings.some((f) => f.code === "MANIFEST_INVALID")).toBe(true);
-		expect(result.riskLevel).toBe("HIGH");
+		expect(result.metadata.pluginTypes).toEqual(["NON_PLUGIN"]);
+		expect(result.riskLevel).toBe("UNKNOWN");
 	});
 });

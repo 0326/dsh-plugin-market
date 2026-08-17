@@ -36,6 +36,7 @@ const PLUGIN_TYPE_LABELS: Record<string, Record<Language, string>> = {
 	INTEGRATION: { zh: "集成", en: "Integration" },
 	THEME: { zh: "主题", en: "Theme" },
 	BUNDLE: { zh: "插件包", en: "Bundle" },
+	NON_PLUGIN: { zh: "非插件", en: "Not a plugin" },
 	UNKNOWN: { zh: "未知", en: "Unknown" },
 };
 
@@ -58,6 +59,7 @@ export default function Explore({ query = "" }: { query?: string }) {
 	const [capabilities, setCapabilities] = useState<string[]>([]);
 	const [pluginTypes, setPluginTypes] = useState<string[]>([]);
 	const requestKey = JSON.stringify({ q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort });
+	const anyRiskLabel = lang === "zh" ? "任意安全风险" : "Any security risk";
 
 	useEffect(() => {
 		let ignore = false;
@@ -94,10 +96,10 @@ export default function Explore({ query = "" }: { query?: string }) {
 					if (!ignore) setResult({ key: requestKey, items: [] });
 				});
 		}, 250);
-			return () => {
-				ignore = true;
-				window.clearTimeout(timer);
-			};
+		return () => {
+			ignore = true;
+			window.clearTimeout(timer);
+		};
 	}, [q, featuredOnly, verifiedOnly, capability, pluginType, compatibility, risk, sort, requestKey]);
 
 	const loading = result?.key !== requestKey;
@@ -142,8 +144,8 @@ export default function Explore({ query = "" }: { query?: string }) {
 						<option key={c} value={c}>{t("badge." + c)}</option>
 					))}
 				</select>
-				<select aria-label={t("explore.anyRisk")} className="select select-sm" value={risk} onChange={(e) => setRisk(e.target.value)}>
-					<option value="">{t("explore.anyRisk")}</option>
+				<select aria-label={anyRiskLabel} className="select select-sm" value={risk} onChange={(e) => setRisk(e.target.value)}>
+					<option value="">{anyRiskLabel}</option>
 					{RISK.map((r) => (
 						<option key={r} value={r}>{t("badge." + r)}</option>
 					))}
