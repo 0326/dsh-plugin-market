@@ -21,10 +21,21 @@ function resolvePatchPath(patchPath: string): string {
 	return patchPath.replace(/^\.\//, "");
 }
 
+function isNonEmptyMapping(value: unknown): value is Record<string, unknown> {
+	return value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0;
+}
+
 /**
- * Conservative YAML presence check. A full YAML parser is deferred; this only
- * asserts that the patch file has a plausible mapping/list structure so that a
- * plain text file cannot be mistaken for a valid patch.
+ * Conservative Cordis patch structure check. DSH bundles in the wild use both
+ * the legacy mapping form and Cordis' operation-sequence form, for example:
+ *
+ *   - insert:
+ *       - id: my-plugin
+ *         name: '@scope/my-plugin'
+ *
+ * We intentionally validate only YAML shape here, not the semantics of each
+ * Cordis operation. Scanner format verification remains static and does not
+ * execute third-party configuration or code.
  */
 function isPlausiblePatchYaml(content: string | undefined): boolean {
 	if (!content || !content.trim()) return false;
@@ -32,7 +43,11 @@ function isPlausiblePatchYaml(content: string | undefined): boolean {
 		const document = parseDocument(content, { strict: true });
 		if (document.errors.length > 0) return false;
 		const value = document.toJS() as unknown;
-		if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+
+		if (Array.isArray(value)) {
+			return value.length > 0 && value.every(isNonEmptyMapping);
+		}
+		if (!isNonEmptyMapping(value)) return false;
 		return Object.prototype.hasOwnProperty.call(value, "plugins") || Object.prototype.hasOwnProperty.call(value, "patch");
 	} catch {
 		return false;
@@ -89,8 +104,8 @@ export function analyzeBundle(manifest: ParsedPackageJson, snapshot: RepoSnapsho
 					category: "FORMAT",
 					code: "PATCH_INVALID",
 					severity: "MEDIUM",
-					title: "Patch file does not look like valid YAML",
-					detail: "The referenced patch file could not be recognized as a YAML mapping/list.",
+					title: "Patch file does not look like valid Cordis patch YAML",
+					detail: "The referenced patch file could not be recognized as a non-empty Cordis mapping or operation sequence.",
 					filePath: patchPath,
 				});
 			}
