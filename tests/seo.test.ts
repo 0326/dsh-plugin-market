@@ -24,10 +24,11 @@ function plugin(overrides: Partial<PluginListItem> = {}): PluginListItem {
 }
 
 describe("buildSitemapXml", () => {
-	it("includes static, plugin, and publisher URLs with lastmod", () => {
+	it("includes static, trust, plugin, and publisher URLs with lastmod", () => {
 		const xml = buildSitemapXml([plugin()]);
 		expect(xml).toContain("https://dsh-plugin.market/");
 		expect(xml).toContain("https://dsh-plugin.market/plugins");
+		expect(xml).toContain("https://dsh-plugin.market/trust");
 		expect(xml).toContain("https://dsh-plugin.market/plugin/acme/dsh-demo");
 		expect(xml).toContain("https://dsh-plugin.market/publisher/acme");
 		expect(xml).toContain("2026-08-17T06:00:00.000Z");
