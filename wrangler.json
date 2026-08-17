@@ -20,6 +20,7 @@
       "/publisher/*",
       "/submit",
       "/about",
+      "/trust",
       "/sitemap.xml"
     ]
   },
