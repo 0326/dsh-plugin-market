@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { DocsLayout } from "./components/DocsLayout";
 import { GitHubStar } from "./components/GitHubStar";
 import { Icon } from "./components/Icon";
 import { Kun } from "./components/Kun";
@@ -42,9 +43,8 @@ function App() {
 	}, []);
 
 	const isMarket = route.name === "explore" || route.name === "plugin" || route.name === "publisher";
-	const trustLabel = lang === "zh" ? "机制" : "Trust";
-	const trustFooterLabel = lang === "zh" ? "机制" : "Trust Model";
-	const guideLabel = lang === "zh" ? "指南" : "Guides";
+	const isDocs = route.name === "guide" || route.name === "trust";
+	const docsLabel = lang === "zh" ? "文档" : "Docs";
 
 	return (
 		<div className="app-frame flex min-h-screen flex-col bg-base-100 text-base-content">
@@ -59,7 +59,7 @@ function App() {
 					<a className={navClass(route.name === "home")} href="/">{t("nav.home")}</a>
 					<a className={navClass(isMarket)} href="/plugins">{t("nav.explore")}</a>
 					<a className={navClass(route.name === "submit")} href="/submit">{t("nav.submit")}</a>
-					<a className={navClass(route.name === "trust")} href="/trust">{trustLabel}</a>
+					<a className={navClass(isDocs)} href="/guide/what-is-dsh-plugin">{docsLabel}</a>
 					<a className={navClass(route.name === "about")} href="/about">{t("nav.about")}</a>
 				</nav>
 				<div className="navbar-end gap-2">
@@ -69,9 +69,8 @@ function App() {
 						<ul tabIndex={0} className="dropdown-content menu z-50 mt-3 w-52 border border-base-300 bg-base-100 p-2 shadow">
 							<li><a href="/">{t("nav.home")}</a></li>
 							<li><a href="/plugins">{t("nav.explore")}</a></li>
-							<li><a href="/guide/what-is-dsh-plugin">{guideLabel}</a></li>
 							<li><a href="/submit">{t("nav.submit")}</a></li>
-							<li><a href="/trust">{trustLabel}</a></li>
+							<li><a href="/guide/what-is-dsh-plugin">{docsLabel}</a></li>
 							<li><a href="/about">{t("nav.about")}</a></li>
 							<li><button type="button" onClick={toggleTheme}><Icon name={theme === "light" ? "moon" : "sun"} size={16} stroke={2} />{theme === "light" ? t("theme.dark") : t("theme.light")}</button></li>
 						</ul>
@@ -91,9 +90,17 @@ function App() {
 				{route.name === "explore" && <Explore key={route.query} query={route.query} />}
 				{route.name === "plugin" && <PluginDetail key={route.owner + "/" + route.repo} owner={route.owner} repo={route.repo} />}
 				{route.name === "publisher" && <Publisher owner={route.owner} />}
-				{route.name === "guide" && <Guide key={route.slug} slug={route.slug} />}
+				{route.name === "guide" && (
+					<DocsLayout route={route}>
+						<Guide key={route.slug} slug={route.slug} />
+					</DocsLayout>
+				)}
 				{route.name === "submit" && <Submit />}
-				{route.name === "trust" && <Trust />}
+				{route.name === "trust" && (
+					<DocsLayout route={route}>
+						<Trust />
+					</DocsLayout>
+				)}
 				{route.name === "about" && <About />}
 			</main>
 
@@ -106,8 +113,7 @@ function App() {
 					<p className="max-w-md opacity-80">{t("footer")}</p>
 				</div>
 				<nav className="flex flex-wrap items-center gap-x-6 gap-y-3 md:justify-end" aria-label={t("footerLinks")}>
-					<a className="link-hover link" href="/guide/what-is-dsh-plugin">{guideLabel}</a>
-					<a className="link-hover link" href="/trust">{trustFooterLabel}</a>
+					<a className="link-hover link" href="/guide/what-is-dsh-plugin">{docsLabel}</a>
 					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/0326/dsh-plugin-market" target="_blank" rel="noreferrer"><Icon name="github" size={16} stroke={2} />{t("footerSource")}</a>
 					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noreferrer"><Icon name="external-link" size={14} stroke={2} />DeepSeek Harness</a>
 				</nav>
