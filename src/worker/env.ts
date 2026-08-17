@@ -1,4 +1,4 @@
-import type { ScanJob } from "./domain/scan";
+import type { ScanQueueJob } from "./domain/scan";
 
 /**
  * Worker bindings and secrets.
@@ -7,7 +7,7 @@ import type { ScanJob } from "./domain/scan";
  * set with `wrangler secret put` and are never committed.
  */
 export type Env = Omit<Cloudflare.Env, "SCAN_QUEUE" | "ASSETS"> & {
-  SCAN_QUEUE: Queue<ScanJob>;
+  SCAN_QUEUE: Queue<ScanQueueJob>;
   ASSETS: Fetcher;
   GITHUB_TOKEN: string;
   INTERNAL_API_SECRET: string;
