@@ -50,11 +50,17 @@ export interface PluginReadme {
 }
 
 export interface RegistryStats {
+	/** Backward-compatible alias for discovered repositories. */
 	total: number;
+	githubTotal: number | null;
+	discovered: number;
+	scanned: number;
+	detected: number;
 	verified: number;
 	featured: number;
 	updatedThisWeek: number;
 	lastScanAt: string | null;
+	discoveryCheckedAt: string | null;
 }
 
 export interface CompatibilityBaseline {

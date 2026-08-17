@@ -99,6 +99,11 @@ export default function Home() {
 		? new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(stats.lastScanAt))
 		: t("home.noScanYet");
 	const baselineLabel = baseline ? `DSH ${baseline.dshVersion} · Cordis ${baseline.cordisVersion}` : "—";
+	const progressLabels = lang === "zh"
+		? ["GitHub 总量", "已发现仓库", "已扫描仓库", "已检测插件", "格式已验证"]
+		: ["GitHub total", "discovered repos", "scanned repos", "detected plugins", "format verified"];
+	const discoveredLabel = lang === "zh" ? "已发现仓库" : "Discovered repositories";
+	const progressValues: Array<number | string> = [stats.githubTotal ?? "—", stats.discovered, stats.scanned, stats.detected, stats.verified];
 
 	function onSearch(e: React.FormEvent) {
 		e.preventDefault();
@@ -130,11 +135,12 @@ export default function Home() {
 						<input className="input join-item w-full" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("home.searchPlaceholder")} aria-label={t("home.searchPlaceholder")} />
 						<button type="submit" className="btn join-item btn-neutral"><Icon name="search" size={18} stroke={2} />{t("home.search")}</button>
 					</form>
-					<div className="hero-stats">
-						<div className="hero-stat"><strong>{stats.total}</strong><span>{t("home.statsTotal")}</span></div>
-						<div className="hero-stat"><strong>{stats.featured}</strong><span>{t("home.statsFeatured")}</span></div>
-						<div className="hero-stat"><strong>{stats.verified}</strong><span>{t("home.statsVerified")}</span></div>
-						<div className="hero-stat"><strong>{stats.updatedThisWeek}</strong><span>{t("home.statsUpdated")}</span></div>
+					<div className="mt-[1.65rem] grid max-w-[760px] grid-cols-2 sm:grid-cols-5">
+						{progressValues.map((value, index) => (
+							<div key={progressLabels[index]} className={"hero-stat " + (index % 2 === 0 ? "max-sm:border-l-0 max-sm:pl-0" : "")}>
+								<strong>{value}</strong><span>{progressLabels[index]}</span>
+							</div>
+						))}
 					</div>
 				</div>
 				<div className="hero-art hidden lg:grid">
@@ -190,7 +196,7 @@ export default function Home() {
 					<div className="works-grid">
 						<Pipeline steps={copy.works.steps} />
 						<FactList items={[
-							{ label: copy.works.facts.total, value: stats.total },
+							{ label: discoveredLabel, value: stats.discovered },
 							{ label: copy.works.facts.verified, value: stats.verified },
 							{ label: copy.works.facts.scanner, value: scannerVersion },
 							{ label: copy.works.facts.baseline, value: baselineLabel },

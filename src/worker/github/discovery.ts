@@ -7,6 +7,7 @@ import {
 	updateRepositoryPreviewImage,
 	upsertRepository,
 } from "../db/repository";
+import { upsertDiscoverySummary } from "../db/registry";
 import { extractReadmeImage } from "../scanner/readme-image";
 import { GithubError, type GithubClient, type GithubSearchReposResult } from "./client";
 
@@ -19,11 +20,11 @@ const THROTTLE_MS = 2200; // Keep under the 30 search requests/min rate limit.
 const MIN_WINDOW_MS = 1000; // Stop splitting below 1 second.
 const MAX_RETRIES = 10;
 /**
- * Fixed lower bound for the created-time window. The dsh-plugin topic cannot
- * predate DeepSeek Harness (early 2026); a fixed floor avoids the (broken)
- * sort=created probe that GitHub repository search silently ignores.
+ * Search the complete practical GitHub repository history instead of assuming
+ * dsh-plugin repositories were created after the DSH launch. Older repos can
+ * add the topic later, so a DSH-specific creation-date floor would miss them.
  */
-const EARLIEST = "2025-01-01T00:00:00.000Z";
+export const GITHUB_REPOSITORY_EPOCH = "2008-01-01T00:00:00.000Z";
 /**
  * Repos processed per cron run. Sized to the Workers free plan: 2 D1 queries
  * per repo (~800 for 400 repos) + a few sendBatch + search calls stay under
@@ -32,6 +33,7 @@ const EARLIEST = "2025-01-01T00:00:00.000Z";
 const MAX_REPOS_PER_RUN = 400;
 
 export interface DiscoveryRun {
+	githubTotal: number;
 	reposSeen: number;
 	enqueued: number;
 	shardsProcessed: number;
@@ -100,10 +102,15 @@ export async function runDiscovery(
 	queue: Queue<ScanJob>,
 	maxReposPerRun: number = MAX_REPOS_PER_RUN,
 ): Promise<DiscoveryRun> {
+	// Persist the unfiltered GitHub topic count once per discovery run. Homepage
+	// requests read this cached D1 value instead of spending GitHub API quota.
+	const totalProbe = await searchThrottled(client, TOPIC_QUERY, 1, 1);
+	await upsertDiscoverySummary(db, SOURCE, TOPIC_QUERY, totalProbe.total_count);
+
 	let pending = await listPendingDiscoveryShards(db, SOURCE, TOPIC_QUERY);
 	if (pending.length === 0) {
 		const windows: { start: string; end: string }[] = [];
-		await collectShards(client, EARLIEST, new Date().toISOString(), windows);
+		await collectShards(client, GITHUB_REPOSITORY_EPOCH, new Date().toISOString(), windows);
 		await clearDiscoveryShards(db, SOURCE, TOPIC_QUERY);
 		await insertDiscoveryShards(db, SOURCE, TOPIC_QUERY, windows);
 		pending = await listPendingDiscoveryShards(db, SOURCE, TOPIC_QUERY);
@@ -157,7 +164,7 @@ export async function runDiscovery(
 	await flushJobs();
 
 	const remaining = (await listPendingDiscoveryShards(db, SOURCE, TOPIC_QUERY)).length;
-	return { reposSeen, enqueued, shardsProcessed, pendingShards: remaining };
+	return { githubTotal: totalProbe.total_count, reposSeen, enqueued, shardsProcessed, pendingShards: remaining };
 }
 
 /**
