@@ -7,6 +7,10 @@ function finding(overrides: Partial<Finding> = {}): Finding {
 }
 
 describe("parseAutoFeatureMinStars", () => {
+	it("uses 100 stars as the default feature threshold", () => {
+		expect(AUTO_FEATURE_DEFAULT_MIN_STARS).toBe(100);
+	});
+
 	it("falls back to the default when unset or invalid", () => {
 		expect(parseAutoFeatureMinStars(undefined)).toBe(AUTO_FEATURE_DEFAULT_MIN_STARS);
 		expect(parseAutoFeatureMinStars("")).toBe(AUTO_FEATURE_DEFAULT_MIN_STARS);
