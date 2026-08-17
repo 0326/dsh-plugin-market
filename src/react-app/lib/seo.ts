@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Route } from "./router";
 
 const SITE_URL = "https://dsh-plugin.market";
@@ -93,12 +93,24 @@ function getSeo(route: Route, lang: string): SeoSpec {
 }
 
 export function useSeo(route: Route, lang: string): void {
+	const initialEdgeKeyRef = useRef<string | null | undefined>(undefined);
+	const previousKeyRef = useRef<string | null>(null);
+
 	useEffect(() => {
 		const spec = getSeo(route, lang);
+		const key = `${spec.canonicalPath}|${lang}`;
 		document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
-		const edgePath = document.head.querySelector<HTMLMetaElement>('meta[name="dsh-edge-seo"]')?.content;
-		if (edgePath === spec.canonicalPath) return;
 
+		if (initialEdgeKeyRef.current === undefined) {
+			const edgePath = document.head.querySelector<HTMLMetaElement>('meta[name="dsh-edge-seo"]')?.content;
+			initialEdgeKeyRef.current = edgePath === spec.canonicalPath ? key : null;
+		}
+
+		if (previousKeyRef.current === null) previousKeyRef.current = key;
+		if (initialEdgeKeyRef.current === key && previousKeyRef.current === key) return;
+
+		initialEdgeKeyRef.current = null;
+		previousKeyRef.current = key;
 		const canonical = `${SITE_URL}${spec.canonicalPath}`;
 		document.title = spec.title;
 		setCanonical(canonical);
