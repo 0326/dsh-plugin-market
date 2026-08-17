@@ -41,7 +41,8 @@ function App() {
 	}, []);
 
 	const isMarket = route.name === "explore" || route.name === "plugin" || route.name === "publisher";
-	const isAbout = route.name === "about" || route.name === "trust";
+	const trustLabel = lang === "zh" ? "机制" : "Trust";
+	const trustFooterLabel = lang === "zh" ? "机制" : "Trust Model";
 
 	return (
 		<div className="app-frame flex min-h-screen flex-col bg-base-100 text-base-content">
@@ -56,7 +57,8 @@ function App() {
 					<a className={navClass(route.name === "home")} href="/">{t("nav.home")}</a>
 					<a className={navClass(isMarket)} href="/plugins">{t("nav.explore")}</a>
 					<a className={navClass(route.name === "submit")} href="/submit">{t("nav.submit")}</a>
-					<a className={navClass(isAbout)} href="/about">{t("nav.about")}</a>
+					<a className={navClass(route.name === "trust")} href="/trust">{trustLabel}</a>
+					<a className={navClass(route.name === "about")} href="/about">{t("nav.about")}</a>
 				</nav>
 				<div className="navbar-end gap-2">
 					<div className="hidden sm:block"><GitHubStar /></div>
@@ -66,8 +68,8 @@ function App() {
 							<li><a href="/">{t("nav.home")}</a></li>
 							<li><a href="/plugins">{t("nav.explore")}</a></li>
 							<li><a href="/submit">{t("nav.submit")}</a></li>
+							<li><a href="/trust">{trustLabel}</a></li>
 							<li><a href="/about">{t("nav.about")}</a></li>
-							<li><a href="/trust">Trust</a></li>
 							<li><button type="button" onClick={toggleTheme}><Icon name={theme === "light" ? "moon" : "sun"} size={16} stroke={2} />{theme === "light" ? t("theme.dark") : t("theme.light")}</button></li>
 						</ul>
 					</div>
@@ -87,8 +89,8 @@ function App() {
 				{route.name === "plugin" && <PluginDetail key={route.owner + "/" + route.repo} owner={route.owner} repo={route.repo} />}
 				{route.name === "publisher" && <Publisher owner={route.owner} />}
 				{route.name === "submit" && <Submit />}
-				{route.name === "about" && <About />}
 				{route.name === "trust" && <Trust />}
+				{route.name === "about" && <About />}
 			</main>
 
 			<footer className="site-footer bg-neutral p-8 text-neutral-content md:p-10">
@@ -100,7 +102,7 @@ function App() {
 					<p className="max-w-md opacity-80">{t("footer")}</p>
 				</div>
 				<nav className="flex flex-wrap items-center gap-x-6 gap-y-3 md:justify-end" aria-label={t("footerLinks")}>
-					<a className="link-hover link" href="/trust">Trust Model</a>
+					<a className="link-hover link" href="/trust">{trustFooterLabel}</a>
 					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/0326/dsh-plugin-market" target="_blank" rel="noreferrer"><Icon name="github" size={16} stroke={2} />{t("footerSource")}</a>
 					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noreferrer"><Icon name="external-link" size={14} stroke={2} />DeepSeek Harness</a>
 				</nav>
