@@ -7,16 +7,16 @@ const COPY = {
 		kicker: "ABOUT / BRAND",
 		tagline: "一只从深海游向 AI 世界的爱鲲",
 		intro: "DSH-PLUGIN MARKET 的鲲，不只是一个 Logo。它从 DeepSeek 的深海意象出发，游进 AI 世界，也把技术社区的创造力和一点轻松的 iKun 彩蛋带了进来。",
-		equationLabel: "iKun 计算公式",
+		equationLabel: "iKun 核心公式",
 		equation: ["DeepSeek + AI", "鲸 + AI", "AI + 鲲", "爱 + 鲲", "iKun"],
 		hobbyLabel: "iKun 的爱好",
-		hobbyEquation: "iKun = 唱跳 + Code + 打篮球",
+		hobbyTitle: "唱跳、代码、打篮球",
 		hobbies: [
 			{ key: "music", label: "唱跳", caption: "SING & DANCE" },
 			{ key: "code", label: "代码", caption: "CODE" },
 			{ key: "ball", label: "打篮球", caption: "BASKETBALL" },
 		],
-		brandText: "从深海、鲸、鲲，到 AI 与“爱”的谐音，最终汇成 iKun。这里保留的是一个开发者社区自己的品牌玩心：认真做插件市场，也认真把它做得有记忆点。",
+		brandText: "唱跳、代码和篮球是围绕爱鲲的三个趣味符号，用来延续首页原有的品牌彩蛋；它们不是 iKun 的计算公式。真正的品牌公式只有上面的 DeepSeek + AI → 鲸 + AI → AI + 鲲 → 爱 + 鲲 → iKun。",
 		browse: "浏览插件",
 		docs: "查看文档",
 		communityTitle: "社区驱动，开放协作",
@@ -27,16 +27,16 @@ const COPY = {
 		kicker: "ABOUT / BRAND",
 		tagline: "An AI-loving Kun swimming from the deep sea into the AI world",
 		intro: "The Kun is more than the DSH-PLUGIN MARKET logo. It starts with DeepSeek's deep-sea imagery, swims into the AI world, and carries a playful iKun signature from the developer community.",
-		equationLabel: "The iKun equation",
+		equationLabel: "The core iKun equation",
 		equation: ["DeepSeek + AI", "Whale + AI", "AI + Kun", "Love + Kun", "iKun"],
 		hobbyLabel: "What iKun loves",
-		hobbyEquation: "iKun = Sing & Dance + Code + Basketball",
+		hobbyTitle: "Sing & Dance, Code, Basketball",
 		hobbies: [
 			{ key: "music", label: "Sing & Dance", caption: "SING & DANCE" },
 			{ key: "code", label: "Code", caption: "CODE" },
 			{ key: "ball", label: "Basketball", caption: "BASKETBALL" },
 		],
-		brandText: "Deep sea becomes whale, whale becomes Kun, and AI meets the sound of love — eventually forming iKun. It is a small piece of developer-community playfulness inside a serious plugin marketplace.",
+		brandText: "Sing & dance, code, and basketball are playful motifs around the iKun brand and carry over the visual easter eggs from the homepage. They are not the iKun equation. The only brand equation is the origin chain above: DeepSeek + AI → Whale + AI → AI + Kun → Love + Kun → iKun.",
 		browse: "Browse plugins",
 		docs: "Read the docs",
 		communityTitle: "Community-driven and open",
@@ -107,7 +107,7 @@ export default function About() {
 			<section className="about-hobby-section">
 				<div className="about-hobby-copy">
 					<p className="content-kicker">{copy.hobbyLabel}</p>
-					<h2>{copy.hobbyEquation}</h2>
+					<h2>{copy.hobbyTitle}</h2>
 					<p>{copy.brandText}</p>
 				</div>
 				<div className="about-hobby-grid">
