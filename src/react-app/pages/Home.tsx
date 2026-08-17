@@ -78,8 +78,8 @@ export default function Home() {
 		Promise.all([
 			getRegistryContext(),
 			listPlugins({ featured: true, limit: 3 }),
-			listPlugins({ verified: true, sort: "new", limit: 6 }),
-			listPlugins({ verified: true, sort: "stars", limit: 6 }),
+			listPlugins({ sort: "new", limit: 6 }),
+			listPlugins({ sort: "stars", limit: 6 }),
 			getCategories(),
 		])
 			.then(([context, featured, latest, popular, cats]) => {
