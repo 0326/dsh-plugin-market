@@ -1,4 +1,4 @@
-# DS Plugin Market
+# DSH Plugin Market
 
 [English](README.en.md) | **简体中文**
 
@@ -6,9 +6,9 @@
 >
 > 面向 DeepSeek Harness 生态的可信插件注册、发现与安装平台。
 
-🌐 **https://ds-plugin.market**
+🌐 **https://dsh-plugin.market**
 
-![DS Plugin Market](screenshot.png)
+![DSH Plugin Market](screenshot.png)
 
 ![Runtime](https://img.shields.io/badge/Runtime-Cloudflare%20Workers-orange)
 ![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript-61dafb)
@@ -37,7 +37,7 @@ DeepSeek Harness 的核心理念是 **Everything is a Plugin**。官方目前通
 - 它有哪些需要关注的**安全和供应链风险**？
 - 我应该安装哪个版本 / commit，才能和市场扫描的代码保持一致？
 
-**DS Plugin Market 不只是 GitHub Topic 的展示层，而是把候选仓库转换为结构化、可验证、可追溯的 Plugin Registry。**
+**DSH Plugin Market 不只是 GitHub Topic 的展示层，而是把候选仓库转换为结构化、可验证、可追溯的 Plugin Registry。**
 
 ## 核心价值
 
@@ -130,7 +130,7 @@ dsh plugin --profile web add github:owner/repo
 
 对于需要构建的 Git dependency，作者可能通过 `prepare` 脚本生成产物。允许该脚本意味着第三方代码会在安装阶段执行。
 
-因此 DS Plugin Market 会把以下信息作为一等信息展示：
+因此 DSH Plugin Market 会把以下信息作为一等信息展示：
 
 ```text
 Install scripts
@@ -209,7 +209,7 @@ Metadata              Files
       Cloudflare D1 Registry
               │
               ▼
-        ds-plugin.market
+        dsh-plugin.market
 ```
 
 自动更新链路：
@@ -339,17 +339,17 @@ wrangler secret put INTERNAL_API_SECRET # 守卫 /api/internal/* 接口
 ```text
 GitHub = Source of Truth for Code
 
-DS Plugin Market
+DSH Plugin Market
 = Source of Truth for Plugin Metadata & Trust Signals
 ```
 
 我们不托管插件、不复制第三方发布体系，也不试图替代 GitHub / npm。我们的职责是：
 
-> **GitHub 告诉你哪些仓库声称自己是 DSH Plugin；DS Plugin Market 告诉你它到底是什么、是否兼容，以及安装前你应该知道什么。**
+> **GitHub 告诉你哪些仓库声称自己是 DSH Plugin；DSH Plugin Market 告诉你它到底是什么、是否兼容，以及安装前你应该知道什么。**
 
 ## 免责声明
 
-DS Plugin Market 是社区项目，不是 DeepSeek 官方产品，也不代表 DeepSeek 对第三方插件的审核或背书。
+DSH Plugin Market 是社区项目，不是 DeepSeek 官方产品，也不代表 DeepSeek 对第三方插件的审核或背书。
 
 所有 Verification、Compatibility 和 Security 结果都基于特定 Scanner 版本、特定时间和特定 commit 的自动化分析，只作为安装决策的辅助信息，不能替代源码审查或其他安全措施。
 
