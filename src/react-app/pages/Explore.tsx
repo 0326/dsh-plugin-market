@@ -73,17 +73,20 @@ function FacetTree({ title, items, selected, getLabel, onToggle, onClear }: Face
 				{selected.length > 0 && <span className="explore-facet-count">{selected.length}</span>}
 			</label>
 			<div className="explore-facet-children" role="group" aria-label={title}>
-				{items.map((item) => (
-					<label key={item} className="explore-facet-option">
-						<input
-							type="checkbox"
-							className="checkbox checkbox-xs"
-							checked={selected.includes(item)}
-							onChange={() => onToggle(item)}
-						/>
-						<span>{getLabel(item)}</span>
-					</label>
-				))}
+				{items.map((item) => {
+					const checked = selected.includes(item);
+					return (
+						<label key={item} className={"explore-facet-option" + (checked ? " is-selected" : "")}>
+							<input
+								type="checkbox"
+								className="checkbox checkbox-xs"
+								checked={checked}
+								onChange={() => onToggle(item)}
+							/>
+							<span>{getLabel(item)}</span>
+						</label>
+					);
+				})}
 			</div>
 		</section>
 	);
@@ -185,6 +188,39 @@ export default function Explore({ query = "" }: { query?: string }) {
 				</label>
 			</div>
 
+			<div className="explore-market-filters explore-filters-scroll mb-8">
+				<div className="explore-filters">
+					<select aria-label={t("explore.anyCompatibility")} className="select select-sm" value={compatibility} onChange={(e) => setCompatibility(e.target.value)}>
+						<option value="">{t("explore.anyCompatibility")}</option>
+						{COMPATIBILITY.map((c) => (
+							<option key={c} value={c}>{t("badge." + c)}</option>
+						))}
+					</select>
+					<select aria-label={t("explore.anyRisk")} className="select select-sm" value={risk} onChange={(e) => setRisk(e.target.value)}>
+						<option value="">{t("explore.anyRisk")}</option>
+						{RISK.map((r) => (
+							<option key={r} value={r}>{t("badge." + r)}</option>
+						))}
+					</select>
+					<select aria-label={t("explore.sortUpdated")} className="select select-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+						<option value="updated">{t("explore.sortUpdated")}</option>
+						<option value="stars">{t("explore.sortStars")}</option>
+						<option value="new">{t("explore.sortNew")}</option>
+						<option value="trending">{t("explore.sortTrending")}</option>
+					</select>
+					<div className="explore-checks">
+						<label className="label cursor-pointer gap-2">
+							<input type="checkbox" className="checkbox checkbox-sm" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
+							<span>{t("explore.featuredOnly")}</span>
+						</label>
+						<label className="label cursor-pointer gap-2">
+							<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
+							<span>{t("explore.verifiedOnly")}</span>
+						</label>
+					</div>
+				</div>
+			</div>
+
 			<div className="explore-market-layout">
 				<aside className="explore-sidebar" aria-label={sidebarLabel}>
 					<div className="explore-sidebar-kicker">{sidebarLabel}</div>
@@ -207,39 +243,6 @@ export default function Explore({ query = "" }: { query?: string }) {
 				</aside>
 
 				<div className="explore-results">
-					<div className="explore-filters-scroll mb-8">
-						<div className="explore-filters">
-							<select aria-label={t("explore.anyCompatibility")} className="select select-sm" value={compatibility} onChange={(e) => setCompatibility(e.target.value)}>
-								<option value="">{t("explore.anyCompatibility")}</option>
-								{COMPATIBILITY.map((c) => (
-									<option key={c} value={c}>{t("badge." + c)}</option>
-								))}
-							</select>
-							<select aria-label={t("explore.anyRisk")} className="select select-sm" value={risk} onChange={(e) => setRisk(e.target.value)}>
-								<option value="">{t("explore.anyRisk")}</option>
-								{RISK.map((r) => (
-									<option key={r} value={r}>{t("badge." + r)}</option>
-								))}
-							</select>
-							<select aria-label={t("explore.sortUpdated")} className="select select-sm" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-								<option value="updated">{t("explore.sortUpdated")}</option>
-								<option value="stars">{t("explore.sortStars")}</option>
-								<option value="new">{t("explore.sortNew")}</option>
-								<option value="trending">{t("explore.sortTrending")}</option>
-							</select>
-							<div className="explore-checks">
-								<label className="label cursor-pointer gap-2">
-									<input type="checkbox" className="checkbox checkbox-sm" checked={featuredOnly} onChange={(e) => setFeaturedOnly(e.target.checked)} />
-									<span>{t("explore.featuredOnly")}</span>
-								</label>
-								<label className="label cursor-pointer gap-2">
-									<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => setVerifiedOnly(e.target.checked)} />
-									<span>{t("explore.verifiedOnly")}</span>
-								</label>
-							</div>
-						</div>
-					</div>
-
 					{loading ? (
 						<PluginGridSkeleton />
 					) : items.length === 0 ? (

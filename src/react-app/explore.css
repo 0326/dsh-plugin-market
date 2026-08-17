@@ -1,3 +1,8 @@
+.explore-market-filters .explore-filters {
+	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+	min-width: 700px;
+}
+
 .explore-market-layout {
 	display: grid;
 	grid-template-columns: 220px minmax(0, 1fr);
@@ -87,21 +92,17 @@
 	border-top: 1px solid var(--color-base-300);
 }
 
-.explore-facet-option:hover span {
+.explore-facet-option:hover span,
+.explore-facet-option.is-selected span {
 	color: var(--color-secondary);
+}
+
+.explore-facet-option.is-selected {
+	font-weight: 800;
 }
 
 .explore-results {
 	min-width: 0;
-}
-
-.explore-results .explore-filters-scroll {
-	margin-bottom: 1rem;
-}
-
-.explore-results .explore-filters {
-	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-	min-width: 700px;
 }
 
 .explore-results-grid {
