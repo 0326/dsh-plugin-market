@@ -15,16 +15,24 @@ export default function Trust() {
 	const { lang, t } = useI18n();
 	const copy = getContentSeoCopy(lang).trust;
 	const [context, setContext] = useState<RegistryContext | null>(null);
+	const [contextLoaded, setContextLoaded] = useState(false);
 
 	useEffect(() => {
 		let ignore = false;
 		getRegistryContext()
-			.then((value) => { if (!ignore) setContext(value); })
-			.catch(() => { if (!ignore) setContext(null); });
+			.then((value) => {
+				if (!ignore) setContext(value);
+			})
+			.catch(() => {
+				if (!ignore) setContext(null);
+			})
+			.finally(() => {
+				if (!ignore) setContextLoaded(true);
+			});
 		return () => { ignore = true; };
 	}, []);
 
-	const fallback = t("common.loading");
+	const fallback = contextLoaded ? "—" : t("common.loading");
 	const baseline = context?.baseline;
 	const lastScan = formatDate(context?.stats.lastScanAt, lang, fallback);
 	const baselineChecked = formatDate(baseline?.checkedAt, lang, fallback);
