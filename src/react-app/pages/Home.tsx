@@ -115,6 +115,10 @@ export default function Home() {
 		),
 	}));
 
+	const whatGuideLabel = lang === "zh" ? "阅读 DSH Plugin 指南" : "Read the DSH Plugin guide";
+	const installGuideLabel = lang === "zh" ? "完整安装指南" : "Full install guide";
+	const chooseGuideLabel = lang === "zh" ? "如何选择插件" : "How to choose a plugin";
+
 	return (
 		<div>
 			<section className="home-hero">
@@ -178,7 +182,7 @@ export default function Home() {
 					<div className="entity-chain" aria-label="DSH Plugin Market entity relationships"><strong>GitHub</strong><span>→</span><strong>DSH Plugin Market</strong><span>→</span><strong>DeepSeek Harness</strong></div>
 				</ContentSection>
 
-				<ContentSection kicker={copy.plugin.kicker} title={copy.plugin.title} answer={<p>{copy.plugin.body}</p>} className="content-section-accent">
+				<ContentSection kicker={copy.plugin.kicker} title={copy.plugin.title} answer={<p>{copy.plugin.body}</p>} actions={<a className="link font-bold" href="/guide/what-is-dsh-plugin">{whatGuideLabel} →</a>} className="content-section-accent">
 					<div className="capability-grid">{copy.plugin.capabilities.map((item, index) => <div key={item}><span>{String(index + 1).padStart(2, "0")}</span><strong>{item}</strong></div>)}</div>
 				</ContentSection>
 
@@ -195,7 +199,7 @@ export default function Home() {
 					</div>
 				</ContentSection>
 
-				<ContentSection kicker={copy.install.kicker} title={copy.install.title} answer={<p>{copy.install.body}</p>} actions={<a className="link font-bold" href="/plugins">{copy.install.browse} →</a>} className="content-section-dark">
+				<ContentSection kicker={copy.install.kicker} title={copy.install.title} answer={<p>{copy.install.body}</p>} actions={<RelatedLinks links={[{ href: "/guide/install-dsh-plugin", label: installGuideLabel }, { href: "/plugins", label: copy.install.browse }]} />} className="content-section-dark">
 					<div className="install-examples">
 						<div><span>{copy.install.standard}</span><code>dsh plugin --profile web add github:owner/repo</code></div>
 						<div><span>{copy.install.pinned}</span><code>dsh plugin --profile web add github:owner/repo#&lt;scanned_commit&gt;</code></div>
@@ -203,7 +207,7 @@ export default function Home() {
 					</div>
 				</ContentSection>
 
-				<ContentSection kicker={copy.verified.kicker} title={copy.verified.title} answer={<p>{copy.verified.body}</p>} actions={<a className="btn btn-neutral btn-sm" href="/trust">{copy.verified.learn} →</a>}>
+				<ContentSection kicker={copy.verified.kicker} title={copy.verified.title} answer={<p>{copy.verified.body}</p>} actions={<RelatedLinks links={[{ href: "/trust", label: copy.verified.learn }, { href: "/guide/choose-dsh-plugin", label: chooseGuideLabel }]} />}>
 					<div className="verified-panel"><strong>{copy.verified.warning}</strong>{copy.verified.items.map((item) => <div key={item.label}><span>{item.label}</span><p>{item.text}</p></div>)}</div>
 				</ContentSection>
 			</div>
