@@ -6,7 +6,8 @@ export type Route =
 	| { name: "plugin"; owner: string; repo: string }
 	| { name: "publisher"; owner: string }
 	| { name: "submit" }
-	| { name: "about" };
+	| { name: "about" }
+	| { name: "trust" };
 
 export function parseRoute(pathname: string, search: string): Route {
 	const path = (pathname || "/").replace(/\/+$/, "") || "/";
@@ -18,6 +19,7 @@ export function parseRoute(pathname: string, search: string): Route {
 	if (segments[0] === "publisher" && segments[1]) return { name: "publisher", owner: segments[1] };
 	if (segments[0] === "submit") return { name: "submit" };
 	if (segments[0] === "about") return { name: "about" };
+	if (segments[0] === "trust") return { name: "trust" };
 	return { name: "home" };
 }
 
