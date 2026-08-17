@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import PluginDetail from "./pages/PluginDetail";
 import Publisher from "./pages/Publisher";
 import Submit from "./pages/Submit";
+import Trust from "./pages/Trust";
 
 function navClass(active: boolean): string {
 	return "btn btn-sm " + (active ? "bg-neutral text-neutral-content" : "btn-ghost");
@@ -23,8 +24,6 @@ function App() {
 	const { theme, toggleTheme } = useTheme();
 	useSeo(route, lang);
 
-	// Intercept in-app link clicks so path-based navigation stays in the SPA
-	// (no full reload). External links and new-tab clicks are left untouched.
 	useEffect(() => {
 		function onClick(e: MouseEvent) {
 			if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -42,6 +41,7 @@ function App() {
 	}, []);
 
 	const isMarket = route.name === "explore" || route.name === "plugin" || route.name === "publisher";
+	const isAbout = route.name === "about" || route.name === "trust";
 
 	return (
 		<div className="app-frame flex min-h-screen flex-col bg-base-100 text-base-content">
@@ -49,16 +49,14 @@ function App() {
 				<div className="navbar-start">
 					<a className="flex items-center gap-2" href="/" aria-label="DSH-PLUGIN MARKET">
 						<Kun className="h-11 w-11 object-contain" ariaHidden />
-						<span className="brand-lockup">
-							DSH-PLUGIN <strong>MARKET</strong>
-						</span>
+						<span className="brand-lockup">DSH-PLUGIN <strong>MARKET</strong></span>
 					</a>
 				</div>
 				<nav className="navbar-center hidden gap-2 md:flex" aria-label="Primary">
 					<a className={navClass(route.name === "home")} href="/">{t("nav.home")}</a>
 					<a className={navClass(isMarket)} href="/plugins">{t("nav.explore")}</a>
 					<a className={navClass(route.name === "submit")} href="/submit">{t("nav.submit")}</a>
-					<a className={navClass(route.name === "about")} href="/about">{t("nav.about")}</a>
+					<a className={navClass(isAbout)} href="/about">{t("nav.about")}</a>
 				</nav>
 				<div className="navbar-end gap-2">
 					<div className="hidden sm:block"><GitHubStar /></div>
@@ -69,6 +67,7 @@ function App() {
 							<li><a href="/plugins">{t("nav.explore")}</a></li>
 							<li><a href="/submit">{t("nav.submit")}</a></li>
 							<li><a href="/about">{t("nav.about")}</a></li>
+							<li><a href="/trust">Trust</a></li>
 							<li><button type="button" onClick={toggleTheme}><Icon name={theme === "light" ? "moon" : "sun"} size={16} stroke={2} />{theme === "light" ? t("theme.dark") : t("theme.light")}</button></li>
 						</ul>
 					</div>
@@ -89,6 +88,7 @@ function App() {
 				{route.name === "publisher" && <Publisher owner={route.owner} />}
 				{route.name === "submit" && <Submit />}
 				{route.name === "about" && <About />}
+				{route.name === "trust" && <Trust />}
 			</main>
 
 			<footer className="site-footer bg-neutral p-8 text-neutral-content md:p-10">
@@ -100,14 +100,9 @@ function App() {
 					<p className="max-w-md opacity-80">{t("footer")}</p>
 				</div>
 				<nav className="flex flex-wrap items-center gap-x-6 gap-y-3 md:justify-end" aria-label={t("footerLinks")}>
-					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/0326/dsh-plugin-market" target="_blank" rel="noreferrer">
-						<Icon name="github" size={16} stroke={2} />
-						{t("footerSource")}
-					</a>
-					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noreferrer">
-						<Icon name="external-link" size={14} stroke={2} />
-						DeepSeek Harness
-					</a>
+					<a className="link-hover link" href="/trust">Trust Model</a>
+					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/0326/dsh-plugin-market" target="_blank" rel="noreferrer"><Icon name="github" size={16} stroke={2} />{t("footerSource")}</a>
+					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noreferrer"><Icon name="external-link" size={14} stroke={2} />DeepSeek Harness</a>
 				</nav>
 			</footer>
 		</div>
