@@ -4,6 +4,7 @@ import type { Env } from "./env";
 export const SITE_URL = "https://dsh-plugin.market";
 export const SITE_NAME = "DSH Plugin Market";
 const DEFAULT_IMAGE = `${SITE_URL}/kun.png`;
+const GUIDE_UPDATED = "2026-08-17T00:00:00.000Z";
 const SITEMAP_PLUGIN_LIMIT = 45_000;
 const SITEMAP_URL_LIMIT = 49_900;
 
@@ -33,11 +34,6 @@ function websiteNode(): Record<string, unknown> {
 		description: "A trusted plugin registry and discovery platform for the DeepSeek Harness ecosystem.",
 		inLanguage: ["zh-CN", "en"],
 		sameAs: ["https://github.com/0326/dsh-plugin-market"],
-		potentialAction: {
-			"@type": "SearchAction",
-			target: `${SITE_URL}/plugins?q={search_term_string}`,
-			"query-input": "required name=search_term_string",
-		},
 	};
 }
 
@@ -50,6 +46,17 @@ function webPageNode(path: string, title: string, description: string): Record<s
 		name: title,
 		description,
 		isPartOf: { "@id": `${SITE_URL}/#website` },
+	};
+}
+
+function breadcrumbNode(path: string, title: string): Record<string, unknown> {
+	return {
+		"@type": "BreadcrumbList",
+		"@id": `${SITE_URL}${path}#breadcrumb`,
+		itemListElement: [
+			{ "@type": "ListItem", position: 1, name: "DSH Plugin Market", item: `${SITE_URL}/` },
+			{ "@type": "ListItem", position: 2, name: title, item: `${SITE_URL}${path}` },
+		],
 	};
 }
 
@@ -77,6 +84,24 @@ function parseMetadata(json: string | null): PluginMetadata {
 function cleanDescription(value: string | null | undefined, fallback: string): string {
 	const text = value?.replace(/\s+/g, " ").trim();
 	return text ? text.slice(0, 300) : fallback;
+}
+
+function guideSpec(path: string, title: string, description: string): SeoSpec {
+	const page = webPageNode(path, title, description);
+	page.dateModified = GUIDE_UPDATED;
+	page.breadcrumb = { "@id": `${SITE_URL}${path}#breadcrumb` };
+	page.about = [
+		{ "@type": "SoftwareApplication", name: "DeepSeek Harness", url: "https://github.com/deepseek-ai/deepseek-harness" },
+		{ "@type": "Thing", name: "DSH Plugin" },
+	];
+	return {
+		title,
+		description,
+		canonicalPath: path,
+		image: DEFAULT_IMAGE,
+		robots: "index,follow,max-image-preview:large,max-snippet:-1",
+		jsonLd: graph(page, breadcrumbNode(path, title)),
+	};
 }
 
 function staticSpec(pathname: string): SeoSpec | null {
@@ -110,6 +135,27 @@ function staticSpec(pathname: string): SeoSpec | null {
 			{ "@type": "Thing", name: "Plugin security signals" },
 		];
 		return { title, description, canonicalPath: "/trust", image: DEFAULT_IMAGE, robots: "index,follow,max-image-preview:large,max-snippet:-1", jsonLd: graph(page) };
+	}
+	if (pathname === "/guide/what-is-dsh-plugin") {
+		return guideSpec(
+			pathname,
+			`What is a DSH Plugin? — ${SITE_NAME}`,
+			"Learn what a DSH Plugin is, how it extends DeepSeek Harness, how plugins are discovered and verified, and what to check before installation.",
+		);
+	}
+	if (pathname === "/guide/install-dsh-plugin") {
+		return guideSpec(
+			pathname,
+			`How to Install a DSH Plugin — ${SITE_NAME}`,
+			"Install a DSH Plugin from GitHub with DeepSeek Harness and understand pinned commits, compatibility checks, and install-script risks.",
+		);
+	}
+	if (pathname === "/guide/choose-dsh-plugin") {
+		return guideSpec(
+			pathname,
+			`How to Evaluate and Choose a DSH Plugin — ${SITE_NAME}`,
+			"Evaluate DSH Plugins using format, compatibility, security, maintenance, publisher, and scanned-commit signals instead of relying on one badge.",
+		);
 	}
 	return null;
 }
@@ -199,7 +245,7 @@ function notFoundSpec(pathname: string): SeoSpec {
 }
 
 export function isSeoPagePath(pathname: string): boolean {
-	return pathname === "/" || pathname === "/plugins" || pathname === "/submit" || pathname === "/about" || pathname === "/trust" || /^\/plugin\/[^/]+\/[^/]+\/?$/.test(pathname) || /^\/publisher\/[^/]+\/?$/.test(pathname);
+	return pathname === "/" || pathname === "/plugins" || pathname === "/submit" || pathname === "/about" || pathname === "/trust" || pathname === "/guide" || pathname.startsWith("/guide/") || /^\/plugin\/[^/]+\/[^/]+\/?$/.test(pathname) || /^\/publisher\/[^/]+\/?$/.test(pathname);
 }
 
 export async function resolveSeoSpec(pathname: string, db: D1Database): Promise<SeoSpec> {
@@ -245,6 +291,9 @@ export function buildSitemapXml(items: PluginListItem[]): string {
 		{ loc: `${SITE_URL}/plugins` },
 		{ loc: `${SITE_URL}/about` },
 		{ loc: `${SITE_URL}/trust` },
+		{ loc: `${SITE_URL}/guide/what-is-dsh-plugin`, lastmod: GUIDE_UPDATED },
+		{ loc: `${SITE_URL}/guide/install-dsh-plugin`, lastmod: GUIDE_UPDATED },
+		{ loc: `${SITE_URL}/guide/choose-dsh-plugin`, lastmod: GUIDE_UPDATED },
 		{ loc: `${SITE_URL}/submit` },
 	];
 
