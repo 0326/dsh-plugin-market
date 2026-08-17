@@ -4,7 +4,7 @@ import { Icon, type IconName } from "../components/Icon";
 import { Kun } from "../components/Kun";
 import { PluginCard } from "../components/PluginCard";
 import { getContentSeoCopy } from "../content/seo-content";
-import { useI18n } from "../lib/i18n";
+import { formatDateTime, useI18n } from "../lib/i18n";
 import { navigate } from "../lib/router";
 import { getCategories, getRegistryContext, listPlugins, type PluginListItem, type RegistryContext } from "../lib/api";
 
@@ -95,9 +95,11 @@ export default function Home() {
 	if (!data) return <p className="text-base-content/60">{t("common.loading")}</p>;
 
 	const { stats, baseline, scannerVersion } = data.context;
-	const lastScanTime = stats.lastScanAt
-		? new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(stats.lastScanAt))
-		: t("home.noScanYet");
+	// Discovery runs even when no repository needs a new scan. Use the latest
+	// scan/discovery activity so this status does not appear frozen between scans.
+	const activityValues = [stats.lastScanAt, stats.discoveryCheckedAt].filter((value): value is string => Boolean(value)).sort();
+	const activityAt = activityValues.length > 0 ? activityValues[activityValues.length - 1] : null;
+	const lastScanTime = activityAt ? formatDateTime(activityAt, lang) : t("home.noScanYet");
 	const baselineLabel = baseline ? `DSH ${baseline.dshVersion} · Cordis ${baseline.cordisVersion}` : "—";
 	const progressLabels = lang === "zh"
 		? ["GitHub 总量", "已发现仓库", "已扫描仓库", "已检测插件", "格式已验证"]
@@ -128,7 +130,7 @@ export default function Home() {
 		<div>
 			<section className="home-hero">
 				<div className="hero-copy">
-					<p className="hero-updated mb-5">{t("home.lastScanLabel")}：<time dateTime={stats.lastScanAt ?? undefined}>{lastScanTime}</time></p>
+					<p className="hero-updated mb-5">{t("home.lastScanLabel")}：<time dateTime={activityAt ?? undefined}>{lastScanTime}</time></p>
 					<h1 className="hero-title"><strong>DEEPSEEK HARNESS</strong><span>PLUGIN MARKET</span></h1>
 					<p className="hero-tagline">{t("home.heroTagline")}</p>
 					<form className="hero-search join w-full" onSubmit={onSearch} role="search">
