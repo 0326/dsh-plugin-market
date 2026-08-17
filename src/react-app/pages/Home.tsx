@@ -102,6 +102,7 @@ export default function Home() {
 	const progressLabels = lang === "zh"
 		? ["GitHub 总量", "已发现仓库", "已扫描仓库", "已检测插件", "格式已验证"]
 		: ["GitHub total", "discovered repos", "scanned repos", "detected plugins", "format verified"];
+	const discoveredLabel = lang === "zh" ? "已发现仓库" : "Discovered repositories";
 	const progressValues: Array<number | string> = [stats.githubTotal ?? "—", stats.discovered, stats.scanned, stats.detected, stats.verified];
 
 	function onSearch(e: React.FormEvent) {
@@ -136,7 +137,7 @@ export default function Home() {
 					</form>
 					<div className="mt-[1.65rem] grid max-w-[760px] grid-cols-2 sm:grid-cols-5">
 						{progressValues.map((value, index) => (
-							<div key={progressLabels[index]} className={"hero-stat " + (index % 2 === 0 ? "max-sm:!border-l-0 max-sm:!pl-0" : "")}>
+							<div key={progressLabels[index]} className={"hero-stat " + (index % 2 === 0 ? "max-sm:border-l-0 max-sm:pl-0" : "")}>
 								<strong>{value}</strong><span>{progressLabels[index]}</span>
 							</div>
 						))}
@@ -195,7 +196,7 @@ export default function Home() {
 					<div className="works-grid">
 						<Pipeline steps={copy.works.steps} />
 						<FactList items={[
-							{ label: copy.works.facts.total, value: stats.discovered },
+							{ label: discoveredLabel, value: stats.discovered },
 							{ label: copy.works.facts.verified, value: stats.verified },
 							{ label: copy.works.facts.scanner, value: scannerVersion },
 							{ label: copy.works.facts.baseline, value: baselineLabel },
