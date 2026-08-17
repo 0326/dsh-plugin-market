@@ -15,8 +15,13 @@ vi.mock("../src/worker/db/repository", () => ({
 	updateDiscoveryShard: vi.fn(async () => {}),
 }));
 
-import { collectShards, ensurePreviewImage, runDiscovery } from "../src/worker/github/discovery";
+vi.mock("../src/worker/db/registry", () => ({
+	upsertDiscoverySummary: vi.fn(async () => {}),
+}));
+
+import { collectShards, ensurePreviewImage, GITHUB_REPOSITORY_EPOCH, runDiscovery } from "../src/worker/github/discovery";
 import { listPendingDiscoveryShards, updateDiscoveryShard, updateRepositoryPreviewImage } from "../src/worker/db/repository";
+import { upsertDiscoverySummary } from "../src/worker/db/registry";
 
 function makeRepo(i: number, secondOfDay: number) {
 	const created = new Date(Date.UTC(2026, 0, 1, 0, 0, secondOfDay)).toISOString();
@@ -44,6 +49,10 @@ describe("collectShards", () => {
 		vi.clearAllMocks();
 	});
 
+	it("covers GitHub repository history instead of using a DSH-era lower bound", () => {
+		expect(GITHUB_REPOSITORY_EPOCH).toBe("2008-01-01T00:00:00.000Z");
+	});
+
 	it("splits an oversized window into ordered, non-overlapping shards", async () => {
 		const N = 2500;
 		const repos = Array.from({ length: N }, (_, i) => makeRepo(i, i % 86400)); // spread over one day
@@ -59,7 +68,7 @@ describe("collectShards", () => {
 		};
 
 		const out: { start: string; end: string }[] = [];
-		await collectShards(client as never, "2025-01-01T00:00:00.000Z", "2026-08-17T00:00:00.000Z", out);
+		await collectShards(client as never, GITHUB_REPOSITORY_EPOCH, "2026-08-17T00:00:00.000Z", out);
 
 		expect(out.length).toBeGreaterThanOrEqual(3); // 2500 repos need at least 3 shards of <=1000
 		for (let i = 1; i < out.length; i++) {
@@ -73,7 +82,7 @@ describe("runDiscovery", () => {
 		vi.clearAllMocks();
 	});
 
-	it("processes a pending shard, upserts repos, and enqueues via sendBatch", async () => {
+	it("processes a pending shard, records GitHub total, and enqueues via sendBatch", async () => {
 		const repos = Array.from({ length: 5 }, (_, i) => makeRepo(i, i));
 		vi.mocked(listPendingDiscoveryShards).mockResolvedValue([
 			{ id: 1, windowStart: "2025-01-01T00:00:00.000Z", windowEnd: "2026-08-17T00:00:00.000Z", page: 1 },
@@ -87,8 +96,10 @@ describe("runDiscovery", () => {
 
 		const result = await runDiscovery(client as never, {} as never, queue as never);
 
+		expect(result.githubTotal).toBe(5);
 		expect(result.reposSeen).toBe(5);
 		expect(result.enqueued).toBe(5);
+		expect(upsertDiscoverySummary).toHaveBeenCalledWith({}, "github", "topic:dsh-plugin", 5);
 		expect(sendBatch).toHaveBeenCalledTimes(1);
 		const bodies = sendBatch.mock.calls[0][0] as Array<{ body: { repositoryId: number } }>;
 		expect(bodies).toHaveLength(5);
