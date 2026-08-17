@@ -9,7 +9,7 @@ import type { ScanResult } from "../scanner";
  * `AUTO_FEATURE_MIN_STARS` var (declared in wrangler.json). Set it to 0 to
  * drop the star gate entirely and feature every qualifying plugin.
  */
-export const AUTO_FEATURE_DEFAULT_MIN_STARS = 50;
+export const AUTO_FEATURE_DEFAULT_MIN_STARS = 100;
 
 export function parseAutoFeatureMinStars(raw: string | undefined): number {
   const trimmed = raw?.trim();
