@@ -3,6 +3,7 @@ import { ContentSection, FAQ, FactList, RelatedLinks } from "../components/Conte
 import { Icon, type IconName } from "../components/Icon";
 import { Kun } from "../components/Kun";
 import { PluginCard } from "../components/PluginCard";
+import { HomeSkeleton } from "../components/Skeletons";
 import { getContentSeoCopy } from "../content/seo-content";
 import { formatDateTime, useI18n, type Language } from "../lib/i18n";
 import { navigate } from "../lib/router";
@@ -105,7 +106,7 @@ export default function Home() {
 	}, []);
 
 	if (error) return <p className="text-error">{t("home.loadError", { msg: error })}</p>;
-	if (!data) return <p className="text-base-content/60">{t("common.loading")}</p>;
+	if (!data) return <HomeSkeleton />;
 
 	const { stats, baseline, scannerVersion } = data.context;
 	// Discovery runs even when no repository needs a new scan. Use the latest

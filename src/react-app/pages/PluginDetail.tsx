@@ -275,7 +275,7 @@ export default function PluginDetail({ owner, repo }: { owner: string; repo: str
 				</div>
 				<InstallCard plugin={detail} />
 
-				<div role="tablist" className="tabs tabs-border sticky top-[78px] z-20 mb-6 mt-8 overflow-x-auto bg-base-100">
+				<div role="tablist" className="detail-tabs tabs tabs-border sticky z-20 mb-6 mt-8 overflow-x-auto bg-base-100">
 					{tabs.map((tb) => (
 						<button
 							key={tb.key}
