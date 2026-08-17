@@ -30,10 +30,10 @@ function setCanonical(url: string): void {
 	link.href = url;
 }
 
-function guideSeo(slug: Extract<Route, { name: "guide" }>['slug'], zh: boolean): SeoSpec {
+function guideSeo(slug: Extract<Route, { name: "guide" }>["slug"], zh: boolean): SeoSpec {
 	if (slug === "what-is-dsh-plugin") {
 		return {
-			title: zh ? `什么是 DSH Plugin？— ${SITE_NAME}` : `What is a DSH Plugin? — ${SITE_NAME}`,
+			title: zh ? `什么是 DSH Plugin？ — ${SITE_NAME}` : `What is a DSH Plugin? — ${SITE_NAME}`,
 			description: zh
 				? "了解 DSH Plugin 在 DeepSeek Harness 中的作用、插件结构、发现与验证方式，以及安装前应该检查的关键信号。"
 				: "Learn what a DSH Plugin is, how it extends DeepSeek Harness, how plugins are discovered and verified, and what to check before installation.",
@@ -122,6 +122,10 @@ function getSeo(route: Route, lang: string): SeoSpec {
 	}
 }
 
+function shouldPreserveEdgeMetadata(route: Route): boolean {
+	return route.name === "plugin" || route.name === "publisher";
+}
+
 export function useSeo(route: Route, lang: string): void {
 	const initialEdgeKeyRef = useRef<string | null | undefined>(undefined);
 	const previousKeyRef = useRef<string | null>(null);
@@ -133,7 +137,7 @@ export function useSeo(route: Route, lang: string): void {
 
 		if (initialEdgeKeyRef.current === undefined) {
 			const edgePath = document.head.querySelector<HTMLMetaElement>('meta[name="dsh-edge-seo"]')?.content;
-			initialEdgeKeyRef.current = edgePath === spec.canonicalPath ? key : null;
+			initialEdgeKeyRef.current = shouldPreserveEdgeMetadata(route) && edgePath === spec.canonicalPath ? key : null;
 		}
 
 		if (previousKeyRef.current === null) previousKeyRef.current = key;
