@@ -42,7 +42,7 @@ function App() {
 
 	const isMarket = route.name === "explore" || route.name === "plugin" || route.name === "publisher";
 	const trustLabel = lang === "zh" ? "机制" : "Trust";
-	const trustFooterLabel = lang === "zh" ? "信任机制" : "Trust Model";
+	const trustFooterLabel = lang === "zh" ? "机制" : "Trust Model";
 
 	return (
 		<div className="app-frame flex min-h-screen flex-col bg-base-100 text-base-content">
