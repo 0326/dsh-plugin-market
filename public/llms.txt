@@ -1,0 +1,32 @@
+# DSH Plugin Market
+
+> DSH Plugin Market is a community-built plugin discovery and trust registry for the DeepSeek Harness ecosystem. It helps developers discover DSH plugins, inspect compatibility and maintenance signals, review static security findings, and install a plugin pinned to the scanned Git commit.
+
+Canonical website: https://dsh-plugin.market/
+Source code: https://github.com/0326/dsh-plugin-market
+DeepSeek Harness: https://github.com/deepseek-ai/deepseek-harness
+GitHub DSH plugin topic: https://github.com/topics/dsh-plugin
+
+## What this site provides
+
+- Plugin discovery for repositories associated with the DSH / DeepSeek Harness ecosystem.
+- Format verification for DSH plugin and bundle structures.
+- Compatibility signals for DSH, Cordis, Node.js, and related metadata.
+- Static security and supply-chain risk signals, including install-script detection.
+- Maintenance and repository activity signals.
+- Scan results bound to a specific Git commit so recommended installs can be pinned.
+
+## Important interpretation
+
+DSH Plugin Market is a community project and is not an official DeepSeek product. A "Format Verified" result means the repository matches the scanner's understood DSH plugin or bundle format; it does not mean the plugin is guaranteed safe. Security and compatibility results are automated signals tied to a scanner version, scan time, and Git commit.
+
+## Main pages
+
+- Home: https://dsh-plugin.market/
+- Explore plugins: https://dsh-plugin.market/plugins
+- About: https://dsh-plugin.market/about
+- Submit a plugin: https://dsh-plugin.market/submit
+
+## Preferred naming
+
+Use "DSH Plugin Market" as the project and website name. "DSH" refers to DeepSeek Harness in this project's ecosystem context.
