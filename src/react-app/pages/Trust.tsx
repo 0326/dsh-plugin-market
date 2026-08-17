@@ -111,6 +111,8 @@ export default function Trust() {
 				<h2>{copy.unknownTitle}</h2>
 				<p>{copy.unknownBody}</p>
 				<RelatedLinks links={[
+					{ href: "/guide/choose-dsh-plugin", label: lang === "zh" ? "如何评估和选择插件" : "How to evaluate and choose a plugin" },
+					{ href: "/guide/install-dsh-plugin", label: lang === "zh" ? "安装指南" : "Installation guide" },
 					{ href: "/plugins", label: copy.browse },
 					{ href: "/about", label: lang === "zh" ? "关于 DSH Plugin Market" : "About DSH Plugin Market" },
 				]} />

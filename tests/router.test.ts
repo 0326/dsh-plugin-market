@@ -8,6 +8,14 @@ describe("parseRoute", () => {
 		expect(parseRoute("/about", "")).toEqual({ name: "about" });
 	});
 
+	it("matches only the three supported guide slugs", () => {
+		expect(parseRoute("/guide/what-is-dsh-plugin", "")).toEqual({ name: "guide", slug: "what-is-dsh-plugin" });
+		expect(parseRoute("/guide/install-dsh-plugin", "")).toEqual({ name: "guide", slug: "install-dsh-plugin" });
+		expect(parseRoute("/guide/choose-dsh-plugin", "")).toEqual({ name: "guide", slug: "choose-dsh-plugin" });
+		expect(parseRoute("/guide/not-a-guide", "")).toEqual({ name: "home" });
+		expect(parseRoute("/guide/install-dsh-plugin/extra", "")).toEqual({ name: "home" });
+	});
+
 	it("does not let static routes swallow extra path segments", () => {
 		expect(parseRoute("/trust/extra", "")).toEqual({ name: "home" });
 		expect(parseRoute("/about/extra", "")).toEqual({ name: "home" });
