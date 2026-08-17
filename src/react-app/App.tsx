@@ -8,6 +8,7 @@ import { useSeo } from "./lib/seo";
 import { useTheme } from "./lib/theme";
 import About from "./pages/About";
 import Explore from "./pages/Explore";
+import Guide from "./pages/Guide";
 import Home from "./pages/Home";
 import PluginDetail from "./pages/PluginDetail";
 import Publisher from "./pages/Publisher";
@@ -43,6 +44,7 @@ function App() {
 	const isMarket = route.name === "explore" || route.name === "plugin" || route.name === "publisher";
 	const trustLabel = lang === "zh" ? "机制" : "Trust";
 	const trustFooterLabel = lang === "zh" ? "机制" : "Trust Model";
+	const guideLabel = lang === "zh" ? "指南" : "Guides";
 
 	return (
 		<div className="app-frame flex min-h-screen flex-col bg-base-100 text-base-content">
@@ -67,6 +69,7 @@ function App() {
 						<ul tabIndex={0} className="dropdown-content menu z-50 mt-3 w-52 border border-base-300 bg-base-100 p-2 shadow">
 							<li><a href="/">{t("nav.home")}</a></li>
 							<li><a href="/plugins">{t("nav.explore")}</a></li>
+							<li><a href="/guide/what-is-dsh-plugin">{guideLabel}</a></li>
 							<li><a href="/submit">{t("nav.submit")}</a></li>
 							<li><a href="/trust">{trustLabel}</a></li>
 							<li><a href="/about">{t("nav.about")}</a></li>
@@ -88,6 +91,7 @@ function App() {
 				{route.name === "explore" && <Explore key={route.query} query={route.query} />}
 				{route.name === "plugin" && <PluginDetail key={route.owner + "/" + route.repo} owner={route.owner} repo={route.repo} />}
 				{route.name === "publisher" && <Publisher owner={route.owner} />}
+				{route.name === "guide" && <Guide key={route.slug} slug={route.slug} />}
 				{route.name === "submit" && <Submit />}
 				{route.name === "trust" && <Trust />}
 				{route.name === "about" && <About />}
@@ -102,6 +106,7 @@ function App() {
 					<p className="max-w-md opacity-80">{t("footer")}</p>
 				</div>
 				<nav className="flex flex-wrap items-center gap-x-6 gap-y-3 md:justify-end" aria-label={t("footerLinks")}>
+					<a className="link-hover link" href="/guide/what-is-dsh-plugin">{guideLabel}</a>
 					<a className="link-hover link" href="/trust">{trustFooterLabel}</a>
 					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/0326/dsh-plugin-market" target="_blank" rel="noreferrer"><Icon name="github" size={16} stroke={2} />{t("footerSource")}</a>
 					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noreferrer"><Icon name="external-link" size={14} stroke={2} />DeepSeek Harness</a>
