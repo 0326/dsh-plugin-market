@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { isGuideSlug, type GuideSlug } from "../content/guide-content";
 
 export type Route =
 	| { name: "home" }
@@ -7,7 +8,8 @@ export type Route =
 	| { name: "publisher"; owner: string }
 	| { name: "submit" }
 	| { name: "about" }
-	| { name: "trust" };
+	| { name: "trust" }
+	| { name: "guide"; slug: GuideSlug };
 
 export function parseRoute(pathname: string, search: string): Route {
 	const path = (pathname || "/").replace(/\/+$/, "") || "/";
@@ -17,6 +19,7 @@ export function parseRoute(pathname: string, search: string): Route {
 	if (segments.length === 1 && segments[0] === "plugins") return { name: "explore", query };
 	if (segments.length === 3 && segments[0] === "plugin" && segments[1] && segments[2]) return { name: "plugin", owner: segments[1], repo: segments[2] };
 	if (segments.length === 2 && segments[0] === "publisher" && segments[1]) return { name: "publisher", owner: segments[1] };
+	if (segments.length === 2 && segments[0] === "guide" && isGuideSlug(segments[1])) return { name: "guide", slug: segments[1] };
 	if (segments.length === 1 && segments[0] === "submit") return { name: "submit" };
 	if (segments.length === 1 && segments[0] === "trust") return { name: "trust" };
 	if (segments.length === 1 && segments[0] === "about") return { name: "about" };
