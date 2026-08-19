@@ -12,20 +12,20 @@ export interface CompatibilityBaseline {
  * Fallback baseline used when D1 has no synced baseline yet.
  *
  * Versions reflect the latest published packages at calibration time:
- *   @deepseek-ai/dsh     -> 0.1.0-rc.6
+ *   @deepseek-ai/dsh     -> 0.1.0-rc.7
  *   @deepseek-ai/cordis  -> 4.0.1
  * The authoritative values are synced from npm (src/worker/npm/baseline.ts).
  */
 export const DEFAULT_BASELINE: CompatibilityBaseline = {
-	dshVersion: "0.1.0-rc.6",
+	dshVersion: "0.1.0-rc.7",
 	cordisVersion: "4.0.1",
-	checkedAt: "2026-08-16T00:00:00.000Z",
+	checkedAt: "2026-08-19T00:00:00.000Z",
 };
 
 export interface DshConstraint {
 	packageName: string;
 	constraint: string;
-	source: "dependencies" | "peerDependencies" | "devDependencies";
+	source: "dependencies" | "peerDependencies";
 }
 
 export type ConstraintStatus = "COMPATIBLE" | "LIKELY_COMPATIBLE" | "OUTDATED" | "INCOMPATIBLE" | "UNKNOWN";
@@ -44,15 +44,15 @@ export interface CompatibilityAnalysis {
 	findings: Finding[];
 }
 
-/**
- * Packages republished in the @deepseek-ai scope that keep an independent
- * upstream version line. They are implementation dependencies, not DSH ABI
- * compatibility signals, so comparing them with the DSH release is invalid.
- */
-const VENDORED_PACKAGES = new Set(["@deepseek-ai/cosmokit", "@deepseek-ai/schemastery"]);
+/** Only compare packages whose published version is represented by our baseline. */
+const BASELINE_TARGETS = new Map<string, keyof Pick<CompatibilityBaseline, "dshVersion" | "cordisVersion">>([
+	["@deepseek-ai/dsh", "dshVersion"],
+	["@deepseek-ai/cordis", "cordisVersion"],
+	["cordis", "cordisVersion"],
+]);
 
 function isDshPackage(name: string): boolean {
-	return !VENDORED_PACKAGES.has(name) && (name === "cordis" || name.startsWith("@deepseek-ai/"));
+	return BASELINE_TARGETS.has(name);
 }
 
 export function extractDshConstraints(manifest: ParsedPackageJson): DshConstraint[] {
@@ -60,7 +60,6 @@ export function extractDshConstraints(manifest: ParsedPackageJson): DshConstrain
 	const sources: [DshConstraint["source"], Record<string, string> | undefined][] = [
 		["peerDependencies", manifest.peerDependencies],
 		["dependencies", manifest.dependencies],
-		["devDependencies", manifest.devDependencies],
 	];
 	for (const [source, deps] of sources) {
 		if (!deps) continue;
@@ -72,9 +71,8 @@ export function extractDshConstraints(manifest: ParsedPackageJson): DshConstrain
 }
 
 function baselineFor(packageName: string, baseline: CompatibilityBaseline): string | null {
-	if (VENDORED_PACKAGES.has(packageName)) return null;
-	if (packageName === "cordis" || packageName === "@deepseek-ai/cordis") return baseline.cordisVersion;
-	return baseline.dshVersion;
+	const target = BASELINE_TARGETS.get(packageName);
+	return target ? baseline[target] : null;
 }
 
 function extractTargetVersion(constraint: string): string | null {

@@ -3,7 +3,15 @@
 export type ScanReason = "DISCOVERY" | "COMMIT_CHANGED" | "MANUAL" | "SCANNER_UPGRADE";
 
 /** Current scanner version; every scan is bound to it. */
-export const SCANNER_VERSION = "0.4.0";
+export const SCANNER_VERSION = "0.4.1";
+
+/**
+ * The persisted scan identity includes external compatibility inputs. This
+ * keeps scans idempotent while making a baseline update eligible for rescan.
+ */
+export function buildScanRevision(baseline: { dshVersion: string; cordisVersion: string }): string {
+	return `${SCANNER_VERSION}+dsh.${baseline.dshVersion}.cordis.${baseline.cordisVersion}`;
+}
 
 /** Message body placed on the scan queue. */
 export interface ScanJob {

@@ -550,13 +550,15 @@ Bundle
 
 从插件侧读取：
 
-- `peerDependencies`；
-- `dependencies`；
+- runtime `peerDependencies`；
+- runtime `dependencies`；
 - `engines.node`；
-- `@deepseek-ai/dsh-*` 版本；
+- `@deepseek-ai/dsh` 版本；
 - `@deepseek-ai/cordis` 版本；
 - `dsh.client.platform`；
 - manifest / patch 结构。
+
+其他 `@deepseek-ai/*` 包拥有独立版本线；在 Registry 为其配置独立 baseline 前，只记录依赖信息，不参与 DSH/Cordis 兼容性聚合。`devDependencies` 也不作为运行时兼容或插件识别信号。
 
 从 Registry baseline 读取：
 
@@ -1081,10 +1083,10 @@ interface ScanJob {
 幂等键：
 
 ```text
-repository_id + commit_sha + scanner_version
+repository_id + commit_sha + scanner_revision
 ```
 
-保证 Queue 重试不会重复生成有效 scan。
+其中 `scanner_revision = scanner_version + compatibility baseline`。这样既保证 Queue 重试不会重复生成有效 scan，也能在 DSH/Cordis baseline 更新后将相同 commit 重新纳入扫描。
 
 失败分类：
 

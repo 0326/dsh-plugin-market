@@ -60,6 +60,12 @@ describe("semver", () => {
 		expect(satisfiesRange("0.1.0-rc.6", "^0.1.0-rc.4").satisfied).toBe(true);
 		expect(satisfiesRange("1.2.3", "garbage").satisfied).toBeNull();
 	});
+
+	it("evaluates OR ranges as alternatives rather than an AND expression", () => {
+		expect(satisfiesRange("4.0.1", "^3.0.0 || ^4.0.0").satisfied).toBe(true);
+		expect(satisfiesRange("4.0.1", "^2.0.0 || ^3.0.0").satisfied).toBe(false);
+		expect(satisfiesRange("4.0.1", "^3.0.0 || workspace:*").satisfied).toBeNull();
+	});
 });
 
 describe("manifest", () => {
@@ -109,6 +115,11 @@ describe("bundle", () => {
 		const b = analyzeBundle(pkg, snap);
 		expect(b.patchParseable).toBe(false);
 	});
+
+	it("does not treat a development-only Cordis dependency as a runtime plugin signal", () => {
+		const pkg = { name: "build-tool", devDependencies: { "@deepseek-ai/cordis": "^4.0.0" } };
+		expect(analyzeBundle(pkg, snapshotFor(pkg)).hasCordisDependency).toBe(false);
+	});
 });
 
 describe("compatibility", () => {
@@ -137,13 +148,15 @@ describe("compatibility", () => {
 		expect(res.verdicts.find((v) => v.packageName === "@deepseek-ai/dsh")).toMatchObject({ source: "peerDependencies" });
 	});
 
-	it("does not compare independently-versioned vendored packages with the DSH baseline", () => {
+	it("only compares packages with an explicitly configured compatibility baseline", () => {
 		const res = analyzeCompatibility(
 			{
 				name: "x",
 				dependencies: {
 					"@deepseek-ai/cordis": "^4.0.0",
 					"@deepseek-ai/cosmokit": "^1.8.0",
+					"@deepseek-ai/cordis-plugin-http": "^1.0.0",
+					"@deepseek-ai/dsh-storage": "^0.0.1-rc.1",
 					"@deepseek-ai/schemastery": "^3.18.1",
 				},
 			},
@@ -153,18 +166,25 @@ describe("compatibility", () => {
 		expect(res.verdicts.map((v) => v.packageName)).toEqual(["@deepseek-ai/cordis"]);
 	});
 
-	it("returns UNKNOWN when a vendored package is the only scoped dependency", () => {
+	it("returns UNKNOWN when an independent package is the only scoped dependency", () => {
 		const res = analyzeCompatibility({ name: "x", dependencies: { "@deepseek-ai/schemastery": "^3.18.1" } }, DEFAULT_BASELINE);
 		expect(res.status).toBe("UNKNOWN");
 		expect(res.verdicts).toEqual([]);
 		expect(res.findings.some((finding) => finding.code === "NO_DSH_CONSTRAINT")).toBe(true);
 		expect(classifyConstraint("@deepseek-ai/schemastery", "^3.18.1", DEFAULT_BASELINE).status).toBe("UNKNOWN");
+		expect(classifyConstraint("@deepseek-ai/dsh-storage", "^0.0.1-rc.1", DEFAULT_BASELINE).status).toBe("UNKNOWN");
 	});
 
-	it("does not select the Cordis baseline by substring", () => {
+	it("does not select a baseline by package-name prefix or substring", () => {
 		const v = classifyConstraint("@deepseek-ai/cordis-adapter", "^0.1.0-rc.6", DEFAULT_BASELINE);
-		expect(v.status).toBe("COMPATIBLE");
-		expect(v.reason).toContain(DEFAULT_BASELINE.dshVersion);
+		expect(v.status).toBe("UNKNOWN");
+		expect(v.reason).toContain("no baseline configured");
+	});
+
+	it("does not let development-only constraints affect runtime compatibility", () => {
+		const res = analyzeCompatibility({ name: "x", devDependencies: { "@deepseek-ai/cordis": "^2.0.0" } }, DEFAULT_BASELINE);
+		expect(res.status).toBe("UNKNOWN");
+		expect(res.verdicts).toEqual([]);
 	});
 });
 
@@ -265,6 +285,17 @@ describe("scanRepository", () => {
 			maintenance: { archived: false, disabled: false, stars: 0, forks: 0 },
 		});
 		expect(result.verificationStatus).toBe("DETECTED");
+	});
+
+	it("keeps a development-only Cordis consumer as a non-plugin candidate", () => {
+		const pkg = { name: "cordis-build-tool", devDependencies: { "@deepseek-ai/cordis": "^4.0.0" } };
+		const result = scanRepository({
+			snapshot: snapshotFor(pkg),
+			maintenance: { archived: false, disabled: false, stars: 0, forks: 0 },
+		});
+		expect(result.verificationStatus).toBe("CANDIDATE");
+		expect(result.compatibilityStatus).toBe("UNKNOWN");
+		expect(result.metadata.pluginTypes).toEqual(["NON_PLUGIN"]);
 	});
 
 	it("does not turn compatibility failures into security risk", () => {
