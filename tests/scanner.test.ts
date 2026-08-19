@@ -136,6 +136,36 @@ describe("compatibility", () => {
 		expect(res.verdicts.find((v) => v.packageName === "@deepseek-ai/cordis")).toMatchObject({ constraint: "^4.0.0", source: "dependencies", status: "COMPATIBLE" });
 		expect(res.verdicts.find((v) => v.packageName === "@deepseek-ai/dsh")).toMatchObject({ source: "peerDependencies" });
 	});
+
+	it("does not compare independently-versioned vendored packages with the DSH baseline", () => {
+		const res = analyzeCompatibility(
+			{
+				name: "x",
+				dependencies: {
+					"@deepseek-ai/cordis": "^4.0.0",
+					"@deepseek-ai/cosmokit": "^1.8.0",
+					"@deepseek-ai/schemastery": "^3.18.1",
+				},
+			},
+			DEFAULT_BASELINE,
+		);
+		expect(res.status).toBe("COMPATIBLE");
+		expect(res.verdicts.map((v) => v.packageName)).toEqual(["@deepseek-ai/cordis"]);
+	});
+
+	it("returns UNKNOWN when a vendored package is the only scoped dependency", () => {
+		const res = analyzeCompatibility({ name: "x", dependencies: { "@deepseek-ai/schemastery": "^3.18.1" } }, DEFAULT_BASELINE);
+		expect(res.status).toBe("UNKNOWN");
+		expect(res.verdicts).toEqual([]);
+		expect(res.findings.some((finding) => finding.code === "NO_DSH_CONSTRAINT")).toBe(true);
+		expect(classifyConstraint("@deepseek-ai/schemastery", "^3.18.1", DEFAULT_BASELINE).status).toBe("UNKNOWN");
+	});
+
+	it("does not select the Cordis baseline by substring", () => {
+		const v = classifyConstraint("@deepseek-ai/cordis-adapter", "^0.1.0-rc.6", DEFAULT_BASELINE);
+		expect(v.status).toBe("COMPATIBLE");
+		expect(v.reason).toContain(DEFAULT_BASELINE.dshVersion);
+	});
 });
 
 describe("security", () => {

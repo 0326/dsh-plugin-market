@@ -44,8 +44,15 @@ export interface CompatibilityAnalysis {
 	findings: Finding[];
 }
 
+/**
+ * Packages republished in the @deepseek-ai scope that keep an independent
+ * upstream version line. They are implementation dependencies, not DSH ABI
+ * compatibility signals, so comparing them with the DSH release is invalid.
+ */
+const VENDORED_PACKAGES = new Set(["@deepseek-ai/cosmokit", "@deepseek-ai/schemastery"]);
+
 function isDshPackage(name: string): boolean {
-	return name === "cordis" || name.startsWith("@deepseek-ai/");
+	return !VENDORED_PACKAGES.has(name) && (name === "cordis" || name.startsWith("@deepseek-ai/"));
 }
 
 export function extractDshConstraints(manifest: ParsedPackageJson): DshConstraint[] {
@@ -65,7 +72,8 @@ export function extractDshConstraints(manifest: ParsedPackageJson): DshConstrain
 }
 
 function baselineFor(packageName: string, baseline: CompatibilityBaseline): string | null {
-	if (packageName.includes("cordis")) return baseline.cordisVersion;
+	if (VENDORED_PACKAGES.has(packageName)) return null;
+	if (packageName === "cordis" || packageName === "@deepseek-ai/cordis") return baseline.cordisVersion;
 	return baseline.dshVersion;
 }
 
@@ -128,7 +136,7 @@ export function analyzeCompatibility(manifest: ParsedPackageJson, baseline: Comp
 					code: "NO_DSH_CONSTRAINT",
 					severity: "UNKNOWN",
 					title: "No DSH/Cordis dependency declared",
-					detail: "Compatibility cannot be assessed without a @deepseek-ai/* or cordis dependency.",
+					detail: "Compatibility cannot be assessed without a versioned DSH or Cordis compatibility target.",
 					filePath: "package.json",
 				},
 			],
