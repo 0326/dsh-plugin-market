@@ -56,6 +56,6 @@ describe("Cordis sequence patch verification", () => {
 	});
 
 	it("bumps the scanner version so existing commits are eligible for rescan", () => {
-		expect(SCANNER_VERSION).toBe("0.4.0");
+		expect(SCANNER_VERSION).toBe("0.4.1");
 	});
 });

@@ -295,22 +295,22 @@ export async function getPlugin(db: D1Database, owner: string, repo: string): Pr
 	};
 }
 
-export async function createScan(db: D1Database, repositoryId: number, commitSha: string): Promise<{ id: number; created: boolean }> {
+export async function createScan(db: D1Database, repositoryId: number, commitSha: string, scannerRevision = SCANNER_VERSION): Promise<{ id: number; created: boolean }> {
 	const existing = await db
 		.prepare("SELECT id, status FROM scans WHERE repository_id = ? AND commit_sha = ? AND scanner_version = ?")
-		.bind(repositoryId, commitSha, SCANNER_VERSION)
+		.bind(repositoryId, commitSha, scannerRevision)
 		.first<{ id: number; status: string }>();
 	if (existing?.status === "completed") return { id: existing.id, created: false };
 	if (existing) return { id: existing.id, created: true };
 	const now = new Date().toISOString();
 	const res = await db
 		.prepare("INSERT OR IGNORE INTO scans (repository_id, commit_sha, scanner_version, status, started_at) VALUES (?, ?, ?, 'running', ?)")
-		.bind(repositoryId, commitSha, SCANNER_VERSION, now)
+		.bind(repositoryId, commitSha, scannerRevision, now)
 		.run();
 	if (res.meta.changes === 0) {
 		const row = await db
 			.prepare("SELECT id FROM scans WHERE repository_id = ? AND commit_sha = ? AND scanner_version = ?")
-			.bind(repositoryId, commitSha, SCANNER_VERSION)
+			.bind(repositoryId, commitSha, scannerRevision)
 			.first<{ id: number }>();
 		if (!row) throw new Error("scan insert did not return an id");
 		return { id: row.id, created: true };

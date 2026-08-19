@@ -29,7 +29,7 @@
 - [x] GitHub client（认证 / ETag / rate-limit / 429 退避）
 - [x] Discovery（`topic:dsh-plugin` + 时间窗口分片 + SHA 增量）
 - [x] Scanner v1 纯函数（manifest / bundle / compatibility / security / maintenance）
-- [x] Cron handler（只做发现）+ Queue consumer（做扫描，幂等键 `repo_id+sha+scanner_version`）
+- [x] Cron handler（只做发现）+ Queue consumer（做扫描，幂等键 `repo_id+sha+scanner_revision`，revision 包含兼容性 baseline）
 - [x] 公共 API + internal API
 - [x] 前端页面（Home / Explore / Detail / Submit）
 

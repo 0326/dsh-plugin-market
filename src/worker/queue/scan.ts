@@ -1,5 +1,5 @@
 import { completeScan, createScan, getBaseline, getRepositoryById, updateRepositorySha } from "../db/repository";
-import { SCANNER_VERSION, type RescanSweepJob, type ScanJob } from "../domain/scan";
+import { buildScanRevision, SCANNER_VERSION, type RescanSweepJob, type ScanJob } from "../domain/scan";
 import type { Env } from "../env";
 import { GithubClient } from "../github/client";
 import { ensurePreviewImage } from "../github/discovery";
@@ -34,6 +34,7 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 	const snapshot = fetched.snapshot;
 	await ensurePreviewImage(client, env.DB, repo, getFileContent(snapshot, "README.md"), snapshot.commitSha);
 	const baseline = (await getBaseline(env.DB)) ?? DEFAULT_BASELINE;
+	const scannerRevision = buildScanRevision(baseline);
 	const result = scanRepository({
 		snapshot,
 		maintenance: {
@@ -46,7 +47,7 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 		baseline,
 	});
 
-	const scan = await createScan(env.DB, repo.id, snapshot.commitSha);
+	const scan = await createScan(env.DB, repo.id, snapshot.commitSha, scannerRevision);
 	if (!scan.created) return;
 	await completeScan(env.DB, scan.id, result);
 	await updateRepositorySha(env.DB, repo.id, snapshot.commitSha);
@@ -75,6 +76,8 @@ export async function startRescanSweep(env: Env): Promise<{ status: "started"; s
  * filtered out by the query and completed scans are idempotent.
  */
 export async function processRescanSweepJob(env: Env, job: RescanSweepJob): Promise<RescanSweepResult> {
+	const baseline = (await getBaseline(env.DB)) ?? DEFAULT_BASELINE;
+	const scannerRevision = buildScanRevision(baseline);
 	const rows = await env.DB
 		.prepare(
 			`SELECT r.id AS id, r.owner AS owner, r.name AS name
@@ -86,7 +89,7 @@ export async function processRescanSweepJob(env: Env, job: RescanSweepJob): Prom
 			ORDER BY r.id ASC
 			LIMIT ?`,
 		)
-		.bind(job.afterRepositoryId, SCANNER_VERSION, RESCAN_SWEEP_PAGE_SIZE)
+		.bind(job.afterRepositoryId, scannerRevision, RESCAN_SWEEP_PAGE_SIZE)
 		.all<{ id: number; owner: string; name: string }>();
 
 	const page = rows.results ?? [];

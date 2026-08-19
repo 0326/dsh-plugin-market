@@ -13,7 +13,7 @@ export interface BundleAnalysis {
 }
 
 function hasCordis(manifest: ParsedPackageJson): boolean {
-	const all = { ...(manifest.dependencies ?? {}), ...(manifest.peerDependencies ?? {}), ...(manifest.devDependencies ?? {}) };
+	const all = { ...(manifest.dependencies ?? {}), ...(manifest.peerDependencies ?? {}) };
 	return Object.keys(all).some((name) => name === "cordis" || name === "@deepseek-ai/cordis");
 }
 

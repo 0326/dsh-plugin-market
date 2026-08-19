@@ -73,6 +73,21 @@ export function satisfiesRange(version: string, range: string): RangeResult {
 		return { satisfied: true };
 	}
 
+	if (r.includes("||")) {
+		const alternatives = r.split(/\s*\|\|\s*/);
+		let sawUnknown = false;
+		for (const alternative of alternatives) {
+			if (!alternative) {
+				sawUnknown = true;
+				continue;
+			}
+			const res = satisfiesRange(version, alternative);
+			if (res.satisfied === true) return res;
+			if (res.satisfied === null) sawUnknown = true;
+		}
+		return sawUnknown ? { satisfied: null } : { satisfied: false };
+	}
+
 	if (/\s/.test(r)) {
 		const clauses = r.split(/\s+/).filter(Boolean);
 		let sawUnknown = false;
