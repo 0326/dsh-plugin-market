@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { PluginDetail, PluginListItem } from "../src/worker/db/repository";
-import { buildPluginJsonLd, buildSitemapXml, isSeoPagePath, resolveSeoSpec } from "../src/worker/seo";
+import type { PluginReadmeContent } from "../src/worker/github/readme-content";
+import { buildPluginJsonLd, buildPluginSeoBody, buildSitemapXml, isSeoPagePath, resolveSeoSpec } from "../src/worker/seo";
 
 function plugin(overrides: Partial<PluginListItem> = {}): PluginListItem {
 	return {
@@ -20,6 +21,20 @@ function plugin(overrides: Partial<PluginListItem> = {}): PluginListItem {
 		updatedAt: "2026-08-17T06:00:00.000Z",
 		previewImageUrl: null,
 		...overrides,
+	};
+}
+
+function pluginDetail(): PluginDetail {
+	return {
+		...plugin(),
+		htmlUrl: "https://github.com/acme/dsh-demo",
+		forks: 2,
+		licenseSpdx: "MIT",
+		featured: 1,
+		metadataJson: JSON.stringify({ packageVersion: "1.2.3", capabilities: ["search"], pluginTypes: ["tool"] }),
+		scannerVersion: "1.0.0",
+		scannedAt: "2026-08-17T06:00:00.000Z",
+		findings: [],
 	};
 }
 
@@ -71,17 +86,7 @@ describe("guide SEO", () => {
 
 describe("buildPluginJsonLd", () => {
 	it("exposes plugin identity and trust signals", () => {
-		const detail: PluginDetail = {
-			...plugin(),
-			htmlUrl: "https://github.com/acme/dsh-demo",
-			forks: 2,
-			licenseSpdx: "MIT",
-			featured: 1,
-			metadataJson: JSON.stringify({ packageVersion: "1.2.3", capabilities: ["search"], pluginTypes: ["tool"] }),
-			scannerVersion: "1.0.0",
-			scannedAt: "2026-08-17T06:00:00.000Z",
-			findings: [],
-		};
+		const detail = pluginDetail();
 		const json = buildPluginJsonLd(detail, "/plugin/acme/dsh-demo", "A demo DSH plugin") as { "@graph": Array<Record<string, unknown>> };
 		const software = json["@graph"].find((node) => node["@type"] === "SoftwareSourceCode");
 		expect(software).toBeTruthy();
@@ -90,5 +95,28 @@ describe("buildPluginJsonLd", () => {
 		expect(String(software?.keywords)).toContain("DeepSeek Harness");
 		expect(JSON.stringify(software?.additionalProperty)).toContain("FORMAT_VERIFIED");
 		expect(JSON.stringify(software?.additionalProperty)).toContain("abc123");
+	});
+});
+
+describe("buildPluginSeoBody", () => {
+	it("renders indexable plugin detail and README HTML pinned to the scanned commit", () => {
+		const readme: PluginReadmeContent = {
+			owner: "acme",
+			repo: "dsh-demo",
+			path: "docs/README.md",
+			language: "unknown",
+			fallback: false,
+			ref: "abc123",
+			html: '<h2>Install</h2><p><a href="guide.md">Guide</a></p><img src="images/demo.png">',
+			sourceUrl: "https://github.com/acme/dsh-demo/blob/abc123/docs/README.md",
+		};
+		const html = buildPluginSeoBody(pluginDetail(), readme);
+		expect(html).toContain("acme/dsh-demo");
+		expect(html).toContain("FORMAT_VERIFIED");
+		expect(html).toContain("COMPATIBLE");
+		expect(html).toContain("README");
+		expect(html).toContain("<h2>Install</h2>");
+		expect(html).toContain("https://github.com/acme/dsh-demo/blob/abc123/docs/guide.md");
+		expect(html).toContain("https://raw.githubusercontent.com/acme/dsh-demo/abc123/docs/images/demo.png");
 	});
 });

@@ -81,7 +81,7 @@ async function queue(batch: MessageBatch<ScanQueueJob>, env: Env): Promise<void>
 async function fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(request.url);
 	if (url.pathname === "/sitemap.xml") return renderSitemap(env.DB);
-	if (isSeoPagePath(url.pathname)) return renderSeoPage(request, env);
+	if (isSeoPagePath(url.pathname)) return renderSeoPage(request, env, ctx);
 	return app.fetch(request, env, ctx);
 }
 

@@ -1,5 +1,6 @@
 import { getPlugin, getPublisher, listPlugins, type PluginDetail, type PluginListItem, type PublisherInfo } from "./db/repository";
 import type { Env } from "./env";
+import { loadPluginReadme, rewriteReadmeHtmlUrls, type PluginReadmeContent } from "./github/readme-content";
 
 export const SITE_URL = "https://dsh-plugin.market";
 export const SITE_NAME = "DSH Plugin Market";
@@ -22,6 +23,7 @@ export interface SeoSpec {
 	robots: string;
 	jsonLd: Record<string, unknown>;
 	status?: number;
+	pluginDetail?: PluginDetail;
 }
 
 function websiteNode(): Record<string, unknown> {
@@ -84,6 +86,10 @@ function parseMetadata(json: string | null): PluginMetadata {
 function cleanDescription(value: string | null | undefined, fallback: string): string {
 	const text = value?.replace(/\s+/g, " ").trim();
 	return text ? text.slice(0, 300) : fallback;
+}
+
+function htmlEscape(value: string): string {
+	return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function guideSpec(path: string, title: string, description: string): SeoSpec {
@@ -203,6 +209,48 @@ export function buildPluginJsonLd(detail: PluginDetail, canonicalPath: string, d
 	return graph(page, software);
 }
 
+export function buildPluginSeoBody(detail: PluginDetail, readme: PluginReadmeContent | null): string {
+	const metadata = parseMetadata(detail.metadataJson);
+	const description = cleanDescription(detail.description, `DeepSeek Harness plugin ${detail.fullName}.`);
+	const publisherPath = `/publisher/${encodeURIComponent(detail.owner)}`;
+	const fields: Array<[string, string | null | undefined]> = [
+		["Package", detail.packageName],
+		["Version", metadata.packageVersion],
+		["Format verification", detail.verificationStatus],
+		["Compatibility", detail.compatibilityStatus],
+		["Security", detail.securityStatus],
+		["Maintenance", detail.maintenanceStatus],
+		["Risk level", detail.riskLevel],
+		["License", detail.licenseSpdx],
+		["Scanned commit", detail.latestCommitSha],
+	];
+	const detailRows = fields
+		.filter((entry): entry is [string, string] => Boolean(entry[1]))
+		.map(([label, value]) => `<div><dt><strong>${htmlEscape(label)}</strong></dt><dd>${htmlEscape(value)}</dd></div>`)
+		.join("\n");
+	const readmeSection = readme
+		? `<section aria-labelledby="seo-readme-title" class="readme-shell">
+	<h2 id="seo-readme-title">README</h2>
+	<div class="readme-markdown">${rewriteReadmeHtmlUrls(readme.html, readme)}</div>
+	<p class="readme-source"><a href="${htmlEscape(readme.sourceUrl)}" rel="noopener noreferrer">${htmlEscape(readme.path)}</a></p>
+</section>`
+		: "";
+
+	return `<article data-dsh-edge-body="plugin" class="mx-auto max-w-5xl px-4 py-8">
+	<nav aria-label="Breadcrumb"><a href="/plugins">DSH Plugin Market</a> / <a href="${publisherPath}">${htmlEscape(detail.owner)}</a></nav>
+	<header>
+		<h1>${htmlEscape(detail.fullName)}</h1>
+		<p>${htmlEscape(description)}</p>
+	</header>
+	<section aria-labelledby="seo-plugin-info-title">
+		<h2 id="seo-plugin-info-title">Plugin information</h2>
+		<dl>${detailRows}</dl>
+		<p><a href="${htmlEscape(detail.htmlUrl)}" rel="noopener noreferrer">GitHub repository</a></p>
+	</section>
+	${readmeSection}
+</article>`;
+}
+
 function pluginSpec(detail: PluginDetail): SeoSpec {
 	const canonicalPath = `/plugin/${encodeURIComponent(detail.owner)}/${encodeURIComponent(detail.repo)}`;
 	const description = cleanDescription(
@@ -217,6 +265,7 @@ function pluginSpec(detail: PluginDetail): SeoSpec {
 		image: detail.previewImageUrl ?? DEFAULT_IMAGE,
 		robots: "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1",
 		jsonLd: buildPluginJsonLd(detail, canonicalPath, description),
+		pluginDetail: detail,
 	};
 }
 
@@ -331,9 +380,29 @@ export async function renderSitemap(db: D1Database): Promise<Response> {
 	});
 }
 
-export async function renderSeoPage(request: Request, env: Env): Promise<Response> {
+export async function renderSeoPage(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(request.url);
 	const spec = await resolveSeoSpec(url.pathname, env.DB);
+	let pluginBody: string | null = null;
+	if (spec.pluginDetail && !spec.status) {
+		let readme: PluginReadmeContent | null = null;
+		try {
+			readme = await loadPluginReadme({
+				detail: spec.pluginDetail,
+				language: "zh",
+				githubToken: env.GITHUB_TOKEN,
+				origin: url.origin,
+				waitUntil: (promise) => ctx.waitUntil(promise),
+			});
+		} catch (err) {
+			console.warn(
+				`edge README pre-render failed for ${spec.pluginDetail.fullName}`,
+				err instanceof Error ? err.message : String(err),
+			);
+		}
+		pluginBody = buildPluginSeoBody(spec.pluginDetail, readme);
+	}
+
 	const assetResponse = await env.ASSETS.fetch(request);
 	const contentType = assetResponse.headers.get("content-type") ?? "";
 	if (!contentType.includes("text/html")) return assetResponse;
@@ -347,8 +416,7 @@ export async function renderSeoPage(request: Request, env: Env): Promise<Respons
 	});
 	const canonical = `${SITE_URL}${spec.canonicalPath}`;
 	const jsonLd = serializeJsonLd(spec.jsonLd);
-
-	return new HTMLRewriter()
+	const rewriter = new HTMLRewriter()
 		.on("title", { element(e) { e.setInnerContent(spec.title); } })
 		.on('meta[name="description"]', { element(e) { e.setAttribute("content", spec.description); } })
 		.on('meta[name="robots"]', { element(e) { e.setAttribute("content", spec.robots); } })
@@ -363,6 +431,9 @@ export async function renderSeoPage(request: Request, env: Env): Promise<Respons
 		.on('meta[name="twitter:description"]', { element(e) { e.setAttribute("content", spec.description); } })
 		.on('meta[name="twitter:image"]', { element(e) { e.setAttribute("content", spec.image); } })
 		.on("script#seo-jsonld", { element(e) { e.setInnerContent(jsonLd, { html: true }); } })
-		.on("head", { element(e) { e.append(`<meta name="dsh-edge-seo" content="${spec.canonicalPath.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">`, { html: true }); } })
-		.transform(response);
+		.on("head", { element(e) { e.append(`<meta name="dsh-edge-seo" content="${spec.canonicalPath.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">`, { html: true }); } });
+	if (pluginBody) {
+		rewriter.on("#root", { element(e) { e.setInnerContent(pluginBody, { html: true }); } });
+	}
+	return rewriter.transform(response);
 }
