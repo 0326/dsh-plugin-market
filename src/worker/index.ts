@@ -7,7 +7,8 @@ import type { Env } from "./env";
 import { recomputeFeatured } from "./curation/featured";
 import { syncBaseline } from "./npm/baseline";
 import { processRescanSweepJob, processScanJob, startRescanSweep, TransientScanError } from "./queue/scan";
-import { isSeoPagePath, renderSeoPage, renderSitemap } from "./seo";
+import { applyPluginIndexability, renderIndexableSitemap } from "./seo-indexability";
+import { isSeoPagePath, renderSeoPage } from "./seo";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -80,8 +81,11 @@ async function queue(batch: MessageBatch<ScanQueueJob>, env: Env): Promise<void>
 
 async function fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(request.url);
-	if (url.pathname === "/sitemap.xml") return renderSitemap(env.DB);
-	if (isSeoPagePath(url.pathname)) return renderSeoPage(request, env, ctx);
+	if (url.pathname === "/sitemap.xml") return renderIndexableSitemap(env.DB);
+	if (isSeoPagePath(url.pathname)) {
+		const response = await renderSeoPage(request, env, ctx);
+		return applyPluginIndexability(response, url.pathname, env.DB);
+	}
 	return app.fetch(request, env, ctx);
 }
 
