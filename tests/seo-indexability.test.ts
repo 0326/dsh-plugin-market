@@ -26,6 +26,7 @@ function plugin(overrides: Partial<SitemapCandidate> = {}): SitemapCandidate {
 		updatedAt: "2026-08-20T06:00:00.000Z",
 		previewImageUrl: null,
 		pluginTypesJson: JSON.stringify(["TOOL"]),
+		metadataJson: JSON.stringify({ pluginTypes: ["TOOL"] }),
 		...overrides,
 	};
 }
@@ -51,6 +52,16 @@ describe("plugin SEO indexability", () => {
 			}),
 		).toBe(false);
 	});
+
+	it("falls back to metadata when plugin_types_json is missing", () => {
+		expect(
+			isPluginIndexable({
+				verificationStatus: "FORMAT_VERIFIED",
+				pluginTypesJson: null,
+				metadataJson: JSON.stringify({ pluginTypes: ["NON_PLUGIN"] }),
+			}),
+		).toBe(false);
+	});
 });
 
 describe("sitemap indexability", () => {
@@ -61,6 +72,12 @@ describe("sitemap indexability", () => {
 			plugin({ owner: "candidate", repo: "plugin", verificationStatus: "CANDIDATE" }),
 			plugin({ owner: "rejected", repo: "plugin", verificationStatus: "REJECTED" }),
 			plugin({ owner: "not-plugin", repo: "repo", pluginTypesJson: JSON.stringify(["NON_PLUGIN"]) }),
+			plugin({
+				owner: "legacy-not-plugin",
+				repo: "repo",
+				pluginTypesJson: null,
+				metadataJson: JSON.stringify({ pluginTypes: ["NON_PLUGIN"] }),
+			}),
 		];
 
 		const items: PluginListItem[] = filterIndexableSitemapItems(candidates);
@@ -73,8 +90,10 @@ describe("sitemap indexability", () => {
 		expect(xml).not.toContain("/plugin/candidate/plugin");
 		expect(xml).not.toContain("/plugin/rejected/plugin");
 		expect(xml).not.toContain("/plugin/not-plugin/repo");
+		expect(xml).not.toContain("/plugin/legacy-not-plugin/repo");
 		expect(xml).not.toContain("/publisher/candidate");
 		expect(xml).not.toContain("/publisher/rejected");
 		expect(xml).not.toContain("/publisher/not-plugin");
+		expect(xml).not.toContain("/publisher/legacy-not-plugin");
 	});
 });
