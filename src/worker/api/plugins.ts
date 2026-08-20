@@ -5,7 +5,7 @@ import { CAPABILITY, PLUGIN_TYPE } from "../domain/plugin";
 import { SCANNER_VERSION } from "../domain/scan";
 import type { Env } from "../env";
 import { GithubClient, GithubError, type GithubRepo } from "../github/client";
-import { resolveReadmePath, type ReadmeLanguage } from "../github/readme";
+import { loadPluginReadme, type ReadmeLanguage } from "../github/readme-content";
 
 export const api = new Hono<{ Bindings: Env }>();
 
@@ -40,10 +40,6 @@ function parseRepoUrl(input: string | undefined): { owner: string; repo: string 
 	return normalizedRepo ? { owner, repo: normalizedRepo } : null;
 }
 
-function encodeGithubPath(path: string): string {
-	return path.split("/").map(encodeURIComponent).join("/");
-}
-
 api.get("/plugins", async (c) => {
 	const q = c.req.query();
 	const sort: "updated" | "stars" | "new" | "trending" = q.sort === "stars" || q.sort === "new" || q.sort === "trending" ? q.sort : "updated";
@@ -68,42 +64,20 @@ api.get("/plugins/:owner/:repo/readme", async (c) => {
 	const owner = c.req.param("owner");
 	const repo = c.req.param("repo");
 	const language: ReadmeLanguage = c.req.query("lang") === "en" ? "en" : "zh";
-	const cacheKey = new Request(new URL(`/api/plugins/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme?lang=${language}`, c.req.url).toString());
-	const cached = await caches.default.match(cacheKey);
-	if (cached) return cached;
 	const detail = await getPlugin(c.env.DB, owner, repo);
 	if (!detail) return c.json({ error: "not_found" }, 404);
-	const client = new GithubClient(c.env.GITHUB_TOKEN);
 
 	try {
-		let ref = detail.latestCommitSha;
-		if (!ref) {
-			const githubRepo = await client.getRepo(owner, repo);
-			ref = await client.getBranchSha(owner, repo, githubRepo.default_branch);
-		}
-
-		const tree = await client.getTree(owner, repo, ref);
-		const resolved = resolveReadmePath(tree, language);
-		if (!resolved) return c.json({ error: "readme_not_found" }, 404);
-
-		const markdown = await client.getFile(owner, repo, resolved.path, ref);
-		if (!markdown) return c.json({ error: "readme_not_found" }, 404);
-		const html = await client.renderMarkdown(markdown);
-		const sourceUrl = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/blob/${encodeURIComponent(ref)}/${encodeGithubPath(resolved.path)}`;
-
-		c.header("Cache-Control", "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400");
-		const response = c.json({
-			owner,
-			repo,
-			path: resolved.path,
-			language: resolved.language,
-			fallback: resolved.fallback,
-			ref,
-			html,
-			sourceUrl,
+		const readme = await loadPluginReadme({
+			detail,
+			language,
+			githubToken: c.env.GITHUB_TOKEN,
+			origin: new URL(c.req.url).origin,
+			waitUntil: (promise) => c.executionCtx.waitUntil(promise),
 		});
-		c.executionCtx.waitUntil(caches.default.put(cacheKey, response.clone()));
-		return response;
+		if (!readme) return c.json({ error: "readme_not_found" }, 404);
+		c.header("Cache-Control", "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400");
+		return c.json(readme);
 	} catch (err) {
 		if (err instanceof GithubError && err.rateLimited) {
 			if (err.retryAfterSeconds !== undefined) c.header("Retry-After", String(err.retryAfterSeconds));
