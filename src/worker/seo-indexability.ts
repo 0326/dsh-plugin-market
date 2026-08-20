@@ -15,6 +15,7 @@ export interface PluginIndexabilityInput {
 
 export interface SitemapCandidate extends PluginListItem {
 	pluginTypesJson: string | null;
+	metadataJson: string | null;
 }
 
 function parseStringArray(raw: string | null | undefined): string[] {
@@ -43,12 +44,27 @@ export function isPluginIndexable(plugin: PluginIndexabilityInput): boolean {
 	if (!(INDEXABLE_VERIFICATION_STATUSES as readonly string[]).includes(plugin.verificationStatus)) return false;
 	const pluginTypes =
 		plugin.pluginTypes ??
-		(plugin.pluginTypesJson !== undefined ? parseStringArray(plugin.pluginTypesJson) : parseMetadataPluginTypes(plugin.metadataJson));
+		(plugin.pluginTypesJson ? parseStringArray(plugin.pluginTypesJson) : parseMetadataPluginTypes(plugin.metadataJson));
 	return !pluginTypes.includes("NON_PLUGIN");
 }
 
 export function filterIndexableSitemapItems(items: SitemapCandidate[]): PluginListItem[] {
-	return items.filter(isPluginIndexable).map(({ pluginTypesJson: _pluginTypesJson, ...item }) => item);
+	return items.filter(isPluginIndexable).map((item) => ({
+		owner: item.owner,
+		repo: item.repo,
+		fullName: item.fullName,
+		description: item.description,
+		stars: item.stars,
+		verificationStatus: item.verificationStatus,
+		compatibilityStatus: item.compatibilityStatus,
+		securityStatus: item.securityStatus,
+		maintenanceStatus: item.maintenanceStatus,
+		riskLevel: item.riskLevel,
+		packageName: item.packageName,
+		latestCommitSha: item.latestCommitSha,
+		updatedAt: item.updatedAt,
+		previewImageUrl: item.previewImageUrl,
+	}));
 }
 
 async function listSitemapCandidates(db: D1Database): Promise<SitemapCandidate[]> {
@@ -57,7 +73,7 @@ async function listSitemapCandidates(db: D1Database): Promise<SitemapCandidate[]
 		p.verification_status AS verificationStatus, p.compatibility_status AS compatibilityStatus,
 		p.security_status AS securityStatus, p.maintenance_status AS maintenanceStatus,
 		p.risk_level AS riskLevel, p.package_name AS packageName,
-		p.plugin_types_json AS pluginTypesJson,
+		p.plugin_types_json AS pluginTypesJson, p.metadata_json AS metadataJson,
 		s.commit_sha AS latestCommitSha, p.updated_at AS updatedAt, r.preview_image_url AS previewImageUrl
 	FROM plugins p
 	JOIN repositories r ON r.id = p.repository_id
