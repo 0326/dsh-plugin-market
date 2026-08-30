@@ -253,6 +253,15 @@ export function buildPluginSeoBody(detail: PluginDetail, readme: PluginReadmeCon
 }
 
 
+function isRegistryPluginLinkable(item: PluginListItem): boolean {
+	const eligibleStatuses = new Set(["DETECTED", "FORMAT_VERIFIED", "FEATURED"]);
+	if (!eligibleStatuses.has(item.verificationStatus)) return false;
+	if (item.verificationStatus === "DETECTED") {
+		return Boolean(item.description?.trim()) && Boolean(item.packageName || item.latestCommitSha);
+	}
+	return true;
+}
+
 function pluginHref(item: PluginListItem): string {
 	return `/plugin/${encodeURIComponent(item.owner)}/${encodeURIComponent(item.repo)}`;
 }
@@ -264,7 +273,7 @@ function pluginLink(item: PluginListItem): string {
 }
 
 export function buildExploreSeoBody(items: PluginListItem[]): string {
-	const links = items.slice(0, 50).map(pluginLink).join("\n");
+	const links = items.filter(isRegistryPluginLinkable).slice(0, 50).map(pluginLink).join("\n");
 	return `<section data-dsh-edge-body="plugins" class="mx-auto max-w-7xl px-4 py-8">
 	<nav aria-label="Breadcrumb"><a href="/">DSH Plugin Market</a> / <span>Explore plugins</span></nav>
 	<header><h1>Explore DSH Plugins</h1><p>Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.</p></header>
@@ -277,7 +286,7 @@ export function buildExploreSeoBody(items: PluginListItem[]): string {
 }
 
 export function buildPublisherSeoBody(pub: PublisherInfo): string {
-	const links = pub.repos.slice(0, 100).map(pluginLink).join("\n");
+	const links = pub.repos.filter(isRegistryPluginLinkable).slice(0, 100).map(pluginLink).join("\n");
 	return `<section data-dsh-edge-body="publisher" class="mx-auto max-w-5xl px-4 py-8">
 	<nav aria-label="Breadcrumb"><a href="/plugins">DSH Plugin Market</a> / <span>${htmlEscape(pub.owner)}</span></nav>
 	<header><h1>${htmlEscape(pub.owner)} DSH Plugins</h1><p>Explore ${pub.repos.length} DeepSeek Harness plugin${pub.repos.length === 1 ? "" : "s"} from ${htmlEscape(pub.owner)}, including ${pub.verifiedCount} format-verified plugin${pub.verifiedCount === 1 ? "" : "s"} and trust signals.</p></header>
@@ -319,8 +328,9 @@ function staticRelatedLinks(pathname: string): Array<[string, string]> {
 export function buildStaticSeoBody(pathname: string, spec: SeoSpec, recent: PluginListItem[] = []): string {
 	const heading = pathname === "/" ? "DSH Plugin Market" : spec.title.replace(` — ${SITE_NAME}`, "");
 	const related = staticRelatedLinks(pathname).map(([href, label]) => `<li><a href="${htmlEscape(href)}">${htmlEscape(label)}</a></li>`).join("\n");
-	const recentSection = pathname === "/" && recent.length > 0
-		? `<section aria-labelledby="seo-latest-title"><h2 id="seo-latest-title">Latest DSH plugins</h2><ol>${recent.slice(0, 12).map(pluginLink).join("\n")}</ol></section>`
+	const linkableRecent = recent.filter(isRegistryPluginLinkable);
+	const recentSection = pathname === "/" && linkableRecent.length > 0
+		? `<section aria-labelledby="seo-latest-title"><h2 id="seo-latest-title">Latest DSH plugins</h2><ol>${linkableRecent.slice(0, 12).map(pluginLink).join("\n")}</ol></section>`
 		: "";
 	return `<article data-dsh-edge-body="static" class="mx-auto max-w-7xl px-4 py-8">
 	<nav aria-label="Breadcrumb"><a href="/">DSH Plugin Market</a></nav>
@@ -338,8 +348,8 @@ function buildPluginListJsonLd(items: PluginListItem[]): Record<string, unknown>
 	page["@type"] = "CollectionPage";
 	page.mainEntity = {
 		"@type": "ItemList",
-		numberOfItems: items.length,
-		itemListElement: items.slice(0, 50).map((item, index) => ({
+		numberOfItems: items.filter(isRegistryPluginLinkable).length,
+		itemListElement: items.filter(isRegistryPluginLinkable).slice(0, 50).map((item, index) => ({
 			"@type": "ListItem",
 			position: index + 1,
 			name: item.fullName,
@@ -369,8 +379,7 @@ function pluginSpec(detail: PluginDetail): SeoSpec {
 
 
 export function isPublisherIndexable(pub: PublisherInfo): boolean {
-	const eligibleStatuses = new Set(["DETECTED", "FORMAT_VERIFIED", "FEATURED"]);
-	return pub.repos.filter((repo) => eligibleStatuses.has(repo.verificationStatus)).length >= 2;
+	return pub.repos.filter(isRegistryPluginLinkable).length >= 2;
 }
 
 function publisherSpec(pub: PublisherInfo): SeoSpec {
@@ -380,10 +389,11 @@ function publisherSpec(pub: PublisherInfo): SeoSpec {
 	const page = webPageNode(canonicalPath, title, description);
 	page["@type"] = "CollectionPage";
 	page.about = { name: pub.owner, url: `https://github.com/${encodeURIComponent(pub.owner)}` };
+	const linkableRepos = pub.repos.filter(isRegistryPluginLinkable);
 	page.mainEntity = {
 		"@type": "ItemList",
-		numberOfItems: pub.repos.length,
-		itemListElement: pub.repos.slice(0, 100).map((repo, index) => ({
+		numberOfItems: linkableRepos.length,
+		itemListElement: linkableRepos.slice(0, 100).map((repo, index) => ({
 			"@type": "ListItem",
 			position: index + 1,
 			name: repo.fullName,
