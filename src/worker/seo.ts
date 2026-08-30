@@ -254,99 +254,99 @@ export function buildPluginSeoBody(detail: PluginDetail, readme: PluginReadmeCon
 
 
 function pluginHref(item: PluginListItem): string {
-\treturn \`/plugin/\${encodeURIComponent(item.owner)}/\${encodeURIComponent(item.repo)}\`;
+	return `/plugin/${encodeURIComponent(item.owner)}/${encodeURIComponent(item.repo)}`;
 }
 
 function pluginLink(item: PluginListItem): string {
-\tconst description = cleanDescription(item.description, "DeepSeek Harness plugin.");
-\tconst status = [item.verificationStatus, item.compatibilityStatus, item.maintenanceStatus].filter(Boolean).join(" · ");
-\treturn \`<li><a href="\${htmlEscape(pluginHref(item))}"><strong>\${htmlEscape(item.fullName)}</strong></a><p>\${htmlEscape(description)}</p><small>\${htmlEscape(status)}</small></li>\`;
+	const description = cleanDescription(item.description, "DeepSeek Harness plugin.");
+	const status = [item.verificationStatus, item.compatibilityStatus, item.maintenanceStatus].filter(Boolean).join(" · ");
+	return `<li><a href="${htmlEscape(pluginHref(item))}"><strong>${htmlEscape(item.fullName)}</strong></a><p>${htmlEscape(description)}</p><small>${htmlEscape(status)}</small></li>`;
 }
 
 export function buildExploreSeoBody(items: PluginListItem[]): string {
-\tconst links = items.slice(0, 50).map(pluginLink).join("\\n");
-\treturn \`<section data-dsh-edge-body="plugins" class="mx-auto max-w-7xl px-4 py-8">
-\t<nav aria-label="Breadcrumb"><a href="/">DSH Plugin Market</a> / <span>Explore plugins</span></nav>
-\t<header><h1>Explore DSH Plugins</h1><p>Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.</p></header>
-\t<section aria-labelledby="seo-plugin-list-title">
-\t<h2 id="seo-plugin-list-title">DSH plugin registry</h2>
-\t<ol>\${links}</ol>
-\t</section>
-\t<p><a href="/trust">Read the trust model</a> · <a href="/guide/choose-dsh-plugin">How to choose a plugin</a></p>
-</section>\`;
+	const links = items.slice(0, 50).map(pluginLink).join("\n");
+	return `<section data-dsh-edge-body="plugins" class="mx-auto max-w-7xl px-4 py-8">
+	<nav aria-label="Breadcrumb"><a href="/">DSH Plugin Market</a> / <span>Explore plugins</span></nav>
+	<header><h1>Explore DSH Plugins</h1><p>Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.</p></header>
+	<section aria-labelledby="seo-plugin-list-title">
+	<h2 id="seo-plugin-list-title">DSH plugin registry</h2>
+	<ol>${links}</ol>
+	</section>
+	<p><a href="/trust">Read the trust model</a> · <a href="/guide/choose-dsh-plugin">How to choose a plugin</a></p>
+</section>`;
 }
 
 export function buildPublisherSeoBody(pub: PublisherInfo): string {
-\tconst links = pub.repos.slice(0, 100).map(pluginLink).join("\\n");
-\treturn \`<section data-dsh-edge-body="publisher" class="mx-auto max-w-5xl px-4 py-8">
-\t<nav aria-label="Breadcrumb"><a href="/plugins">DSH Plugin Market</a> / <span>\${htmlEscape(pub.owner)}</span></nav>
-\t<header><h1>\${htmlEscape(pub.owner)} DSH Plugins</h1><p>Explore \${pub.repos.length} DeepSeek Harness plugin\${pub.repos.length === 1 ? "" : "s"} from \${htmlEscape(pub.owner)}, including \${pub.verifiedCount} format-verified plugin\${pub.verifiedCount === 1 ? "" : "s"} and trust signals.</p></header>
-\t<section aria-labelledby="seo-publisher-list-title">
-\t<h2 id="seo-publisher-list-title">Published plugins</h2>
-\t<ol>\${links}</ol>
-\t</section>
-</section>\`;
+	const links = pub.repos.slice(0, 100).map(pluginLink).join("\n");
+	return `<section data-dsh-edge-body="publisher" class="mx-auto max-w-5xl px-4 py-8">
+	<nav aria-label="Breadcrumb"><a href="/plugins">DSH Plugin Market</a> / <span>${htmlEscape(pub.owner)}</span></nav>
+	<header><h1>${htmlEscape(pub.owner)} DSH Plugins</h1><p>Explore ${pub.repos.length} DeepSeek Harness plugin${pub.repos.length === 1 ? "" : "s"} from ${htmlEscape(pub.owner)}, including ${pub.verifiedCount} format-verified plugin${pub.verifiedCount === 1 ? "" : "s"} and trust signals.</p></header>
+	<section aria-labelledby="seo-publisher-list-title">
+	<h2 id="seo-publisher-list-title">Published plugins</h2>
+	<ol>${links}</ol>
+	</section>
+</section>`;
 }
 
 function staticRelatedLinks(pathname: string): Array<[string, string]> {
-\tif (pathname === "/") return [
-\t\t["/plugins", "Explore DSH Plugins"],
-\t\t["/trust", "How verification works"],
-\t\t["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
-\t];
-\tif (pathname === "/plugins") return [
-\t\t["/trust", "How verification works"],
-\t\t["/guide/choose-dsh-plugin", "How to choose a plugin"],
-\t];
-\tif (pathname === "/trust") return [
-\t\t["/guide/choose-dsh-plugin", "How to choose a plugin"],
-\t\t["/guide/install-dsh-plugin", "How to install a plugin"],
-\t];
-\tif (pathname === "/about") return [
-\t\t["/trust", "Trust model"],
-\t\t["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
-\t];
-\tif (pathname === "/submit") return [
-\t\t["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
-\t\t["/plugins", "Explore the registry"],
-\t];
-\treturn [
-\t\t["/plugins", "Explore DSH Plugins"],
-\t\t["/trust", "Trust model"],
-\t];
+	if (pathname === "/") return [
+		["/plugins", "Explore DSH Plugins"],
+		["/trust", "How verification works"],
+		["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
+	];
+	if (pathname === "/plugins") return [
+		["/trust", "How verification works"],
+		["/guide/choose-dsh-plugin", "How to choose a plugin"],
+	];
+	if (pathname === "/trust") return [
+		["/guide/choose-dsh-plugin", "How to choose a plugin"],
+		["/guide/install-dsh-plugin", "How to install a plugin"],
+	];
+	if (pathname === "/about") return [
+		["/trust", "Trust model"],
+		["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
+	];
+	if (pathname === "/submit") return [
+		["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
+		["/plugins", "Explore the registry"],
+	];
+	return [
+		["/plugins", "Explore DSH Plugins"],
+		["/trust", "Trust model"],
+	];
 }
 
 export function buildStaticSeoBody(pathname: string, spec: SeoSpec, recent: PluginListItem[] = []): string {
-\tconst heading = pathname === "/" ? "DSH Plugin Market" : spec.title.replace(\` — \${SITE_NAME}\`, "");
-\tconst related = staticRelatedLinks(pathname).map(([href, label]) => \`<li><a href="\${htmlEscape(href)}">\${htmlEscape(label)}</a></li>\`).join("\\n");
-\tconst recentSection = pathname === "/" && recent.length > 0
-\t\t? \`<section aria-labelledby="seo-latest-title"><h2 id="seo-latest-title">Latest DSH plugins</h2><ol>\${recent.slice(0, 12).map(pluginLink).join("\\n")}</ol></section>\`
-\t\t: "";
-\treturn \`<article data-dsh-edge-body="static" class="mx-auto max-w-7xl px-4 py-8">
-\t<nav aria-label="Breadcrumb"><a href="/">DSH Plugin Market</a></nav>
-\t<h1>\${htmlEscape(heading)}</h1>
-\t<p>\${htmlEscape(spec.description)}</p>
-\t\${recentSection}
-\t<nav aria-label="Related pages"><h2>Related pages</h2><ul>\${related}</ul></nav>
-</article>\`;
+	const heading = pathname === "/" ? "DSH Plugin Market" : spec.title.replace(` — ${SITE_NAME}`, "");
+	const related = staticRelatedLinks(pathname).map(([href, label]) => `<li><a href="${htmlEscape(href)}">${htmlEscape(label)}</a></li>`).join("\n");
+	const recentSection = pathname === "/" && recent.length > 0
+		? `<section aria-labelledby="seo-latest-title"><h2 id="seo-latest-title">Latest DSH plugins</h2><ol>${recent.slice(0, 12).map(pluginLink).join("\n")}</ol></section>`
+		: "";
+	return `<article data-dsh-edge-body="static" class="mx-auto max-w-7xl px-4 py-8">
+	<nav aria-label="Breadcrumb"><a href="/">DSH Plugin Market</a></nav>
+	<h1>${htmlEscape(heading)}</h1>
+	<p>${htmlEscape(spec.description)}</p>
+	${recentSection}
+	<nav aria-label="Related pages"><h2>Related pages</h2><ul>${related}</ul></nav>
+</article>`;
 }
 
 function buildPluginListJsonLd(items: PluginListItem[]): Record<string, unknown> {
-\tconst title = "Explore DSH Plugins — DSH Plugin Market";
-\tconst description = "Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.";
-\tconst page = webPageNode("/plugins", title, description);
-\tpage["@type"] = "CollectionPage";
-\tpage.mainEntity = {
-\t\t"@type": "ItemList",
-\t\tnumberOfItems: items.length,
-\t\titemListElement: items.slice(0, 50).map((item, index) => ({
-\t\t\t"@type": "ListItem",
-\t\t\tposition: index + 1,
-\t\t\tname: item.fullName,
-\t\t\turl: \`\${SITE_URL}\${pluginHref(item)}\`,
-\t\t})),
-\t};
-\treturn graph(page);
+	const title = "Explore DSH Plugins — DSH Plugin Market";
+	const description = "Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.";
+	const page = webPageNode("/plugins", title, description);
+	page["@type"] = "CollectionPage";
+	page.mainEntity = {
+		"@type": "ItemList",
+		numberOfItems: items.length,
+		itemListElement: items.slice(0, 50).map((item, index) => ({
+			"@type": "ListItem",
+			position: index + 1,
+			name: item.fullName,
+			url: `${SITE_URL}${pluginHref(item)}`,
+		})),
+	};
+	return graph(page);
 }
 
 function pluginSpec(detail: PluginDetail): SeoSpec {
@@ -369,8 +369,8 @@ function pluginSpec(detail: PluginDetail): SeoSpec {
 
 
 export function isPublisherIndexable(pub: PublisherInfo): boolean {
-\tconst eligibleStatuses = new Set(["DETECTED", "FORMAT_VERIFIED", "FEATURED"]);
-\treturn pub.repos.filter((repo) => eligibleStatuses.has(repo.verificationStatus)).length >= 2;
+	const eligibleStatuses = new Set(["DETECTED", "FORMAT_VERIFIED", "FEATURED"]);
+	return pub.repos.filter((repo) => eligibleStatuses.has(repo.verificationStatus)).length >= 2;
 }
 
 function publisherSpec(pub: PublisherInfo): SeoSpec {
@@ -378,27 +378,27 @@ function publisherSpec(pub: PublisherInfo): SeoSpec {
 	const title = `${pub.owner} DSH Plugins — ${SITE_NAME}`;
 	const description = `Explore ${pub.repos.length} DeepSeek Harness plugin${pub.repos.length === 1 ? "" : "s"} from ${pub.owner}, including ${pub.verifiedCount} format-verified plugin${pub.verifiedCount === 1 ? "" : "s"} and trust signals.`;
 	const page = webPageNode(canonicalPath, title, description);
-\tpage["@type"] = "CollectionPage";
-\tpage.about = { name: pub.owner, url: \`https://github.com/\${encodeURIComponent(pub.owner)}\` };
-\tpage.mainEntity = {
-\t\t"@type": "ItemList",
-\t\tnumberOfItems: pub.repos.length,
-\t\titemListElement: pub.repos.slice(0, 100).map((repo, index) => ({
-\t\t\t"@type": "ListItem",
-\t\t\tposition: index + 1,
-\t\t\tname: repo.fullName,
-\t\t\turl: \`\${SITE_URL}/plugin/\${encodeURIComponent(repo.owner)}/\${encodeURIComponent(repo.repo)}\`,
-\t\t})),
-\t};
-\treturn {
-\t\ttitle,
-\t\tdescription,
-\t\tcanonicalPath,
-\t\timage: DEFAULT_IMAGE,
-\t\trobots: isPublisherIndexable(pub) ? "index,follow,max-image-preview:large" : "noindex,follow",
-\t\tjsonLd: graph(page),
-\t\tpublisherInfo: pub,
-\t};
+	page["@type"] = "CollectionPage";
+	page.about = { name: pub.owner, url: `https://github.com/${encodeURIComponent(pub.owner)}` };
+	page.mainEntity = {
+		"@type": "ItemList",
+		numberOfItems: pub.repos.length,
+		itemListElement: pub.repos.slice(0, 100).map((repo, index) => ({
+			"@type": "ListItem",
+			position: index + 1,
+			name: repo.fullName,
+			url: `${SITE_URL}/plugin/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`,
+		})),
+	};
+	return {
+		title,
+		description,
+		canonicalPath,
+		image: DEFAULT_IMAGE,
+		robots: isPublisherIndexable(pub) ? "index,follow,max-image-preview:large" : "noindex,follow",
+		jsonLd: graph(page),
+		publisherInfo: pub,
+	};
 }
 
 function notFoundSpec(pathname: string): SeoSpec {
@@ -503,79 +503,79 @@ export async function renderSitemap(db: D1Database): Promise<Response> {
 }
 
 export async function renderSeoPage(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-\tconst url = new URL(request.url);
-\tconst normalizedPath = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : url.pathname;
-\tlet spec = await resolveSeoSpec(url.pathname, env.DB);
-\tlet edgeBody: string | null = null;
+	const url = new URL(request.url);
+	const normalizedPath = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : url.pathname;
+	let spec = await resolveSeoSpec(url.pathname, env.DB);
+	let edgeBody: string | null = null;
 
-\tif (spec.pluginDetail && !spec.status) {
-\t\tlet readme: PluginReadmeContent | null = null;
-\t\ttry {
-\t\t\treadme = await loadPluginReadme({
-\t\t\t\tdetail: spec.pluginDetail,
-\t\t\t\tlanguage: "zh",
-\t\t\t\tgithubToken: env.GITHUB_TOKEN,
-\t\t\t\torigin: url.origin,
-\t\t\t\twaitUntil: (promise) => ctx.waitUntil(promise),
-\t\t\t});
-\t\t} catch (err) {
-\t\t\tconsole.warn(
-\t\t\t\t\`edge README pre-render failed for \${spec.pluginDetail.fullName}\`,
-\t\t\t\terr instanceof Error ? err.message : String(err),
-\t\t\t);
-\t\t}
-\t\tedgeBody = buildPluginSeoBody(spec.pluginDetail, readme);
-\t} else if (!spec.status) {
-\t\ttry {
-\t\t\tif (normalizedPath === "/plugins") {
-\t\t\t\tconst items = await listPlugins(env.DB, { sort: "updated", limit: 50 });
-\t\t\t\tedgeBody = buildExploreSeoBody(items);
-\t\t\t\tspec.jsonLd = buildPluginListJsonLd(items);
-\t\t\t} else if (spec.publisherInfo) {
-\t\t\t\tedgeBody = buildPublisherSeoBody(spec.publisherInfo);
-\t\t\t} else {
-\t\t\t\tconst recent = normalizedPath === "/" ? await listPlugins(env.DB, { sort: "updated", limit: 12 }) : [];
-\t\t\t\tedgeBody = buildStaticSeoBody(normalizedPath, spec, recent);
-\t\t\t}
-\t\t} catch (err) {
-\t\t\tconsole.warn(
-\t\t\t\t\`edge SEO body generation failed for \${normalizedPath}\`,
-\t\t\t\terr instanceof Error ? err.message : String(err),
-\t\t\t);
-\t\t}
-\t}
+	if (spec.pluginDetail && !spec.status) {
+		let readme: PluginReadmeContent | null = null;
+		try {
+			readme = await loadPluginReadme({
+				detail: spec.pluginDetail,
+				language: "zh",
+				githubToken: env.GITHUB_TOKEN,
+				origin: url.origin,
+				waitUntil: (promise) => ctx.waitUntil(promise),
+			});
+		} catch (err) {
+			console.warn(
+				`edge README pre-render failed for ${spec.pluginDetail.fullName}`,
+				err instanceof Error ? err.message : String(err),
+			);
+		}
+		edgeBody = buildPluginSeoBody(spec.pluginDetail, readme);
+	} else if (!spec.status) {
+		try {
+			if (normalizedPath === "/plugins") {
+				const items = await listPlugins(env.DB, { sort: "updated", limit: 50 });
+				edgeBody = buildExploreSeoBody(items);
+				spec.jsonLd = buildPluginListJsonLd(items);
+			} else if (spec.publisherInfo) {
+				edgeBody = buildPublisherSeoBody(spec.publisherInfo);
+			} else {
+				const recent = normalizedPath === "/" ? await listPlugins(env.DB, { sort: "updated", limit: 12 }) : [];
+				edgeBody = buildStaticSeoBody(normalizedPath, spec, recent);
+			}
+		} catch (err) {
+			console.warn(
+				`edge SEO body generation failed for ${normalizedPath}`,
+				err instanceof Error ? err.message : String(err),
+			);
+		}
+	}
 
-\tconst assetResponse = await env.ASSETS.fetch(request);
-\tconst contentType = assetResponse.headers.get("content-type") ?? "";
-\tif (!contentType.includes("text/html")) return assetResponse;
+	const assetResponse = await env.ASSETS.fetch(request);
+	const contentType = assetResponse.headers.get("content-type") ?? "";
+	if (!contentType.includes("text/html")) return assetResponse;
 
-\tconst headers = new Headers(assetResponse.headers);
-\theaders.set("cache-control", spec.status === 404 ? "no-store" : "public, max-age=60, s-maxage=300, stale-while-revalidate=86400");
-\tconst response = new Response(assetResponse.body, {
-\t\tstatus: spec.status ?? assetResponse.status,
-\t\tstatusText: assetResponse.statusText,
-\t\theaders,
-\t});
-\tconst canonical = \`\${SITE_URL}\${spec.canonicalPath}\`;
-\tconst jsonLd = serializeJsonLd(spec.jsonLd);
-\tconst rewriter = new HTMLRewriter()
-\t\t.on("title", { element(e) { e.setInnerContent(spec.title); } })
-\t\t.on('meta[name="description"]', { element(e) { e.setAttribute("content", spec.description); } })
-\t\t.on('meta[name="robots"]', { element(e) { e.setAttribute("content", spec.robots); } })
-\t\t.on('link[rel="canonical"]', { element(e) { e.setAttribute("href", canonical); } })
-\t\t.on('meta[property="og:title"]', { element(e) { e.setAttribute("content", spec.title); } })
-\t\t.on('meta[property="og:description"]', { element(e) { e.setAttribute("content", spec.description); } })
-\t\t.on('meta[property="og:url"]', { element(e) { e.setAttribute("content", canonical); } })
-\t\t.on('meta[property="og:image"]', { element(e) { e.setAttribute("content", spec.image); } })
-\t\t.on('meta[property="og:image:alt"]', { element(e) { e.setAttribute("content", spec.title); } })
-\t\t.on('meta[name="twitter:card"]', { element(e) { e.setAttribute("content", "summary_large_image"); } })
-\t\t.on('meta[name="twitter:title"]', { element(e) { e.setAttribute("content", spec.title); } })
-\t\t.on('meta[name="twitter:description"]', { element(e) { e.setAttribute("content", spec.description); } })
-\t\t.on('meta[name="twitter:image"]', { element(e) { e.setAttribute("content", spec.image); } })
-\t\t.on("script#seo-jsonld", { element(e) { e.setInnerContent(jsonLd, { html: true }); } })
-\t\t.on("head", { element(e) { e.append(\`<meta name="dsh-edge-seo" content="\${spec.canonicalPath.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">\`, { html: true }); } });
-\tif (edgeBody) {
-\t\trewriter.on("#root", { element(e) { e.setInnerContent(edgeBody!, { html: true }); } });
-\t}
-\treturn rewriter.transform(response);
+	const headers = new Headers(assetResponse.headers);
+	headers.set("cache-control", spec.status === 404 ? "no-store" : "public, max-age=60, s-maxage=300, stale-while-revalidate=86400");
+	const response = new Response(assetResponse.body, {
+		status: spec.status ?? assetResponse.status,
+		statusText: assetResponse.statusText,
+		headers,
+	});
+	const canonical = `${SITE_URL}${spec.canonicalPath}`;
+	const jsonLd = serializeJsonLd(spec.jsonLd);
+	const rewriter = new HTMLRewriter()
+		.on("title", { element(e) { e.setInnerContent(spec.title); } })
+		.on('meta[name="description"]', { element(e) { e.setAttribute("content", spec.description); } })
+		.on('meta[name="robots"]', { element(e) { e.setAttribute("content", spec.robots); } })
+		.on('link[rel="canonical"]', { element(e) { e.setAttribute("href", canonical); } })
+		.on('meta[property="og:title"]', { element(e) { e.setAttribute("content", spec.title); } })
+		.on('meta[property="og:description"]', { element(e) { e.setAttribute("content", spec.description); } })
+		.on('meta[property="og:url"]', { element(e) { e.setAttribute("content", canonical); } })
+		.on('meta[property="og:image"]', { element(e) { e.setAttribute("content", spec.image); } })
+		.on('meta[property="og:image:alt"]', { element(e) { e.setAttribute("content", spec.title); } })
+		.on('meta[name="twitter:card"]', { element(e) { e.setAttribute("content", "summary_large_image"); } })
+		.on('meta[name="twitter:title"]', { element(e) { e.setAttribute("content", spec.title); } })
+		.on('meta[name="twitter:description"]', { element(e) { e.setAttribute("content", spec.description); } })
+		.on('meta[name="twitter:image"]', { element(e) { e.setAttribute("content", spec.image); } })
+		.on("script#seo-jsonld", { element(e) { e.setInnerContent(jsonLd, { html: true }); } })
+		.on("head", { element(e) { e.append(`<meta name="dsh-edge-seo" content="${spec.canonicalPath.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">`, { html: true }); } });
+	if (edgeBody) {
+		rewriter.on("#root", { element(e) { e.setInnerContent(edgeBody!, { html: true }); } });
+	}
+	return rewriter.transform(response);
 }
