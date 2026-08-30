@@ -122,7 +122,8 @@ function pluginMatch(pathname: string): { owner: string; repo: string } | null {
 }
 
 export function detailIsIndexable(
-	detail: Pick<PluginDetail, "verificationStatus" | "metadataJson" | "description" | "packageName" | "latestCommitSha">,
+	detail: Pick<PluginDetail, "verificationStatus" | "metadataJson"> &
+		Partial<Pick<PluginDetail, "description" | "packageName" | "latestCommitSha">>,
 ): boolean {
 	return isPluginIndexable({
 		verificationStatus: detail.verificationStatus,
