@@ -475,16 +475,20 @@ export function buildSitemapXml(items: PluginListItem[]): string {
 		});
 	}
 
-	const owners = new Map<string, string | null>();
+	const owners = new Map<string, { updatedAt: string | null; count: number }>();
 	for (const item of items) {
-		const previous = owners.get(item.owner);
-		if (!previous || (item.updatedAt && item.updatedAt > previous)) owners.set(item.owner, item.updatedAt);
+		const current = owners.get(item.owner);
+		if (!current) {
+			owners.set(item.owner, { updatedAt: item.updatedAt, count: 1 });
+			continue;
+		}
+		current.count += 1;
+		if (item.updatedAt && (!current.updatedAt || item.updatedAt > current.updatedAt)) current.updatedAt = item.updatedAt;
 	}
 	const remaining = Math.max(0, SITEMAP_URL_LIMIT - urls.length);
-	for (const [owner, updatedAt] of [...owners.entries()].slice(0, remaining)) {
-		urls.push({ loc: `${SITE_URL}/publisher/${encodeURIComponent(owner)}`, lastmod: lastMod(updatedAt) });
+	for (const [owner, info] of [...owners.entries()].filter(([, value]) => value.count >= 2).slice(0, remaining)) {
+		urls.push({ loc: \`\${SITE_URL}/publisher/\${encodeURIComponent(owner)}\`, lastmod: lastMod(info.updatedAt) });
 	}
-
 	const rows = urls.map(({ loc, lastmod }) => {
 		const modified = lastmod ? `\n    <lastmod>${xmlEscape(lastmod)}</lastmod>` : "";
 		return `  <url>\n    <loc>${xmlEscape(loc)}</loc>${modified}\n  </url>`;
