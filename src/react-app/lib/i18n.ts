@@ -15,16 +15,16 @@ export type Dict = { [key: string]: string | Dict };
 
 const zh: Dict = {
   meta: {
-    title: "dsh-plugin market",
+    title: "DSH Plugin Market",
     description:
-      "dsh-plugin market — 面向 DeepSeek Harness 生态的可信插件注册、发现与安装平台。",
+      "DSH Plugin Market — 面向 DeepSeek Harness 生态的独立插件可信注册表。",
   },
   nav: { home: "首页", explore: "插件市场", submit: "提交插件", about: "关于" },
   langSwitch: "English",
   theme: { light: "亮色", dark: "暗色" },
-  github: { star: "加星", starAria: "在 GitHub 上给 dsh-plugin market 加星" },
+  github: { star: "加星", starAria: "在 GitHub 上给 DSH Plugin Market 加星" },
   footer:
-    "dsh-plugin market 是社区项目，并非 DeepSeek 官方产品。格式验证 ≠ 安全。",
+    "DSH Plugin Market 是社区项目，并非 DeepSeek 官方产品。格式验证 ≠ 安全。",
   footerLinks: "项目链接",
   footerSource: "项目源码",
   common: {
@@ -32,7 +32,7 @@ const zh: Dict = {
     noDescription: "暂无描述。",
   },
   home: {
-    heroTagline: "构建安全可信的 DSH 精选插件市场",
+    heroTagline: "面向 DeepSeek Harness 的独立插件可信注册表",
     searchPlaceholder: "搜索插件、功能或开发者……",
     search: "搜索",
     browse: "浏览",
@@ -195,9 +195,9 @@ const zh: Dict = {
 
 const en: Dict = {
   meta: {
-    title: "dsh-plugin market",
+    title: "DSH Plugin Market",
     description:
-      "dsh-plugin market — a trusted plugin registry for the DeepSeek Harness ecosystem.",
+      "DSH Plugin Market — an independent trust registry for DeepSeek Harness plugins.",
   },
   nav: {
     home: "Home",
@@ -207,9 +207,9 @@ const en: Dict = {
   },
   langSwitch: "中文",
   theme: { light: "Light", dark: "Dark" },
-  github: { star: "Star", starAria: "Star dsh-plugin market on GitHub" },
+  github: { star: "Star", starAria: "Star DSH Plugin Market on GitHub" },
   footer:
-    "dsh-plugin market is a community project — not an official DeepSeek product. Format Verified ≠ Safe.",
+    "DSH Plugin Market is a community project — not an official DeepSeek product. Format Verified ≠ Safe.",
   footerLinks: "Project links",
   footerSource: "Source code",
   common: {
@@ -217,7 +217,7 @@ const en: Dict = {
     noDescription: "No description.",
   },
   home: {
-    heroTagline: "A secure, trusted, curated plugin marketplace for DSH.",
+    heroTagline: "An independent trust registry for DeepSeek Harness plugins.",
     searchPlaceholder: "Search plugins, capabilities, or developers…",
     search: "Search",
     browse: "Browse",
