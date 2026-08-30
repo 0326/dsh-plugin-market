@@ -36,7 +36,11 @@ export function canonicalRedirect(request: Request): Response | null {
 	}
 
 	if (!changed) return null;
-	const response = Response.redirect(url.toString(), 301);
-	response.headers.set("cache-control", "public, max-age=86400");
-	return response;
+	return new Response(null, {
+		status: 301,
+		headers: {
+			location: url.toString(),
+			"cache-control": "public, max-age=86400",
+		},
+	});
 }
