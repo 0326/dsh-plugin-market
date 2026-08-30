@@ -487,7 +487,7 @@ export function buildSitemapXml(items: PluginListItem[]): string {
 	}
 	const remaining = Math.max(0, SITEMAP_URL_LIMIT - urls.length);
 	for (const [owner, info] of [...owners.entries()].filter(([, value]) => value.count >= 2).slice(0, remaining)) {
-		urls.push({ loc: \`\${SITE_URL}/publisher/\${encodeURIComponent(owner)}\`, lastmod: lastMod(info.updatedAt) });
+		urls.push({ loc: `${SITE_URL}/publisher/${encodeURIComponent(owner)}`, lastmod: lastMod(info.updatedAt) });
 	}
 	const rows = urls.map(({ loc, lastmod }) => {
 		const modified = lastmod ? `\n    <lastmod>${xmlEscape(lastmod)}</lastmod>` : "";
