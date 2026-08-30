@@ -145,7 +145,7 @@ export default function Home() {
 			<section className="home-hero">
 				<div className="hero-copy">
 					<p className="hero-updated mb-5">{t("home.lastScanLabel")}：<time dateTime={activityAt ?? undefined}>{lastScanTime}</time></p>
-					<h1 className="hero-title"><strong>DEEPSEEK HARNESS</strong><span>PLUGIN MARKET</span></h1>
+					<h1 className="hero-title" aria-label="DSH Plugin Market"><strong>DSH PLUGIN</strong><span>MARKET</span></h1>
 					<p className="hero-tagline">{t("home.heroTagline")}</p>
 					<form className="hero-search join w-full" onSubmit={onSearch} role="search">
 						<input className="input join-item w-full" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("home.searchPlaceholder")} aria-label={t("home.searchPlaceholder")} />
