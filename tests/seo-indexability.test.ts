@@ -34,8 +34,21 @@ function plugin(overrides: Partial<SitemapCandidate> = {}): SitemapCandidate {
 describe("plugin SEO indexability", () => {
 	it("indexes detected, format-verified, and featured plugins", () => {
 		for (const verificationStatus of ["DETECTED", "FORMAT_VERIFIED", "FEATURED"]) {
-			expect(isPluginIndexable({ verificationStatus, pluginTypes: ["TOOL"] })).toBe(true);
+			expect(
+				isPluginIndexable({
+					verificationStatus,
+					pluginTypes: ["TOOL"],
+					description: "A usable plugin",
+					packageName: "@acme/dsh-demo",
+					latestCommitSha: "abc123",
+				}),
+			).toBe(true);
 		}
+	});
+
+	it("keeps detected records without minimum evidence out of the index", () => {
+		expect(isPluginIndexable({ verificationStatus: "DETECTED", pluginTypes: ["TOOL"] })).toBe(false);
+		expect(isPluginIndexable({ verificationStatus: "DETECTED", pluginTypes: ["TOOL"], description: "Description only" })).toBe(false);
 	});
 
 	it("keeps candidates and rejected records out of the index", () => {
@@ -68,7 +81,9 @@ describe("sitemap indexability", () => {
 	it("only emits indexable plugin and publisher URLs", () => {
 		const candidates = [
 			plugin({ owner: "verified", repo: "plugin" }),
+			plugin({ owner: "verified", repo: "plugin-two", fullName: "verified/plugin-two" }),
 			plugin({ owner: "detected", repo: "plugin", verificationStatus: "DETECTED" }),
+			plugin({ owner: "detected", repo: "plugin-two", fullName: "detected/plugin-two", verificationStatus: "DETECTED" }),
 			plugin({ owner: "candidate", repo: "plugin", verificationStatus: "CANDIDATE" }),
 			plugin({ owner: "rejected", repo: "plugin", verificationStatus: "REJECTED" }),
 			plugin({ owner: "not-plugin", repo: "repo", pluginTypesJson: JSON.stringify(["NON_PLUGIN"]) }),
