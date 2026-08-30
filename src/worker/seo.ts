@@ -509,7 +509,7 @@ export async function renderSitemap(db: D1Database): Promise<Response> {
 export async function renderSeoPage(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(request.url);
 	const normalizedPath = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : url.pathname;
-	let spec = await resolveSeoSpec(url.pathname, env.DB);
+	const spec = await resolveSeoSpec(url.pathname, env.DB);
 	let edgeBody: string | null = null;
 
 	if (spec.pluginDetail && !spec.status) {
