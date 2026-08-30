@@ -27,15 +27,28 @@ function encodeGithubPath(path: string): string {
 	return path.split("/").map(encodeURIComponent).join("/");
 }
 
-function cacheRequest(origin: string, owner: string, repo: string, language: ReadmeLanguage): Request {
+function cacheRequest(origin: string, owner: string, repo: string, language: ReadmeLanguage, ref: string): Request {
 	return new Request(
-		new URL(`/api/plugins/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme?lang=${language}`, origin).toString(),
+		new URL(
+			`/api/plugins/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme?lang=${language}&ref=${encodeURIComponent(ref)}`,
+			origin,
+		).toString(),
 	);
 }
 
 export async function loadPluginReadme(options: LoadPluginReadmeOptions): Promise<PluginReadmeContent | null> {
 	const { detail, language, githubToken, origin, waitUntil } = options;
-	const key = cacheRequest(origin, detail.owner, detail.repo, language);
+	const client = new GithubClient(githubToken);
+	let ref = detail.latestCommitSha;
+	if (!ref) {
+		const githubRepo = await client.getRepo(detail.owner, detail.repo);
+		ref = await client.getBranchSha(detail.owner, detail.repo, githubRepo.default_branch);
+	}
+	if (!ref) return null;
+
+	// README cache entries are immutable per scanned commit. This prevents a
+	// stale README from being paired with newer scan metadata after rescans.
+	const key = cacheRequest(origin, detail.owner, detail.repo, language, ref);
 	const cached = await caches.default.match(key);
 	if (cached?.ok) {
 		try {
@@ -43,13 +56,6 @@ export async function loadPluginReadme(options: LoadPluginReadmeOptions): Promis
 		} catch {
 			// Ignore a malformed cache entry and refresh it from GitHub.
 		}
-	}
-
-	const client = new GithubClient(githubToken);
-	let ref = detail.latestCommitSha;
-	if (!ref) {
-		const githubRepo = await client.getRepo(detail.owner, detail.repo);
-		ref = await client.getBranchSha(detail.owner, detail.repo, githubRepo.default_branch);
 	}
 
 	const tree = await client.getTree(detail.owner, detail.repo, ref);

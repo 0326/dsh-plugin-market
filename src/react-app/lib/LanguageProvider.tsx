@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { detectLanguage, I18nContext, translations, type Language } from "./i18n";
 
 const STORAGE_KEY = "dsh-market-lang";
@@ -42,12 +42,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 		[lang],
 	);
 
-	useEffect(() => {
-		document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
-		document.title = t("meta.title");
-		const meta = document.querySelector('meta[name="description"]');
-		if (meta) meta.setAttribute("content", t("meta.description"));
-	}, [lang, t]);
 
 	const value = useMemo(() => ({ lang, setLang, toggleLang, t }), [lang, setLang, toggleLang, t]);
 

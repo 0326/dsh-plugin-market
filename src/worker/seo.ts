@@ -24,6 +24,7 @@ export interface SeoSpec {
 	jsonLd: Record<string, unknown>;
 	status?: number;
 	pluginDetail?: PluginDetail;
+	publisherInfo?: PublisherInfo;
 }
 
 function websiteNode(): Record<string, unknown> {
@@ -251,6 +252,113 @@ export function buildPluginSeoBody(detail: PluginDetail, readme: PluginReadmeCon
 </article>`;
 }
 
+
+function isRegistryPluginLinkable(item: PluginListItem): boolean {
+	const eligibleStatuses = new Set(["DETECTED", "FORMAT_VERIFIED", "FEATURED"]);
+	if (!eligibleStatuses.has(item.verificationStatus)) return false;
+	if (item.verificationStatus === "DETECTED") {
+		return Boolean(item.description?.trim()) && Boolean(item.packageName || item.latestCommitSha);
+	}
+	return true;
+}
+
+function pluginHref(item: PluginListItem): string {
+	return `/plugin/${encodeURIComponent(item.owner)}/${encodeURIComponent(item.repo)}`;
+}
+
+function pluginLink(item: PluginListItem): string {
+	const description = cleanDescription(item.description, "DeepSeek Harness plugin.");
+	const status = [item.verificationStatus, item.compatibilityStatus, item.maintenanceStatus].filter(Boolean).join(" · ");
+	return `<li><a href="${htmlEscape(pluginHref(item))}"><strong>${htmlEscape(item.fullName)}</strong></a><p>${htmlEscape(description)}</p><small>${htmlEscape(status)}</small></li>`;
+}
+
+export function buildExploreSeoBody(items: PluginListItem[]): string {
+	const links = items.filter(isRegistryPluginLinkable).slice(0, 50).map(pluginLink).join("\n");
+	return `<section data-dsh-edge-body="plugins" class="mx-auto max-w-7xl px-4 py-8">
+	<nav aria-label="Breadcrumb"><a href="/">DSH Plugin Market</a> / <span>Explore plugins</span></nav>
+	<header><h1>Explore DSH Plugins</h1><p>Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.</p></header>
+	<section aria-labelledby="seo-plugin-list-title">
+	<h2 id="seo-plugin-list-title">DSH plugin registry</h2>
+	<ol>${links}</ol>
+	</section>
+	<p><a href="/trust">Read the trust model</a> · <a href="/guide/choose-dsh-plugin">How to choose a plugin</a></p>
+</section>`;
+}
+
+export function buildPublisherSeoBody(pub: PublisherInfo): string {
+	const links = pub.repos.filter(isRegistryPluginLinkable).slice(0, 100).map(pluginLink).join("\n");
+	return `<section data-dsh-edge-body="publisher" class="mx-auto max-w-5xl px-4 py-8">
+	<nav aria-label="Breadcrumb"><a href="/plugins">DSH Plugin Market</a> / <span>${htmlEscape(pub.owner)}</span></nav>
+	<header><h1>${htmlEscape(pub.owner)} DSH Plugins</h1><p>Explore ${pub.repos.length} DeepSeek Harness plugin${pub.repos.length === 1 ? "" : "s"} from ${htmlEscape(pub.owner)}, including ${pub.verifiedCount} format-verified plugin${pub.verifiedCount === 1 ? "" : "s"} and trust signals.</p></header>
+	<section aria-labelledby="seo-publisher-list-title">
+	<h2 id="seo-publisher-list-title">Published plugins</h2>
+	<ol>${links}</ol>
+	</section>
+</section>`;
+}
+
+function staticRelatedLinks(pathname: string): Array<[string, string]> {
+	if (pathname === "/") return [
+		["/plugins", "Explore DSH Plugins"],
+		["/trust", "How verification works"],
+		["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
+	];
+	if (pathname === "/plugins") return [
+		["/trust", "How verification works"],
+		["/guide/choose-dsh-plugin", "How to choose a plugin"],
+	];
+	if (pathname === "/trust") return [
+		["/guide/choose-dsh-plugin", "How to choose a plugin"],
+		["/guide/install-dsh-plugin", "How to install a plugin"],
+	];
+	if (pathname === "/about") return [
+		["/trust", "Trust model"],
+		["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
+	];
+	if (pathname === "/submit") return [
+		["/guide/what-is-dsh-plugin", "What is a DSH Plugin?"],
+		["/plugins", "Explore the registry"],
+	];
+	return [
+		["/plugins", "Explore DSH Plugins"],
+		["/trust", "Trust model"],
+	];
+}
+
+export function buildStaticSeoBody(pathname: string, spec: SeoSpec, recent: PluginListItem[] = []): string {
+	const heading = pathname === "/" ? "DSH Plugin Market" : spec.title.replace(` — ${SITE_NAME}`, "");
+	const related = staticRelatedLinks(pathname).map(([href, label]) => `<li><a href="${htmlEscape(href)}">${htmlEscape(label)}</a></li>`).join("\n");
+	const linkableRecent = recent.filter(isRegistryPluginLinkable);
+	const recentSection = pathname === "/" && linkableRecent.length > 0
+		? `<section aria-labelledby="seo-latest-title"><h2 id="seo-latest-title">Latest DSH plugins</h2><ol>${linkableRecent.slice(0, 12).map(pluginLink).join("\n")}</ol></section>`
+		: "";
+	return `<article data-dsh-edge-body="static" class="mx-auto max-w-7xl px-4 py-8">
+	<nav aria-label="Breadcrumb"><a href="/">DSH Plugin Market</a></nav>
+	<h1>${htmlEscape(heading)}</h1>
+	<p>${htmlEscape(spec.description)}</p>
+	${recentSection}
+	<nav aria-label="Related pages"><h2>Related pages</h2><ul>${related}</ul></nav>
+</article>`;
+}
+
+function buildPluginListJsonLd(items: PluginListItem[]): Record<string, unknown> {
+	const title = "Explore DSH Plugins — DSH Plugin Market";
+	const description = "Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.";
+	const page = webPageNode("/plugins", title, description);
+	page["@type"] = "CollectionPage";
+	page.mainEntity = {
+		"@type": "ItemList",
+		numberOfItems: items.filter(isRegistryPluginLinkable).length,
+		itemListElement: items.filter(isRegistryPluginLinkable).slice(0, 50).map((item, index) => ({
+			"@type": "ListItem",
+			position: index + 1,
+			name: item.fullName,
+			url: `${SITE_URL}${pluginHref(item)}`,
+		})),
+	};
+	return graph(page);
+}
+
 function pluginSpec(detail: PluginDetail): SeoSpec {
 	const canonicalPath = `/plugin/${encodeURIComponent(detail.owner)}/${encodeURIComponent(detail.repo)}`;
 	const description = cleanDescription(
@@ -269,6 +377,11 @@ function pluginSpec(detail: PluginDetail): SeoSpec {
 	};
 }
 
+
+export function isPublisherIndexable(pub: PublisherInfo): boolean {
+	return pub.repos.filter(isRegistryPluginLinkable).length >= 2;
+}
+
 function publisherSpec(pub: PublisherInfo): SeoSpec {
 	const canonicalPath = `/publisher/${encodeURIComponent(pub.owner)}`;
 	const title = `${pub.owner} DSH Plugins — ${SITE_NAME}`;
@@ -276,7 +389,26 @@ function publisherSpec(pub: PublisherInfo): SeoSpec {
 	const page = webPageNode(canonicalPath, title, description);
 	page["@type"] = "CollectionPage";
 	page.about = { name: pub.owner, url: `https://github.com/${encodeURIComponent(pub.owner)}` };
-	return { title, description, canonicalPath, image: DEFAULT_IMAGE, robots: "index,follow,max-image-preview:large", jsonLd: graph(page) };
+	const linkableRepos = pub.repos.filter(isRegistryPluginLinkable);
+	page.mainEntity = {
+		"@type": "ItemList",
+		numberOfItems: linkableRepos.length,
+		itemListElement: linkableRepos.slice(0, 100).map((repo, index) => ({
+			"@type": "ListItem",
+			position: index + 1,
+			name: repo.fullName,
+			url: `${SITE_URL}/plugin/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}`,
+		})),
+	};
+	return {
+		title,
+		description,
+		canonicalPath,
+		image: DEFAULT_IMAGE,
+		robots: isPublisherIndexable(pub) ? "index,follow,max-image-preview:large" : "noindex,follow",
+		jsonLd: graph(page),
+		publisherInfo: pub,
+	};
 }
 
 function notFoundSpec(pathname: string): SeoSpec {
@@ -353,16 +485,20 @@ export function buildSitemapXml(items: PluginListItem[]): string {
 		});
 	}
 
-	const owners = new Map<string, string | null>();
+	const owners = new Map<string, { updatedAt: string | null; count: number }>();
 	for (const item of items) {
-		const previous = owners.get(item.owner);
-		if (!previous || (item.updatedAt && item.updatedAt > previous)) owners.set(item.owner, item.updatedAt);
+		const current = owners.get(item.owner);
+		if (!current) {
+			owners.set(item.owner, { updatedAt: item.updatedAt, count: 1 });
+			continue;
+		}
+		current.count += 1;
+		if (item.updatedAt && (!current.updatedAt || item.updatedAt > current.updatedAt)) current.updatedAt = item.updatedAt;
 	}
 	const remaining = Math.max(0, SITEMAP_URL_LIMIT - urls.length);
-	for (const [owner, updatedAt] of [...owners.entries()].slice(0, remaining)) {
-		urls.push({ loc: `${SITE_URL}/publisher/${encodeURIComponent(owner)}`, lastmod: lastMod(updatedAt) });
+	for (const [owner, info] of [...owners.entries()].filter(([, value]) => value.count >= 2).slice(0, remaining)) {
+		urls.push({ loc: `${SITE_URL}/publisher/${encodeURIComponent(owner)}`, lastmod: lastMod(info.updatedAt) });
 	}
-
 	const rows = urls.map(({ loc, lastmod }) => {
 		const modified = lastmod ? `\n    <lastmod>${xmlEscape(lastmod)}</lastmod>` : "";
 		return `  <url>\n    <loc>${xmlEscape(loc)}</loc>${modified}\n  </url>`;
@@ -382,8 +518,10 @@ export async function renderSitemap(db: D1Database): Promise<Response> {
 
 export async function renderSeoPage(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(request.url);
+	const normalizedPath = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : url.pathname;
 	const spec = await resolveSeoSpec(url.pathname, env.DB);
-	let pluginBody: string | null = null;
+	let edgeBody: string | null = null;
+
 	if (spec.pluginDetail && !spec.status) {
 		let readme: PluginReadmeContent | null = null;
 		try {
@@ -400,7 +538,25 @@ export async function renderSeoPage(request: Request, env: Env, ctx: ExecutionCo
 				err instanceof Error ? err.message : String(err),
 			);
 		}
-		pluginBody = buildPluginSeoBody(spec.pluginDetail, readme);
+		edgeBody = buildPluginSeoBody(spec.pluginDetail, readme);
+	} else if (!spec.status) {
+		try {
+			if (normalizedPath === "/plugins") {
+				const items = await listPlugins(env.DB, { sort: "updated", limit: 50 });
+				edgeBody = buildExploreSeoBody(items);
+				spec.jsonLd = buildPluginListJsonLd(items);
+			} else if (spec.publisherInfo) {
+				edgeBody = buildPublisherSeoBody(spec.publisherInfo);
+			} else {
+				const recent = normalizedPath === "/" ? await listPlugins(env.DB, { sort: "updated", limit: 12 }) : [];
+				edgeBody = buildStaticSeoBody(normalizedPath, spec, recent);
+			}
+		} catch (err) {
+			console.warn(
+				`edge SEO body generation failed for ${normalizedPath}`,
+				err instanceof Error ? err.message : String(err),
+			);
+		}
 	}
 
 	const assetResponse = await env.ASSETS.fetch(request);
@@ -432,8 +588,8 @@ export async function renderSeoPage(request: Request, env: Env, ctx: ExecutionCo
 		.on('meta[name="twitter:image"]', { element(e) { e.setAttribute("content", spec.image); } })
 		.on("script#seo-jsonld", { element(e) { e.setInnerContent(jsonLd, { html: true }); } })
 		.on("head", { element(e) { e.append(`<meta name="dsh-edge-seo" content="${spec.canonicalPath.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">`, { html: true }); } });
-	if (pluginBody) {
-		rewriter.on("#root", { element(e) { e.setInnerContent(pluginBody, { html: true }); } });
+	if (edgeBody) {
+		rewriter.on("#root", { element(e) { e.setInnerContent(edgeBody!, { html: true }); } });
 	}
 	return rewriter.transform(response);
 }

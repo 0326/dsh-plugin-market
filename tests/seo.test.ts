@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PluginDetail, PluginListItem } from "../src/worker/db/repository";
 import type { PluginReadmeContent } from "../src/worker/github/readme-content";
-import { buildPluginJsonLd, buildPluginSeoBody, buildSitemapXml, isSeoPagePath, resolveSeoSpec } from "../src/worker/seo";
+import { buildExploreSeoBody, buildPluginJsonLd, buildPluginSeoBody, buildSitemapXml, isSeoPagePath, resolveSeoSpec } from "../src/worker/seo";
 
 function plugin(overrides: Partial<PluginListItem> = {}): PluginListItem {
 	return {
@@ -39,8 +39,8 @@ function pluginDetail(): PluginDetail {
 }
 
 describe("buildSitemapXml", () => {
-	it("includes static, guide, plugin, and publisher URLs with lastmod", () => {
-		const xml = buildSitemapXml([plugin()]);
+	it("includes static, guide, plugin, and multi-plugin publisher URLs with lastmod", () => {
+		const xml = buildSitemapXml([plugin(), plugin({ repo: "dsh-second", fullName: "acme/dsh-second" })]);
 		expect(xml).toContain("https://dsh-plugin.market/");
 		expect(xml).toContain("https://dsh-plugin.market/plugins");
 		expect(xml).toContain("https://dsh-plugin.market/trust");
@@ -53,9 +53,21 @@ describe("buildSitemapXml", () => {
 	});
 
 	it("URL-encodes path segments", () => {
-		const xml = buildSitemapXml([plugin({ owner: "acme team", repo: "plugin one" })]);
+		const xml = buildSitemapXml([
+			plugin({ owner: "acme team", repo: "plugin one", fullName: "acme team/plugin one" }),
+			plugin({ owner: "acme team", repo: "plugin two", fullName: "acme team/plugin two" }),
+		]);
 		expect(xml).toContain("/plugin/acme%20team/plugin%20one");
 		expect(xml).toContain("/publisher/acme%20team");
+	});
+});
+
+describe("edge SEO bodies", () => {
+	it("renders crawlable plugin links for the explore page", () => {
+		const html = buildExploreSeoBody([plugin()]);
+		expect(html).toContain("<h1>Explore DSH Plugins</h1>");
+		expect(html).toContain('href="/plugin/acme/dsh-demo"');
+		expect(html).toContain("A demo DSH plugin");
 	});
 });
 
