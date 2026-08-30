@@ -1,5 +1,5 @@
-import { getPlugin, type PluginDetail, type PluginListItem } from "./db/repository";
-import { buildSitemapXml } from "./seo";
+import { getPlugin, getPublisher, type PluginDetail, type PluginListItem } from "./db/repository";
+import { buildSitemapXml, isPublisherIndexable } from "./seo";
 
 const SITEMAP_PLUGIN_LIMIT = 45_000;
 
@@ -11,6 +11,9 @@ export interface PluginIndexabilityInput {
 	pluginTypes?: readonly string[] | null;
 	pluginTypesJson?: string | null;
 	metadataJson?: string | null;
+	description?: string | null;
+	packageName?: string | null;
+	latestCommitSha?: string | null;
 }
 
 export interface SitemapCandidate extends PluginListItem {
@@ -40,8 +43,13 @@ function parseMetadataPluginTypes(raw: string | null | undefined): string[] {
 	}
 }
 
+function hasMinimumDetectedEvidence(plugin: PluginIndexabilityInput): boolean {
+	return Boolean(plugin.description?.trim()) && Boolean(plugin.packageName || plugin.latestCommitSha);
+}
+
 export function isPluginIndexable(plugin: PluginIndexabilityInput): boolean {
 	if (!(INDEXABLE_VERIFICATION_STATUSES as readonly string[]).includes(plugin.verificationStatus)) return false;
+	if (plugin.verificationStatus === "DETECTED" && !hasMinimumDetectedEvidence(plugin)) return false;
 	const pluginTypes =
 		plugin.pluginTypes ??
 		(plugin.pluginTypesJson ? parseStringArray(plugin.pluginTypesJson) : parseMetadataPluginTypes(plugin.metadataJson));
@@ -113,16 +121,35 @@ function pluginMatch(pathname: string): { owner: string; repo: string } | null {
 	return match ? { owner: safeDecode(match[1]), repo: safeDecode(match[2]) } : null;
 }
 
-export function detailIsIndexable(detail: Pick<PluginDetail, "verificationStatus" | "metadataJson">): boolean {
-	return isPluginIndexable({ verificationStatus: detail.verificationStatus, metadataJson: detail.metadataJson });
+export function detailIsIndexable(
+	detail: Pick<PluginDetail, "verificationStatus" | "metadataJson" | "description" | "packageName" | "latestCommitSha">,
+): boolean {
+	return isPluginIndexable({
+		verificationStatus: detail.verificationStatus,
+		metadataJson: detail.metadataJson,
+		description: detail.description,
+		packageName: detail.packageName,
+		latestCommitSha: detail.latestCommitSha,
+	});
 }
 
 export async function applyPluginIndexability(response: Response, pathname: string, db: D1Database): Promise<Response> {
-	const match = pluginMatch(pathname);
-	if (!match) return response;
-	const detail = await getPlugin(db, match.owner, match.repo);
-	if (!detail || detailIsIndexable(detail)) return response;
+	const plugin = pluginMatch(pathname);
+	if (plugin) {
+		const detail = await getPlugin(db, plugin.owner, plugin.repo);
+		if (detail && detailIsIndexable(detail)) return response;
+		return addNoIndex(response);
+	}
 
+	const publisherMatch = /^\/publisher\/([^/]+)\/?$/.exec(pathname);
+	if (!publisherMatch) return response;
+	const owner = safeDecode(publisherMatch[1]);
+	const publisher = await getPublisher(db, owner);
+	if (publisher && isPublisherIndexable(publisher)) return response;
+	return addNoIndex(response);
+}
+
+function addNoIndex(response: Response): Response {
 	const headers = new Headers(response.headers);
 	headers.set("x-robots-tag", "noindex, follow");
 	const noindexResponse = new Response(response.body, {
