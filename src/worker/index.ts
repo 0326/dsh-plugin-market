@@ -3,6 +3,7 @@ import { api } from "./api/plugins";
 import { internal } from "./api/internal";
 import { runCronDiscovery } from "./cron/discovery";
 import { isRescanSweepJob, type ScanQueueJob } from "./domain/scan";
+import { canonicalRedirect } from "./canonical";
 import type { Env } from "./env";
 import { recomputeFeatured } from "./curation/featured";
 import { syncBaseline } from "./npm/baseline";
@@ -80,6 +81,9 @@ async function queue(batch: MessageBatch<ScanQueueJob>, env: Env): Promise<void>
 }
 
 async function fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+	const redirect = canonicalRedirect(request);
+	if (redirect) return redirect;
+
 	const url = new URL(request.url);
 	if (url.pathname === "/sitemap.xml") return renderIndexableSitemap(env.DB);
 	if (isSeoPagePath(url.pathname)) {
