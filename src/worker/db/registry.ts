@@ -13,6 +13,9 @@ export interface RegistryStats {
 	discoveryCheckedAt: string | null;
 }
 
+const REGISTRY_STATS_CACHE_MS = 5 * 60_000;
+let registryStatsCache: { expiresAt: number; value: RegistryStats } | null = null;
+
 export async function upsertDiscoverySummary(
 	db: D1Database,
 	source: string,
@@ -28,14 +31,17 @@ export async function upsertDiscoverySummary(
 		)
 		.bind(source, query, totalCount, now)
 		.run();
+	registryStatsCache = null;
 }
 
 export async function getRegistryStats(db: D1Database): Promise<RegistryStats> {
-	const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+	const now = Date.now();
+	if (registryStatsCache && registryStatsCache.expiresAt > now) return registryStatsCache.value;
+
+	const weekAgo = new Date(now - 7 * 86_400_000).toISOString();
 	const row = await db
 		.prepare(
 			`SELECT
-				(SELECT COUNT(*) FROM repositories) AS total,
 				(SELECT total_count FROM discovery_summary WHERE source = 'github' AND query = 'topic:dsh-plugin') AS githubTotal,
 				(SELECT COUNT(*) FROM repositories) AS discovered,
 				(SELECT COUNT(DISTINCT repository_id) FROM scans WHERE status = 'completed') AS scanned,
@@ -47,18 +53,22 @@ export async function getRegistryStats(db: D1Database): Promise<RegistryStats> {
 				(SELECT checked_at FROM discovery_summary WHERE source = 'github' AND query = 'topic:dsh-plugin') AS discoveryCheckedAt`,
 		)
 		.bind(weekAgo)
-		.first<RegistryStats>();
+		.first<Omit<RegistryStats, "total">>();
 
-	return row ?? {
-		total: 0,
-		githubTotal: null,
-		discovered: 0,
-		scanned: 0,
-		detected: 0,
-		verified: 0,
-		featured: 0,
-		updatedThisWeek: 0,
-		lastScanAt: null,
-		discoveryCheckedAt: null,
-	};
+	const value: RegistryStats = row
+		? { ...row, total: row.discovered }
+		: {
+			total: 0,
+			githubTotal: null,
+			discovered: 0,
+			scanned: 0,
+			detected: 0,
+			verified: 0,
+			featured: 0,
+			updatedThisWeek: 0,
+			lastScanAt: null,
+			discoveryCheckedAt: null,
+		};
+	registryStatsCache = { expiresAt: now + REGISTRY_STATS_CACHE_MS, value };
+	return value;
 }

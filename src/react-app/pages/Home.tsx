@@ -91,9 +91,9 @@ export default function Home() {
 		let ignore = false;
 		Promise.all([
 			getRegistryContext(),
-			listPlugins({ featured: true, limit: 3 }),
-			listPlugins({ sort: "new", limit: 6 }),
-			listPlugins({ sort: "stars", limit: 6 }),
+			listPlugins({ featured: true, limit: 3, includeTotal: false }),
+			listPlugins({ sort: "new", limit: 6, includeTotal: false }),
+			listPlugins({ sort: "stars", limit: 6, includeTotal: false }),
 			getCategories(),
 		])
 			.then(([context, featured, latest, popular, cats]) => {

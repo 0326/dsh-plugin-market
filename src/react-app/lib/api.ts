@@ -118,6 +118,8 @@ export interface ListPluginsOptions {
 	sort?: Sort;
 	limit?: number;
 	offset?: number;
+	/** Skip the expensive COUNT query when the caller only needs preview items. */
+	includeTotal?: boolean;
 }
 
 export interface PluginListResponse { items: PluginListItem[]; total: number; limit: number; offset: number; hasMore: boolean }
@@ -135,6 +137,7 @@ export function listPlugins(opts: ListPluginsOptions = {}): Promise<PluginListRe
 	if (opts.sort) params.set("sort", opts.sort);
 	if (opts.limit !== undefined) params.set("limit", String(opts.limit));
 	if (opts.offset !== undefined) params.set("offset", String(opts.offset));
+	if (opts.includeTotal === false) params.set("total", "0");
 	const qs = params.toString();
 	return get<PluginListResponse>("/plugins" + (qs ? "?" + qs : ""));
 }
