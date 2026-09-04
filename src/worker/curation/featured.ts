@@ -79,44 +79,37 @@ export async function maybeAutoFeatureScan(
 interface FeaturedCandidate {
   owner: string;
   name: string;
-  stars: number;
-  verificationStatus: string;
-  featured: number;
-  blockingSecurityCount: number;
 }
 
 /**
  * Backfill pass that promotes every existing, already-scanned plugin clearing
  * the auto-feature gate. It never demotes an already-featured plugin, so any
- * manual curation is preserved. Used by the hourly cron and the internal
- * `POST /featured/recompute` endpoint.
+ * manual curation is preserved. The SQL filters candidates before touching
+ * scan_findings instead of evaluating a correlated COUNT for every plugin.
  */
 export async function recomputeFeatured(
   env: Env,
 ): Promise<{ promoted: number }> {
   const minStars = parseAutoFeatureMinStars(env.AUTO_FEATURE_MIN_STARS);
   const rows = await env.DB.prepare(
-    `SELECT
-				r.owner AS owner,
-				r.name AS name,
-				r.stars AS stars,
-				p.verification_status AS verificationStatus,
-				p.featured AS featured,
-				(SELECT COUNT(*) FROM scan_findings f
-				 WHERE f.scan_id = p.latest_scan_id
-				   AND f.category = 'SECURITY'
-				   AND f.severity IN ('HIGH', 'CRITICAL')) AS blockingSecurityCount
-			FROM plugins p
-			JOIN repositories r ON r.id = p.repository_id
-			WHERE p.latest_scan_id IS NOT NULL`,
-  ).all<FeaturedCandidate>();
+    `SELECT r.owner AS owner, r.name AS name
+      FROM plugins p
+      JOIN repositories r ON r.id = p.repository_id
+      WHERE p.latest_scan_id IS NOT NULL
+        AND p.featured = 0
+        AND p.verification_status IN ('FORMAT_VERIFIED', 'DETECTED')
+        AND r.stars >= ?
+        AND NOT EXISTS (
+          SELECT 1
+          FROM scan_findings f
+          WHERE f.scan_id = p.latest_scan_id
+            AND f.category = 'SECURITY'
+            AND f.severity IN ('HIGH', 'CRITICAL')
+        )`,
+  ).bind(minStars).all<FeaturedCandidate>();
 
   let promoted = 0;
   for (const row of rows.results ?? []) {
-    if (row.featured === 1) continue;
-    if (row.stars < minStars) continue;
-    if (!hasFeatureEligibleVerification(row.verificationStatus)) continue;
-    if (row.blockingSecurityCount > 0) continue;
     const ok = await setFeatured(env.DB, row.owner, row.name, true);
     if (ok) promoted++;
   }
