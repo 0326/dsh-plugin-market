@@ -56,6 +56,11 @@ api.get("/plugins", async (c) => {
 		limit: clampInt(q.limit, 50, 1, 100),
 		offset: clampInt(q.offset, 0, 0, 100000),
 	};
+	const includeTotal = q.total !== "0";
+	if (!includeTotal) {
+		const items = await listPlugins(c.env.DB, options);
+		return c.json({ items, total: items.length, limit: options.limit, offset: options.offset, hasMore: items.length === options.limit });
+	}
 	const [items, total] = await Promise.all([listPlugins(c.env.DB, options), countPlugins(c.env.DB, options)]);
 	return c.json({ items, total, limit: options.limit, offset: options.offset, hasMore: options.offset + items.length < total });
 });
