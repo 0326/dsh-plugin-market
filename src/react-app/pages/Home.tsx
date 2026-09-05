@@ -138,13 +138,23 @@ export default function Home() {
 	const activityAt = activityValues.length > 0 ? activityValues[activityValues.length - 1] : null;
 	const lastScanTime = data.degraded ? "—" : activityAt ? formatDateTime(activityAt, lang) : t("home.noScanYet");
 	const baselineLabel = baseline ? `DSH ${baseline.dshVersion} · Cordis ${baseline.cordisVersion}` : "—";
-	const progressLabels = lang === "zh"
-		? ["GitHub 总量", "已发现仓库", "已扫描仓库", "已检测插件", "格式已验证"]
-		: ["GitHub total", "discovered repos", "scanned repos", "detected plugins", "format verified"];
+	const progressItems = lang === "zh"
+		? [
+			{ label: "GitHub 话题总数", detail: "公开 dsh-plugin 话题仓库" },
+			{ label: "已完成扫描仓库", detail: "本站静态扫描已完成" },
+			{ label: "合法 DSH 插件数", detail: "符合插件结构规则" },
+			{ label: "精选 DSH 插件数", detail: "进入首页精选列表" },
+		]
+		: [
+			{ label: "GitHub topic total", detail: "Public dsh-plugin repositories" },
+			{ label: "Scanned repositories", detail: "Static scan completed" },
+			{ label: "Valid DSH plugins", detail: "Matches plugin structure" },
+			{ label: "Featured DSH plugins", detail: "Included in featured list" },
+		];
 	const discoveredLabel = lang === "zh" ? "已发现仓库" : "Discovered repositories";
 	const progressValues: Array<number | string> = data.degraded
-		? ["—", "—", "—", "—", "—"]
-		: [stats.githubTotal ?? "—", stats.discovered, stats.scanned, stats.detected, stats.verified];
+		? ["—", "—", "—", "—"]
+		: [stats.githubTotal ?? "—", stats.scanned, stats.detected, stats.featured];
 
 	function onSearch(e: React.FormEvent) {
 		e.preventDefault();
@@ -177,13 +187,15 @@ export default function Home() {
 						<input className="input join-item w-full" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("home.searchPlaceholder")} aria-label={t("home.searchPlaceholder")} />
 						<button type="submit" className="btn join-item btn-neutral"><Icon name="search" size={18} stroke={2} />{t("home.search")}</button>
 					</form>
-					<div className="mt-[1.65rem] grid max-w-[760px] grid-cols-2 sm:grid-cols-5">
+					<div className="hero-stats-heading">{lang === "zh" ? "从公开话题到精选插件" : "From public topics to featured plugins"}</div>
+					<div className="mt-2 grid max-w-[760px] grid-cols-2 sm:grid-cols-4" aria-label={lang === "zh" ? "插件统计" : "Plugin statistics"}>
 						{progressValues.map((value, index) => (
-							<div key={progressLabels[index]} className={"hero-stat " + (index % 2 === 0 ? "max-sm:border-l-0 max-sm:pl-0" : "")}>
-								<strong>{value}</strong><span>{progressLabels[index]}</span>
+							<div key={progressItems[index].label} className={"hero-stat " + (index % 2 === 0 ? "max-sm:border-l-0 max-sm:pl-0" : "")} title={progressItems[index].detail}>
+								<strong>{value}</strong><span>{progressItems[index].label}</span><small>{progressItems[index].detail}</small>
 							</div>
 						))}
 					</div>
+					<p className="hero-stats-note">{lang === "zh" ? "数据来自 GitHub 公开仓库与本站静态扫描；格式通过不等于绝对安全。" : "Based on public GitHub repositories and static scans; format verification is not an absolute safety guarantee."}</p>
 				</div>
 				<div className="hero-art hidden lg:grid">
 					<span className="hero-basketball" aria-hidden="true"><Icon name="ball-basketball" size={58} stroke={2.2} /></span>

@@ -231,6 +231,29 @@
 		font-weight: 700;
 	}
 
+	.hero-stats-heading {
+		font-size: 0.72rem;
+		font-weight: 850;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.hero-stat small {
+		display: block;
+		margin-top: 0.2rem;
+		color: color-mix(in srgb, var(--color-base-content) 58%, transparent);
+		font-size: 0.65rem;
+		line-height: 1.35;
+	}
+
+	.hero-stats-note {
+		max-width: 760px;
+		margin-top: 0.8rem;
+		color: color-mix(in srgb, var(--color-base-content) 58%, transparent);
+		font-size: 0.7rem;
+		line-height: 1.45;
+	}
+
 	.hero-updated {
 		font-size: 0.75rem;
 		font-weight: 800;

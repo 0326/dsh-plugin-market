@@ -33,7 +33,7 @@ const zh: Dict = {
     noDescription: "暂无描述。",
   },
   home: {
-    heroTagline: "面向 DeepSeek Harness 的独立插件可信注册表",
+    heroTagline: "从 GitHub 候选到可核验的 DSH 插件，先看格式、兼容性和安全信号，再放心安装。",
     searchPlaceholder: "搜索插件、功能或开发者……",
     search: "搜索",
     browse: "浏览",
@@ -243,7 +243,7 @@ const en: Dict = {
     noDescription: "No description.",
   },
   home: {
-    heroTagline: "An independent trust registry for DeepSeek Harness plugins.",
+    heroTagline: "From GitHub candidates to verifiable DSH plugins — review format, compatibility, and security signals before installing.",
     searchPlaceholder: "Search plugins, capabilities, or developers…",
     search: "Search",
     browse: "Browse",
