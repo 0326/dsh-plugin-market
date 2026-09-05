@@ -1,6 +1,6 @@
 /** Scan job and scan-result summary types. */
 
-export type ScanReason = "DISCOVERY" | "COMMIT_CHANGED" | "MANUAL" | "SCANNER_UPGRADE";
+export type ScanReason = "DISCOVERY" | "COMMIT_CHANGED" | "MANUAL" | "SCANNER_UPGRADE" | "PRIORITY_RECHECK";
 
 /** Current scanner version; every scan is bound to it. */
 export const SCANNER_VERSION = "0.4.1";
@@ -26,6 +26,11 @@ export interface ScanJob {
 export interface RescanSweepJob {
 	type: "RESCAN_SWEEP";
 	afterRepositoryId: number;
+	/**
+	 * A compatibility/scanner revision can make the whole registry stale. Keep
+	 * that recovery bounded so this Worker never monopolizes a shared Queue.
+	 */
+	remainingBudget: number;
 }
 
 export type ScanQueueJob = ScanJob | RescanSweepJob;

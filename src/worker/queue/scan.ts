@@ -24,7 +24,9 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 		return;
 	}
 
-	const client = new GithubClient(env.GITHUB_TOKEN);
+	// Queue concurrency is deliberately one in wrangler.json. This additional
+	// pause protects the shared GitHub token while a scan fetches several files.
+	const client = new GithubClient(env.GITHUB_TOKEN, Math.min(2_000, positiveInt(env.GITHUB_REQUEST_DELAY_MS, 900)));
 	const fetched = await fetchSnapshot(client, repo.owner, repo.name, repo.default_branch ?? "main", job.expectedSha);
 	if (fetched.error || !fetched.snapshot) {
 		if (fetched.error?.code === "GITHUB_RATE_LIMITED") throw new TransientScanError(fetched.error.message);
@@ -54,8 +56,13 @@ export async function processScanJob(env: Env, job: ScanJob): Promise<void> {
 	await maybeAutoFeatureScan(env, repo, result);
 }
 
-/** Keep each sweep expansion small enough for Free-plan HTTP/queue CPU budgets. */
-export const RESCAN_SWEEP_PAGE_SIZE = 100;
+/** Keep each sweep expansion small enough for a shared-account Queue budget. */
+export const RESCAN_SWEEP_PAGE_SIZE = 50;
+
+function positiveInt(raw: string | undefined, fallback: number): number {
+	const value = Number(raw);
+	return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
 
 export interface RescanSweepResult {
 	enqueued: number;
@@ -64,9 +71,10 @@ export interface RescanSweepResult {
 }
 
 /** Start a full stale-scanner rescan with a single lightweight queue write. */
-export async function startRescanSweep(env: Env): Promise<{ status: "started"; scannerVersion: string }> {
-	await env.SCAN_QUEUE.send({ type: "RESCAN_SWEEP", afterRepositoryId: 0 });
-	return { status: "started", scannerVersion: SCANNER_VERSION };
+export async function startRescanSweep(env: Env): Promise<{ status: "started"; scannerVersion: string; budget: number }> {
+	const budget = positiveInt(env.RESCAN_DAILY_BUDGET, 250);
+	await env.SCAN_QUEUE.send({ type: "RESCAN_SWEEP", afterRepositoryId: 0, remainingBudget: budget });
+	return { status: "started", scannerVersion: SCANNER_VERSION, budget };
 }
 
 /**
@@ -89,7 +97,7 @@ export async function processRescanSweepJob(env: Env, job: RescanSweepJob): Prom
 			ORDER BY r.id ASC
 			LIMIT ?`,
 		)
-		.bind(job.afterRepositoryId, scannerRevision, RESCAN_SWEEP_PAGE_SIZE)
+		.bind(job.afterRepositoryId, scannerRevision, Math.min(RESCAN_SWEEP_PAGE_SIZE, Math.max(1, job.remainingBudget)))
 		.all<{ id: number; owner: string; name: string }>();
 
 	const page = rows.results ?? [];
@@ -101,9 +109,10 @@ export async function processRescanSweepJob(env: Env, job: RescanSweepJob): Prom
 	await env.SCAN_QUEUE.sendBatch(scanJobs);
 
 	const lastRepositoryId = page[page.length - 1].id;
-	const hasPotentialNextPage = page.length === RESCAN_SWEEP_PAGE_SIZE;
+	const remainingBudget = job.remainingBudget - page.length;
+	const hasPotentialNextPage = page.length === Math.min(RESCAN_SWEEP_PAGE_SIZE, Math.max(1, job.remainingBudget)) && remainingBudget > 0;
 	if (hasPotentialNextPage) {
-		await env.SCAN_QUEUE.send({ type: "RESCAN_SWEEP", afterRepositoryId: lastRepositoryId });
+		await env.SCAN_QUEUE.send({ type: "RESCAN_SWEEP", afterRepositoryId: lastRepositoryId, remainingBudget });
 	}
 
 	return {

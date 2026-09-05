@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PluginDetail, PluginListItem } from "../src/worker/db/repository";
 import type { PluginReadmeContent } from "../src/worker/github/readme-content";
-import { buildExploreSeoBody, buildPluginJsonLd, buildPluginSeoBody, buildSitemapXml, isSeoPagePath, resolveSeoSpec } from "../src/worker/seo";
+import { buildExploreSeoBody, buildLandingSeoBody, buildPluginJsonLd, buildPluginSeoBody, buildSitemapXml, isIndexableLandingPath, isSeoPagePath, resolveSeoSpec } from "../src/worker/seo";
 
 function plugin(overrides: Partial<PluginListItem> = {}): PluginListItem {
 	return {
@@ -50,6 +50,14 @@ describe("buildSitemapXml", () => {
 		expect(xml).toContain("https://dsh-plugin.market/plugin/acme/dsh-demo");
 		expect(xml).toContain("https://dsh-plugin.market/publisher/acme");
 		expect(xml).toContain("2026-08-17T06:00:00.000Z");
+	});
+
+	it("includes only explicitly approved landing paths", () => {
+		const xml = buildSitemapXml([plugin(), plugin({ repo: "dsh-second", fullName: "acme/dsh-second" })], ["/plugins/security", "/plugins/popular"]);
+		expect(xml).toContain("https://dsh-plugin.market/plugins/security");
+		expect(xml).toContain("https://dsh-plugin.market/plugins/popular");
+		expect(isIndexableLandingPath("/plugins/security")).toBe(true);
+		expect(isSeoPagePath("/plugins/security")).toBe(true);
 	});
 
 	it("URL-encodes path segments", () => {
@@ -107,6 +115,7 @@ describe("buildPluginJsonLd", () => {
 		expect(String(software?.keywords)).toContain("DeepSeek Harness");
 		expect(JSON.stringify(software?.additionalProperty)).toContain("FORMAT_VERIFIED");
 		expect(JSON.stringify(software?.additionalProperty)).toContain("abc123");
+		expect(JSON.stringify(json)).toContain("Organization");
 	});
 });
 
@@ -130,5 +139,48 @@ describe("buildPluginSeoBody", () => {
 		expect(html).toContain("<h2>Install</h2>");
 		expect(html).toContain("https://github.com/acme/dsh-demo/blob/abc123/docs/guide.md");
 		expect(html).toContain("https://raw.githubusercontent.com/acme/dsh-demo/abc123/docs/images/demo.png");
+		expect(html).toContain("Scanner version");
+		expect(html).toContain("Latest scan evidence");
+		expect(html).toContain("dsh plugin --profile web add github:acme/dsh-demo#abc123");
+	});
+
+	it("renders related plugin links for evidence-led discovery", () => {
+		const html = buildPluginSeoBody(pluginDetail(), null, [plugin({ repo: "dsh-related", fullName: "acme/dsh-related" })]);
+		expect(html).toContain("Related DSH plugins");
+		expect(html).toContain("/plugin/acme/dsh-related");
+	});
+});
+
+describe("landing SEO", () => {
+	function dbWithPlugins(items: PluginListItem[]): D1Database {
+		return { prepare: () => ({ bind: () => ({ all: async () => ({ results: items }) }) }) } as never;
+	}
+
+	it("indexes a landing page only after the real plugin threshold is met", async () => {
+		const items = [plugin(), plugin({ repo: "dsh-two", fullName: "acme/dsh-two" }), plugin({ repo: "dsh-three", fullName: "acme/dsh-three" })];
+		const spec = await resolveSeoSpec("/plugins/security", dbWithPlugins(items));
+		expect(spec.status).toBeUndefined();
+		expect(spec.canonicalPath).toBe("/plugins/security");
+		expect(JSON.stringify(spec.jsonLd)).toContain("BreadcrumbList");
+	});
+
+	it("returns a real noindex 404 for an underfilled landing page", async () => {
+		const spec = await resolveSeoSpec("/plugins/security", dbWithPlugins([plugin()]));
+		expect(spec.status).toBe(404);
+		expect(spec.robots).toBe("noindex,nofollow");
+	});
+
+	it("renders a non-generic landing page with registry entries and trust context", () => {
+		const html = buildLandingSeoBody({
+			slug: "security",
+			title: "Security",
+			definition: "Static security signals.",
+			kind: "capability",
+			capability: "SECURITY",
+			items: [plugin()],
+		});
+		expect(html).toContain("Security DSH Plugins");
+		expect(html).toContain("/plugin/acme/dsh-demo");
+		expect(html).toContain("Read the trust model");
 	});
 });

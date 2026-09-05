@@ -1,14 +1,9 @@
 import type { Env } from "../env";
 import { GithubClient } from "../github/client";
-import { runDiscovery } from "../github/discovery";
+import { runDiscovery, type DiscoveryRun } from "../github/discovery";
 
 /** Cron entrypoint: discover candidates and enqueue scans only. */
-export async function runCronDiscovery(env: Env): Promise<void> {
-	try {
-		const client = new GithubClient(env.GITHUB_TOKEN);
-		const run = await runDiscovery(client, env.DB, env.SCAN_QUEUE);
-		console.log("discovery completed", JSON.stringify(run));
-	} catch (err) {
-		console.error("discovery failed", err);
-	}
+export async function runCronDiscovery(env: Env, maxReposPerRun?: number): Promise<DiscoveryRun> {
+	const client = new GithubClient(env.GITHUB_TOKEN);
+	return runDiscovery(client, env.DB, env.SCAN_QUEUE, maxReposPerRun);
 }

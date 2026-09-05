@@ -57,9 +57,10 @@ interface FacetTreeProps {
 	getLabel: (value: string) => string;
 	onToggle: (value: string) => void;
 	onClear: () => void;
+	counts?: Record<string, number>;
 }
 
-function FacetTree({ title, items, selected, getLabel, onToggle, onClear }: FacetTreeProps) {
+function FacetTree({ title, items, selected, getLabel, onToggle, onClear, counts }: FacetTreeProps) {
 	return (
 		<section className="explore-facet-group" aria-label={title}>
 			<label className="explore-facet-parent">
@@ -83,7 +84,7 @@ function FacetTree({ title, items, selected, getLabel, onToggle, onClear }: Face
 								checked={checked}
 								onChange={() => onToggle(item)}
 							/>
-							<span>{getLabel(item)}</span>
+							<span>{getLabel(item)}{counts?.[item] !== undefined ? ` (${counts[item]})` : ""}</span>
 						</label>
 					);
 				})}
@@ -100,6 +101,7 @@ export default function Explore({ query = "" }: { query?: string }) {
 	const [q, setQ] = useState(params.get("q") ?? "");
 	const [featuredOnly, setFeaturedOnly] = useState(params.get("featured") === "1");
 	const [verifiedOnly, setVerifiedOnly] = useState(params.get("verified") === "1");
+	const [includeCandidates, setIncludeCandidates] = useState(params.get("candidates") === "1");
 	const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>(() => splitFilterParam(params.get("capability")));
 	const [selectedPluginTypes, setSelectedPluginTypes] = useState<string[]>(() => splitFilterParam(params.get("pluginType")));
 	const [compatibility, setCompatibility] = useState(params.get("compatibility") ?? "");
@@ -107,9 +109,14 @@ export default function Explore({ query = "" }: { query?: string }) {
 	const [sort, setSort] = useState<Sort>((params.get("sort") as Sort) ?? "updated");
 	const [capabilities, setCapabilities] = useState<string[]>([]);
 	const [pluginTypes, setPluginTypes] = useState<string[]>([]);
+	const [capabilityCounts, setCapabilityCounts] = useState<Record<string, number>>({});
+	const [trendingAvailable, setTrendingAvailable] = useState(false);
+	const [compareNames, setCompareNames] = useState<string[]>([]);
 	const capabilityFilter = selectedCapabilities.join(",");
 	const pluginTypeFilter = selectedPluginTypes.join(",");
-	const requestKey = JSON.stringify({ q, featuredOnly, verifiedOnly, capabilityFilter, pluginTypeFilter, compatibility, risk, sort, offset });
+	const effectiveSort = sort === "trending" && !trendingAvailable ? "updated" : sort;
+	const queryTooShort = q.trim().length > 0 && q.trim().length < 3;
+	const requestKey = JSON.stringify({ q, featuredOnly, verifiedOnly, includeCandidates, capabilityFilter, pluginTypeFilter, compatibility, risk, sort: effectiveSort, offset });
 	const sidebarLabel = lang === "zh" ? "分类筛选" : "Category filters";
 
 	useEffect(() => {
@@ -119,6 +126,8 @@ export default function Explore({ query = "" }: { query?: string }) {
 				if (!ignore) {
 					setCapabilities(c.capabilities);
 					setPluginTypes(c.pluginTypes);
+					setCapabilityCounts(c.capabilityCounts);
+					setTrendingAvailable(c.trendingAvailable);
 					setSelectedCapabilities((current) => current.filter((value) => c.capabilities.includes(value)));
 					setSelectedPluginTypes((current) => current.filter((value) => c.pluginTypes.includes(value)));
 				}
@@ -131,17 +140,20 @@ export default function Explore({ query = "" }: { query?: string }) {
 
 	useEffect(() => {
 		let ignore = false;
+		if (queryTooShort) return () => { ignore = true; };
 		const timer = window.setTimeout(() => {
 			listPlugins({
 				q: q || undefined,
 				featured: featuredOnly,
 				verified: verifiedOnly,
+				installable: !includeCandidates,
 				capability: capabilityFilter || undefined,
 				pluginType: pluginTypeFilter || undefined,
 				compatibility: compatibility || undefined,
 				risk: risk || undefined,
-				sort,
+				sort: effectiveSort,
 				offset,
+				includeTotal: false,
 			})
 			.then((res) => {
 					if (!ignore) setResult((current) => ({ key: requestKey, items: offset ? [...(current?.items ?? []), ...res.items] : res.items, total: res.total, hasMore: res.hasMore }));
@@ -149,12 +161,12 @@ export default function Explore({ query = "" }: { query?: string }) {
 			.catch(() => {
 					if (!ignore) setResult({ key: requestKey, items: [], total: 0, hasMore: false });
 				});
-		}, 250);
+		}, q.trim() ? 400 : 150);
 		return () => {
 			ignore = true;
 			window.clearTimeout(timer);
 		};
-	}, [q, featuredOnly, verifiedOnly, capabilityFilter, pluginTypeFilter, compatibility, risk, sort, offset, requestKey]);
+	}, [q, featuredOnly, verifiedOnly, includeCandidates, capabilityFilter, pluginTypeFilter, compatibility, risk, effectiveSort, offset, requestKey, queryTooShort]);
 
 	function toggleCapability(value: string) {
 		setOffset(0);
@@ -170,8 +182,15 @@ export default function Explore({ query = "" }: { query?: string }) {
 		);
 	}
 
-	const loading = result?.key !== requestKey;
-	const items = result?.items ?? [];
+	function toggleCompare(fullName: string) {
+		setCompareNames((current) => {
+			if (current.includes(fullName)) return current.filter((value) => value !== fullName);
+			return current.length >= 3 ? current : [...current, fullName];
+		});
+	}
+
+	const loading = !queryTooShort && result?.key !== requestKey;
+	const items = queryTooShort ? [] : result?.items ?? [];
 	const changeFilter = <T,>(setter: (value: T) => void, value: T) => { setOffset(0); setter(value); };
 
 	return (
@@ -192,6 +211,7 @@ export default function Explore({ query = "" }: { query?: string }) {
 					/>
 				</label>
 			</div>
+			<p className="mb-4 text-sm"><a className="link opacity-70" href="/changes">{lang === "zh" ? "查看注册表更新" : "View registry changes"}</a></p>
 
 			<div className="explore-market-filters explore-filters-scroll mb-8">
 				<div className="explore-filters">
@@ -211,7 +231,7 @@ export default function Explore({ query = "" }: { query?: string }) {
 						<option value="updated">{t("explore.sortUpdated")}</option>
 						<option value="stars">{t("explore.sortStars")}</option>
 						<option value="new">{t("explore.sortNew")}</option>
-						<option value="trending">{t("explore.sortTrending")}</option>
+						{trendingAvailable && <option value="trending">{t("explore.sortTrending")}</option>}
 					</select>
 					<div className="explore-checks">
 						<label className="label cursor-pointer gap-2">
@@ -221,6 +241,10 @@ export default function Explore({ query = "" }: { query?: string }) {
 						<label className="label cursor-pointer gap-2">
 							<input type="checkbox" className="checkbox checkbox-sm" checked={verifiedOnly} onChange={(e) => changeFilter(setVerifiedOnly, e.target.checked)} />
 							<span>{t("explore.verifiedOnly")}</span>
+						</label>
+						<label className="label cursor-pointer gap-2">
+							<input type="checkbox" className="checkbox checkbox-sm" checked={includeCandidates} onChange={(e) => changeFilter(setIncludeCandidates, e.target.checked)} />
+							<span>{t("explore.includeCandidates")}</span>
 						</label>
 					</div>
 				</div>
@@ -236,6 +260,7 @@ export default function Explore({ query = "" }: { query?: string }) {
 						getLabel={(value) => taxonomyLabel(value, lang, CAPABILITY_LABELS)}
 						onToggle={toggleCapability}
 						onClear={() => { setOffset(0); setSelectedCapabilities([]); }}
+						counts={capabilityCounts}
 					/>
 					<FacetTree
 						title={t("explore.allTypes")}
@@ -248,16 +273,30 @@ export default function Explore({ query = "" }: { query?: string }) {
 				</aside>
 
 				<div className="explore-results">
+					{compareNames.length > 0 && (
+						<div className="mb-4 flex flex-wrap items-center justify-between gap-3 border border-base-300 bg-base-200 px-3 py-2 text-sm">
+							<span>{t("explore.compareSelected", { count: compareNames.length })}</span>
+							{compareNames.length >= 2 && <a className="btn btn-sm btn-neutral" href={`/compare?plugins=${encodeURIComponent(compareNames.join(","))}`}>{t("explore.compareGo")}</a>}
+						</div>
+					)}
 					{loading ? (
 						<PluginGridSkeleton />
+					) : queryTooShort ? (
+						<p className="text-base-content/60">{t("explore.searchMinChars")}</p>
 					) : items.length === 0 ? (
 						<p className="text-base-content/60">{t("explore.empty")}</p>
 					) : (
 						<>
-						<p className="mb-3 text-sm opacity-60">{t("explore.resultCount", { count: result?.total ?? items.length })}</p>
+						<p className="mb-3 text-sm opacity-60">{t("explore.resultCount", { count: items.length })}</p>
 						<div className="explore-results-grid">
 							{items.map((p) => (
-								<PluginCard key={p.fullName} p={p} />
+								<div key={p.fullName} className="relative">
+									<PluginCard p={p} />
+									<label className="absolute bottom-2 right-2 flex cursor-pointer items-center gap-1 bg-base-100/95 px-2 py-1 text-xs shadow-sm">
+										<input type="checkbox" className="checkbox checkbox-xs" checked={compareNames.includes(p.fullName)} disabled={!compareNames.includes(p.fullName) && compareNames.length >= 3} onChange={() => toggleCompare(p.fullName)} />
+										<span>{t("explore.compareSelect")}</span>
+									</label>
+								</div>
 							))}
 						</div>
 						{result?.hasMore && <button type="button" className="btn btn-outline mx-auto mt-6 block" onClick={() => setOffset((value) => value + 50)}>{t("explore.loadMore")}</button>}

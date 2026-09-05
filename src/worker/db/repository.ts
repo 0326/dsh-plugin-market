@@ -38,6 +38,8 @@ export interface PluginListItem {
 	riskLevel: string;
 	packageName: string | null;
 	latestCommitSha: string | null;
+	pluginTypesJson?: string | null;
+	metadataJson?: string | null;
 	updatedAt: string | null;
 	previewImageUrl: string | null;
 }
@@ -53,10 +55,22 @@ export interface PluginDetail extends PluginListItem {
 	findings: Finding[];
 }
 
+export interface PluginEventRow {
+	owner: string;
+	repo: string;
+	fullName: string;
+	eventType: string;
+	previousValue: string | null;
+	nextValue: string | null;
+	createdAt: string;
+}
+
 export interface ListPluginsOptions {
 	q?: string;
 	status?: string;
 	verifiedOnly?: boolean;
+	/** Only repositories recognised as DSH plugins, excluding raw topic candidates. */
+	installableOnly?: boolean;
 	featured?: boolean;
 	capability?: string;
 	pluginType?: string;
@@ -68,15 +82,59 @@ export interface ListPluginsOptions {
 	offset?: number;
 }
 
+function ftsQuery(raw: string): string | null {
+	const terms = raw
+		.trim()
+		.split(/\s+/)
+		.map((term) => term.replace(/["']/g, "").trim())
+		// The D1 trigram tokenizer has no useful matches for 1–2 character
+		// fragments; rejecting them avoids a request that looks broken to users.
+		.filter((term) => term.length >= 3)
+		.slice(0, 8);
+	return terms.length > 0 ? terms.map((term) => `"${term}"`).join(" AND ") : null;
+}
+
 export async function upsertRepository(db: D1Database, repo: GithubRepo): Promise<{ id: number; changed: boolean }> {
 	const now = new Date().toISOString();
 	const existing = await db
-		.prepare("SELECT id, github_pushed_at FROM repositories WHERE github_id = ?")
+		.prepare(
+			`SELECT id, github_pushed_at, github_updated_at, stars, forks, description,
+				default_branch AS defaultBranch, archived, license_spdx AS licenseSpdx,
+				owner, name, full_name AS fullName, html_url AS htmlUrl
+			FROM repositories WHERE github_id = ?`,
+		)
 		.bind(repo.id)
-		.first<{ id: number; github_pushed_at: string | null }>();
+		.first<{
+			id: number;
+			github_pushed_at: string | null;
+			github_updated_at: string | null;
+			stars: number;
+			forks: number;
+			description: string | null;
+			defaultBranch: string | null;
+			archived: number;
+			licenseSpdx: string | null;
+			owner: string;
+			name: string;
+			fullName: string;
+			htmlUrl: string;
+		}>();
 
 	if (existing) {
 		const changed = existing.github_pushed_at !== repo.pushed_at;
+		const metadataChanged =
+			existing.github_updated_at !== repo.updated_at ||
+			existing.stars !== repo.stargazers_count ||
+			existing.forks !== repo.forks_count ||
+			existing.description !== repo.description ||
+			existing.defaultBranch !== repo.default_branch ||
+			existing.archived !== (repo.archived ? 1 : 0) ||
+			existing.licenseSpdx !== (repo.license?.spdx_id ?? null) ||
+			existing.owner !== repo.owner.login ||
+			existing.name !== repo.name ||
+			existing.fullName !== repo.full_name ||
+			existing.htmlUrl !== repo.html_url;
+		if (!metadataChanged && !changed) return { id: existing.id, changed: false };
 		await db
 			.prepare(
 					`UPDATE repositories SET
@@ -172,6 +230,7 @@ export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {})
 	const where: string[] = [];
 	const params: unknown[] = [];
 	if (opts.verifiedOnly) where.push("p.verification_status = 'FORMAT_VERIFIED'");
+	if (opts.installableOnly) where.push("p.verification_status IN ('DETECTED', 'FORMAT_VERIFIED')");
 	if (opts.status) {
 		where.push("p.verification_status = ?");
 		params.push(opts.status);
@@ -200,18 +259,32 @@ export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {})
 		params.push(opts.owner);
 	}
 	if (opts.q) {
-		where.push("(r.full_name LIKE ? OR r.description LIKE ? OR p.package_name LIKE ?)");
-		const like = "%" + opts.q + "%";
-		params.push(like, like, like);
+		const query = ftsQuery(opts.q);
+		if (!query) return [];
+		where.push("p.id IN (SELECT rowid FROM plugin_search WHERE plugin_search MATCH ?)");
+		params.push(query);
 	}
 
 	let orderBy = "r.updated_at DESC";
+	let trendingJoin = "";
 	if (opts.sort === "stars") orderBy = "r.stars DESC";
 	else if (opts.sort === "new") orderBy = "r.discovered_at DESC";
 	else if (opts.sort === "trending") {
-		where.push("r.github_pushed_at >= ?");
-		params.push(new Date(Date.now() - 90 * 86_400_000).toISOString());
-		orderBy = "r.stars DESC";
+		// Do not approximate popularity from the current stars/push time. A plugin
+		// only appears once we have a comparable daily observation from 7+ days ago.
+		trendingJoin = `
+			JOIN plugin_metrics_daily current_metric
+				ON current_metric.repository_id = r.id
+				AND current_metric.metric_date = (SELECT MAX(metric_date) FROM plugin_metrics_daily)
+			JOIN plugin_metrics_daily previous_metric
+				ON previous_metric.repository_id = r.id
+				AND previous_metric.metric_date = (
+					SELECT MAX(metric_date) FROM plugin_metrics_daily history
+					WHERE history.repository_id = r.id
+						AND history.metric_date <= date(current_metric.metric_date, '-7 days')
+				)`;
+		where.push("current_metric.stars > previous_metric.stars");
+		orderBy = "(current_metric.stars - previous_metric.stars) DESC, r.stars DESC";
 	}
 
 	const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
@@ -220,9 +293,11 @@ export async function listPlugins(db: D1Database, opts: ListPluginsOptions = {})
 			p.verification_status AS verificationStatus, p.compatibility_status AS compatibilityStatus,
 			p.security_status AS securityStatus, p.maintenance_status AS maintenanceStatus,
 			p.risk_level AS riskLevel, p.package_name AS packageName,
+			p.plugin_types_json AS pluginTypesJson, p.metadata_json AS metadataJson,
 			s.commit_sha AS latestCommitSha, p.updated_at AS updatedAt, r.preview_image_url AS previewImageUrl
 		FROM plugins p
 		JOIN repositories r ON r.id = p.repository_id
+		${trendingJoin}
 		LEFT JOIN scans s ON s.id = p.latest_scan_id
 		${whereSql}
 		ORDER BY ${orderBy}
@@ -235,6 +310,7 @@ export async function countPlugins(db: D1Database, opts: ListPluginsOptions = {}
 	const where: string[] = [];
 	const params: unknown[] = [];
 	if (opts.verifiedOnly) where.push("p.verification_status = 'FORMAT_VERIFIED'");
+	if (opts.installableOnly) where.push("p.verification_status IN ('DETECTED', 'FORMAT_VERIFIED')");
 	if (opts.status) { where.push("p.verification_status = ?"); params.push(opts.status); }
 	if (opts.featured) where.push("p.featured = 1");
 	if (opts.compatibility) { where.push("p.compatibility_status = ?"); params.push(opts.compatibility); }
@@ -244,9 +320,26 @@ export async function countPlugins(db: D1Database, opts: ListPluginsOptions = {}
 	const types = splitFacetFilter(opts.pluginType);
 	if (types.length) { where.push("(" + types.map(() => "p.plugin_types_json LIKE ?").join(" OR ") + ")"); params.push(...types.map((v) => '%"' + v + '"%')); }
 	if (opts.owner) { where.push("r.owner = ?"); params.push(opts.owner); }
-	if (opts.q) { where.push("(r.full_name LIKE ? OR r.description LIKE ? OR p.package_name LIKE ?)"); const like = "%" + opts.q + "%"; params.push(like, like, like); }
-	if (opts.sort === "trending") { where.push("r.github_pushed_at >= ?"); params.push(new Date(Date.now() - 90 * 86_400_000).toISOString()); }
-	const row = await db.prepare(`SELECT COUNT(*) AS total FROM plugins p JOIN repositories r ON r.id = p.repository_id ${where.length ? "WHERE " + where.join(" AND ") : ""}`).bind(...params).first<{ total: number }>();
+	if (opts.q) {
+		const query = ftsQuery(opts.q);
+		if (!query) return 0;
+		where.push("p.id IN (SELECT rowid FROM plugin_search WHERE plugin_search MATCH ?)");
+		params.push(query);
+	}
+	const trendingJoin = opts.sort === "trending"
+		? `JOIN plugin_metrics_daily current_metric
+			ON current_metric.repository_id = r.id
+			AND current_metric.metric_date = (SELECT MAX(metric_date) FROM plugin_metrics_daily)
+		JOIN plugin_metrics_daily previous_metric
+			ON previous_metric.repository_id = r.id
+			AND previous_metric.metric_date = (
+				SELECT MAX(metric_date) FROM plugin_metrics_daily history
+				WHERE history.repository_id = r.id
+					AND history.metric_date <= date(current_metric.metric_date, '-7 days')
+			)`
+		: "";
+	if (opts.sort === "trending") where.push("current_metric.stars > previous_metric.stars");
+	const row = await db.prepare(`SELECT COUNT(*) AS total FROM plugins p JOIN repositories r ON r.id = p.repository_id ${trendingJoin} ${where.length ? "WHERE " + where.join(" AND ") : ""}`).bind(...params).first<{ total: number }>();
 	return row?.total ?? 0;
 }
 
@@ -295,6 +388,24 @@ export async function getPlugin(db: D1Database, owner: string, repo: string): Pr
 	};
 }
 
+/** Latest meaningful scanner changes across the installable registry. */
+export async function listPluginEvents(db: D1Database, limit = 50): Promise<PluginEventRow[]> {
+	const result = await db
+		.prepare(
+			`SELECT r.owner, r.name AS repo, r.full_name AS fullName, e.event_type AS eventType,
+				e.previous_value AS previousValue, e.next_value AS nextValue, e.created_at AS createdAt
+			FROM plugin_events e
+			JOIN repositories r ON r.id = e.repository_id
+			JOIN plugins p ON p.repository_id = r.id
+			WHERE p.verification_status IN ('DETECTED', 'FORMAT_VERIFIED')
+			ORDER BY e.created_at DESC
+			LIMIT ?`,
+		)
+		.bind(Math.min(100, Math.max(1, limit)))
+		.all<PluginEventRow>();
+	return result.results ?? [];
+}
+
 export async function createScan(db: D1Database, repositoryId: number, commitSha: string, scannerRevision = SCANNER_VERSION): Promise<{ id: number; created: boolean }> {
 	const existing = await db
 		.prepare("SELECT id, status FROM scans WHERE repository_id = ? AND commit_sha = ? AND scanner_version = ?")
@@ -323,7 +434,23 @@ export async function completeScan(db: D1Database, scanId: number, result: ScanR
 	const metadataJson = JSON.stringify(result.metadata);
 	const capabilitiesJson = JSON.stringify(result.metadata.capabilities ?? []);
 	const pluginTypesJson = JSON.stringify(result.metadata.pluginTypes ?? []);
-	const existing = await db.prepare("SELECT id FROM plugins WHERE repository_id = (SELECT repository_id FROM scans WHERE id = ?)").bind(scanId).first<{ id: number }>();
+	const existing = await db
+		.prepare(
+			`SELECT id, verification_status AS verificationStatus, compatibility_status AS compatibilityStatus,
+				security_status AS securityStatus, maintenance_status AS maintenanceStatus, risk_level AS riskLevel
+			FROM plugins WHERE repository_id = (SELECT repository_id FROM scans WHERE id = ?)`,
+		)
+		.bind(scanId)
+		.first<{
+			id: number;
+			verificationStatus: string;
+			compatibilityStatus: string;
+			securityStatus: string;
+			maintenanceStatus: string;
+			riskLevel: string;
+		}>();
+	const repository = await db.prepare("SELECT repository_id AS repositoryId FROM scans WHERE id = ?").bind(scanId).first<{ repositoryId: number }>();
+	if (!repository) throw new Error("scan repository was not found");
 	const statements = [
 		db.prepare("UPDATE scans SET status = 'completed', completed_at = ?, error_code = NULL, error_message = NULL WHERE id = ?").bind(now, scanId),
 		db.prepare("DELETE FROM scan_findings WHERE scan_id = ?").bind(scanId),
@@ -385,6 +512,29 @@ export async function completeScan(db: D1Database, scanId: number, result: ScanR
 				scanId,
 				),
 			);
+	}
+	if (!existing) {
+		statements.push(
+			db
+				.prepare("INSERT INTO plugin_events (repository_id, scan_id, event_type, next_value, created_at) VALUES (?, ?, 'first_scanned', ?, ?)")
+				.bind(repository.repositoryId, scanId, result.verificationStatus, now),
+		);
+	} else {
+		const eventFields: Array<[string, string, string]> = [
+			["verification_changed", existing.verificationStatus, result.verificationStatus],
+			["compatibility_changed", existing.compatibilityStatus, result.compatibilityStatus],
+			["security_changed", existing.securityStatus, result.securityStatus],
+			["maintenance_changed", existing.maintenanceStatus, result.maintenanceStatus],
+			["risk_changed", existing.riskLevel, result.riskLevel],
+		];
+		for (const [eventType, previousValue, nextValue] of eventFields) {
+			if (previousValue === nextValue) continue;
+			statements.push(
+				db
+					.prepare("INSERT INTO plugin_events (repository_id, scan_id, event_type, previous_value, next_value, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+					.bind(repository.repositoryId, scanId, eventType, previousValue, nextValue, now),
+			);
+		}
 	}
 	await db.batch(statements);
 }

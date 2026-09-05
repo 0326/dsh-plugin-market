@@ -3,6 +3,7 @@ import { api } from "./api/plugins";
 import { internal } from "./api/internal";
 import { runCronDiscovery } from "./cron/discovery";
 import { isRescanSweepJob, type ScanQueueJob } from "./domain/scan";
+import { finishPipelineRun, finishScanAttempt, snapshotRegistryMetrics, startPipelineRun, startScanAttempt } from "./db/operations";
 import { canonicalRedirect } from "./canonical";
 import type { Env } from "./env";
 import { recomputeFeatured } from "./curation/featured";
@@ -17,8 +18,34 @@ app.get("/api/", (c) => c.json({ name: "dsh-plugin-market", status: "ok" }));
 app.route("/api", api);
 app.route("/api/internal", internal);
 
-/** Daily cron that starts a paged re-scan of repos with a stale scanner version. */
-const RESCAN_CRON = "30 0 * * *";
+const INCREMENTAL_DISCOVERY_CRON = "15 * * * *";
+const RECONCILE_DISCOVERY_CRON = "20 2 * * *";
+const BASELINE_CRON = "5 */6 * * *";
+const DAILY_METRICS_CRON = "35 3 * * *";
+const RESCAN_CRON = "50 3 * * *";
+/** Bump only when a public response shape or SEO document changes. */
+const PUBLIC_CACHE_VERSION = "2026-09-05-ops-v1";
+
+function positiveInt(raw: string | undefined, fallback: number): number {
+	const value = Number(raw);
+	return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
+
+async function trackedPipeline(
+	env: Env,
+	kind: Parameters<typeof startPipelineRun>[1],
+	work: () => Promise<Record<string, unknown>>,
+): Promise<void> {
+	const id = await startPipelineRun(env.DB, kind);
+	try {
+		const detail = await work();
+		await finishPipelineRun(env.DB, id, "completed", detail);
+	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		await finishPipelineRun(env.DB, id, "failed", {}, message);
+		throw err;
+	}
+}
 
 /**
  * Public reads are intentionally cacheable because the registry only changes on
@@ -28,7 +55,7 @@ const RESCAN_CRON = "30 0 * * *";
 function publicCacheTtl(pathname: string): number | null {
 	if (pathname === "/sitemap.xml") return 1_800;
 	if (isSeoPagePath(pathname)) return 600;
-	if (pathname === "/api/stats" || pathname === "/api/context") return 3_600;
+	if (pathname === "/api/stats" || pathname === "/api/context" || pathname === "/api/home") return 600;
 	if (pathname === "/api/categories") return 86_400;
 	if (pathname === "/api/plugins") return 600;
 	if (/^\/api\/publishers\/[^/]+\/?$/.test(pathname)) return 600;
@@ -42,6 +69,10 @@ function publicCacheKey(request: Request, pathname: string): Request {
 	// SEO output is derived from the pathname only. Ignore explore/search query
 	// parameters so crawlers do not create thousands of equivalent cache keys.
 	if (isSeoPagePath(pathname)) url.search = "";
+	// Cache API entries persist independently of a Worker deployment. Versioning
+	// the internal key makes schema/UI releases immediately observable without
+	// asking visitors to wait for an old edge entry to expire.
+	url.searchParams.set("__dsh_cache", PUBLIC_CACHE_VERSION);
 	return new Request(url.toString(), { method: "GET" });
 }
 
@@ -80,23 +111,60 @@ async function cachedPublicGet(
 }
 
 async function scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+	if (controller.cron === INCREMENTAL_DISCOVERY_CRON || controller.cron === RECONCILE_DISCOVERY_CRON) {
+		const isReconcile = controller.cron === RECONCILE_DISCOVERY_CRON;
+		ctx.waitUntil(
+			(async () => {
+				try {
+					await trackedPipeline(env, isReconcile ? "discovery_reconcile" : "discovery_incremental", async () => {
+						const result = await runCronDiscovery(env, isReconcile ? positiveInt(env.DISCOVERY_RECONCILE_LIMIT, 800) : positiveInt(env.DISCOVERY_INCREMENTAL_LIMIT, 100));
+						console.log("discovery completed", JSON.stringify(result));
+						return { ...result };
+					});
+				} catch (err) {
+					console.error("discovery cron failed", err);
+				}
+			})(),
+		);
+		return;
+	}
+	if (controller.cron === BASELINE_CRON) {
+		ctx.waitUntil(
+			(async () => {
+				try {
+					await trackedPipeline(env, "baseline_sync", async () => {
+						const baseline = await syncBaseline(env);
+						return { baseline };
+					});
+				} catch (err) {
+					console.error("baseline cron failed", err);
+				}
+			})(),
+		);
+		return;
+	}
+	if (controller.cron === DAILY_METRICS_CRON) {
+		ctx.waitUntil(
+			(async () => {
+				try {
+					await trackedPipeline(env, "daily_metrics", async () => snapshotRegistryMetrics(env.DB));
+				} catch (err) {
+					console.error("daily metrics snapshot failed", err);
+				}
+			})(),
+		);
+		return;
+	}
 	if (controller.cron === RESCAN_CRON) {
 		ctx.waitUntil(
 			(async () => {
 				try {
-					const result = await startRescanSweep(env);
-					console.log("rescan sweep started", JSON.stringify(result));
+					await trackedPipeline(env, "rescan_sweep", async () => {
+						const [result, featured] = await Promise.all([startRescanSweep(env), recomputeFeatured(env)]);
+						return { ...result, featured };
+					});
 				} catch (err) {
-					console.error("rescan sweep start failed", err);
-				}
-				// Existing scans are already auto-featured as they complete. A daily
-				// backfill is enough to catch repositories that crossed the star gate
-				// without a new scan, and avoids a full-registry read every hour.
-				try {
-					const result = await recomputeFeatured(env);
-					console.log("featured backfill completed", JSON.stringify(result));
-				} catch (err) {
-					console.error("featured backfill failed", err);
+					console.error("rescan sweep failed", err);
 				}
 			})(),
 		);
@@ -104,13 +172,13 @@ async function scheduled(controller: ScheduledController, env: Env, ctx: Executi
 	}
 	ctx.waitUntil(
 		(async () => {
-			await Promise.allSettled([runCronDiscovery(env), syncBaseline(env)]);
+			console.warn("unknown cron trigger", controller.cron);
 		})(),
 	);
 }
 
 /** Number of scan/control jobs processed concurrently within a single batch. */
-const SCAN_CONCURRENCY = 3;
+const SCAN_CONCURRENCY = 1;
 
 async function queue(batch: MessageBatch<ScanQueueJob>, env: Env): Promise<void> {
 	const messages = [...batch.messages];
@@ -121,24 +189,28 @@ async function queue(batch: MessageBatch<ScanQueueJob>, env: Env): Promise<void>
 			const message = messages[cursor++];
 			const body = message.body;
 			const isSweep = isRescanSweepJob(body);
+			let attemptId: number | null = null;
 			try {
 				if (isSweep) {
 					const result = await processRescanSweepJob(env, body);
 					console.log("rescan sweep page", JSON.stringify(result));
 				} else {
+					attemptId = await startScanAttempt(env.DB, body.repositoryId, body.reason, message.attempts);
 					await processScanJob(env, body);
+					await finishScanAttempt(env.DB, attemptId, "completed");
 				}
 				message.ack();
 			} catch (err) {
+				const errorMessage = err instanceof Error ? err.message : String(err);
 				if (isSweep) {
-					console.error(JSON.stringify({ message: "rescan sweep page error", error: err instanceof Error ? err.message : String(err), afterRepositoryId: body.afterRepositoryId }));
-					if (message.attempts < 5) message.retry({ delaySeconds: 30 * (message.attempts + 1) });
-					else message.ack();
+					console.error(JSON.stringify({ message: "rescan sweep page error", error: errorMessage, afterRepositoryId: body.afterRepositoryId }));
+					message.retry({ delaySeconds: Math.min(600, 30 * (message.attempts + 1)) });
 				} else if (err instanceof TransientScanError) {
-					if (message.attempts < 5) message.retry({ delaySeconds: 30 * (message.attempts + 1) });
-					else message.ack();
+					if (attemptId !== null) await finishScanAttempt(env.DB, attemptId, "retrying", errorMessage);
+					message.retry({ delaySeconds: Math.min(600, 30 * (message.attempts + 1)) });
 				} else {
-					console.error(JSON.stringify({ message: "scan job error", error: err instanceof Error ? err.message : String(err), repositoryId: body.repositoryId }));
+					if (attemptId !== null) await finishScanAttempt(env.DB, attemptId, "failed", errorMessage);
+					console.error(JSON.stringify({ message: "scan job error", error: errorMessage, repositoryId: body.repositoryId }));
 					message.ack();
 				}
 			}
@@ -155,6 +227,7 @@ async function fetch(request: Request, env: Env, ctx: ExecutionContext): Promise
 	const url = new URL(request.url);
 	const ttl = request.method === "GET" ? publicCacheTtl(url.pathname) : null;
 	const load = async (): Promise<Response> => {
+		if (url.pathname === "/compare" || url.pathname === "/changes") return env.ASSETS.fetch(request);
 		if (url.pathname === "/sitemap.xml") return renderIndexableSitemap(env.DB);
 		if (isSeoPagePath(url.pathname)) {
 			const response = await renderSeoPage(request, env, ctx);

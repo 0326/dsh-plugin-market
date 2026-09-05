@@ -1,4 +1,4 @@
-import type { Language } from "../lib/i18n";
+import type { Language } from "../../shared/language";
 
 export type GuideSlug = "what-is-dsh-plugin" | "install-dsh-plugin" | "choose-dsh-plugin";
 export type GuideExampleMode = "overview" | "install" | "evaluate";

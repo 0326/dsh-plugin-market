@@ -1,4 +1,4 @@
-import type { Language } from "../lib/i18n";
+import type { Language } from "../../shared/language";
 
 export interface ContentSeoCopy {
 	home: {

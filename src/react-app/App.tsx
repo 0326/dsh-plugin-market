@@ -10,6 +10,9 @@ import { useTheme } from "./lib/theme";
 import Home from "./pages/Home";
 const About = lazy(() => import("./pages/About"));
 const Explore = lazy(() => import("./pages/Explore"));
+const Landing = lazy(() => import("./pages/Landing"));
+const Compare = lazy(() => import("./pages/Compare"));
+const Changes = lazy(() => import("./pages/Changes"));
 const Guide = lazy(() => import("./pages/Guide"));
 const PluginDetail = lazy(() => import("./pages/PluginDetail"));
 const Publisher = lazy(() => import("./pages/Publisher"));
@@ -42,7 +45,7 @@ function App() {
 		return () => document.removeEventListener("click", onClick);
 	}, []);
 
-	const isMarket = route.name === "explore" || route.name === "plugin" || route.name === "publisher";
+	const isMarket = route.name === "explore" || route.name === "landing" || route.name === "compare" || route.name === "changes" || route.name === "plugin" || route.name === "publisher";
 	const isDocs = route.name === "guide" || route.name === "trust";
 	const docsLabel = lang === "zh" ? "文档" : "Docs";
 
@@ -89,6 +92,9 @@ function App() {
 				<Suspense fallback={<div className="min-h-[40vh] animate-pulse border border-base-300 bg-base-200/40" aria-label="Loading" />}>
 				{route.name === "home" && <Home />}
 				{route.name === "explore" && <Explore key={route.query} query={route.query} />}
+				{route.name === "landing" && <Landing key={route.slug} slug={route.slug} />}
+				{route.name === "compare" && <Compare key={route.query} query={route.query} />}
+				{route.name === "changes" && <Changes />}
 				{route.name === "plugin" && <PluginDetail key={route.owner + "/" + route.repo} owner={route.owner} repo={route.repo} />}
 				{route.name === "publisher" && <Publisher owner={route.owner} />}
 				{route.name === "guide" && (

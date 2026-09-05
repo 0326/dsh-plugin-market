@@ -14,6 +14,10 @@ export class GithubError extends Error {
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
+function pause(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export interface GithubRepo {
 	id: number;
 	owner: { login: string };
@@ -94,7 +98,11 @@ function decodeBase64(b64: string): string {
 export class GithubClient {
 	private readonly base = "https://api.github.com";
 
-	constructor(private readonly token: string) {}
+	constructor(private readonly token: string, private readonly requestDelayMs: number = 0) {}
+
+	private async throttle(): Promise<void> {
+		if (this.requestDelayMs > 0) await pause(this.requestDelayMs);
+	}
 
 	private headers(accept = "application/vnd.github+json"): Headers {
 		const headers = new Headers({
@@ -116,6 +124,7 @@ export class GithubClient {
 	}
 
 	async get<T>(path: string, etag?: string): Promise<GithubResponse<T>> {
+		await this.throttle();
 		const headers = this.headers();
 		if (etag) headers.set("If-None-Match", etag);
 
@@ -144,6 +153,7 @@ export class GithubClient {
 	}
 
 	private async graphql<T>(query: string): Promise<T> {
+		await this.throttle();
 		const headers = this.headers();
 		headers.set("Content-Type", "application/json");
 
@@ -175,6 +185,7 @@ export class GithubClient {
 
 	/** Render trusted-by-GitHub GFM HTML. Repository-relative URLs are intentionally left for the client to resolve against the scanned ref. */
 	async renderMarkdown(markdown: string): Promise<string> {
+		await this.throttle();
 		const headers = this.headers("text/html");
 		headers.set("Content-Type", "application/json");
 		const res = await fetch(this.base + "/markdown", {

@@ -12,4 +12,8 @@ export type Env = Omit<Cloudflare.Env, "SCAN_QUEUE" | "ASSETS"> & {
   GITHUB_TOKEN: string;
   INTERNAL_API_SECRET: string;
   AUTO_FEATURE_MIN_STARS: string;
+  DISCOVERY_INCREMENTAL_LIMIT: string;
+  DISCOVERY_RECONCILE_LIMIT: string;
+  RESCAN_DAILY_BUDGET: string;
+  GITHUB_REQUEST_DELAY_MS: string;
 };

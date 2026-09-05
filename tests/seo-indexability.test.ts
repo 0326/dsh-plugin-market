@@ -56,6 +56,10 @@ describe("plugin SEO indexability", () => {
 		expect(isPluginIndexable({ verificationStatus: "REJECTED", pluginTypes: ["TOOL"] })).toBe(false);
 	});
 
+	it("keeps records without any usable identity evidence out of the index", () => {
+		expect(isPluginIndexable({ verificationStatus: "FORMAT_VERIFIED" })).toBe(false);
+	});
+
 	it("never indexes records classified as NON_PLUGIN", () => {
 		expect(isPluginIndexable({ verificationStatus: "FORMAT_VERIFIED", pluginTypes: ["NON_PLUGIN"] })).toBe(false);
 		expect(

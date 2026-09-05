@@ -4,6 +4,9 @@ import { isGuideSlug, type GuideSlug } from "../content/guide-content";
 export type Route =
 	| { name: "home" }
 	| { name: "explore"; query: string }
+	| { name: "landing"; slug: string }
+	| { name: "compare"; query: string }
+	| { name: "changes" }
 	| { name: "plugin"; owner: string; repo: string }
 	| { name: "publisher"; owner: string }
 	| { name: "submit" }
@@ -17,6 +20,9 @@ export function parseRoute(pathname: string, search: string): Route {
 	const segments = path.split("/").filter(Boolean);
 	if (segments.length === 0) return { name: "home" };
 	if (segments.length === 1 && segments[0] === "plugins") return { name: "explore", query };
+	if (segments.length === 1 && segments[0] === "compare") return { name: "compare", query };
+	if (segments.length === 1 && segments[0] === "changes") return { name: "changes" };
+	if (segments.length === 2 && segments[0] === "plugins" && segments[1]) return { name: "landing", slug: segments[1] };
 	if (segments.length === 3 && segments[0] === "plugin" && segments[1] && segments[2]) return { name: "plugin", owner: segments[1], repo: segments[2] };
 	if (segments.length === 2 && segments[0] === "publisher" && segments[1]) return { name: "publisher", owner: segments[1] };
 	if (segments.length === 2 && segments[0] === "guide" && isGuideSlug(segments[1])) return { name: "guide", slug: segments[1] };

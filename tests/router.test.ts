@@ -16,6 +16,19 @@ describe("parseRoute", () => {
 		expect(parseRoute("/guide/install-dsh-plugin/extra", "")).toEqual({ name: "home" });
 	});
 
+	it("matches capability and discovery landing routes", () => {
+		expect(parseRoute("/plugins/security", "")).toEqual({ name: "landing", slug: "security" });
+		expect(parseRoute("/plugins/popular", "")).toEqual({ name: "landing", slug: "popular" });
+	});
+
+	it("keeps the compare page separate from plugin listings", () => {
+		expect(parseRoute("/compare", "plugins=acme%2Fa%2Cacme%2Fb")).toEqual({ name: "compare", query: "plugins=acme%2Fa%2Cacme%2Fb" });
+	});
+
+	it("matches the registry changes page", () => {
+		expect(parseRoute("/changes", "")).toEqual({ name: "changes" });
+	});
+
 	it("does not let static routes swallow extra path segments", () => {
 		expect(parseRoute("/trust/extra", "")).toEqual({ name: "home" });
 		expect(parseRoute("/about/extra", "")).toEqual({ name: "home" });

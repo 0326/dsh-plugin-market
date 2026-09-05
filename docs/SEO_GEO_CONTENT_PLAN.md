@@ -4,7 +4,7 @@
 >
 > 原则：Registry as Content，不建设 Blog CMS，不批量生成低质量关键词页。静态知识内容负责解释概念，D1 / Scanner 负责持续提供可验证事实。
 >
-> 当前阶段（2026-09）：基础收录链路已经跑通，重点从“继续增加可抓取页面”切换为 **权重集中、长尾入口建设、实体一致性和高质量内部链接**。
+> 当前阶段（2026-09）：基础收录链路和 Edge 内容已经跑通，重点从“继续增加可抓取页面”切换为 **详情页独特价值、可解释索引门槛、真实 taxonomy Landing Page、实体一致性和高质量内部链接**。
 
 ## 1. 内容架构
 
@@ -23,7 +23,7 @@ Plugin / Publisher / Capability / Scanner Evidence
 
 ## 2. 当前 SEO 基线与判断
 
-截至 2026-09，搜索引擎侧已经能够稳定发现：
+截至 2026-09，代码侧已经具备以下可验证能力；线上“已收录/稳定发现”仍必须以 Search Console URL Inspection 和覆盖率数据为准：
 
 - 首页 `/`
 - 插件列表 `/plugins`
@@ -32,7 +32,7 @@ Plugin / Publisher / Capability / Scanner Evidence
 - 大量 `/plugin/*` 详情页
 - 部分插件详情页已经直接使用 README / Security / Compatibility / Version 等正文信息生成搜索摘要
 
-因此当前不再把“是否可抓取”作为主要问题。
+因此当前不再把“是否可抓取”作为唯一问题；必须同时验证首屏 Edge HTML 的内容质量、索引门槛和 sitemap 完整性。当前单文件 sitemap 按约 45,000 条 Plugin URL 留出静态页、Landing 和 Publisher 空间；接近容量阈值时必须切换 sitemap index，不能静默截断。
 
 当前最重要的风险与机会：
 
@@ -52,6 +52,11 @@ Plugin / Publisher / Capability / Scanner Evidence
 4. **长尾搜索入口不足**
    - 当前主要入口仍集中在首页、列表和插件实体页。
    - 下一阶段需要基于真实 Registry 数据建设有限数量的高质量 Capability / Discovery Landing Page。
+
+5. **最新观察结论（截至 2026-09-01）**
+   - 首页此前的 `api_error` 根因已确认是 D1 额度达到上限；额度升级后最新抓取能够读取服务端 `Latest DSH plugins` 和详情内链。远端 `3e9af11` 又补充了公共读缓存、预览列表跳过 COUNT 和 D1 热查询索引，作为持续的读量保护；前端首页也改为部分读取失败时保留知识内容和导航，不再退化成单行错误页。
+   - 搜索结果仍可能残留 `www` 旧 URL，这是 301 后的索引合并延迟；继续保持现有 canonical，不因短期排名或旧结果频繁改动主域策略。
+   - 当前开发优先级维持 Capability / Discovery Landing、Related Plugins 和 Plugin Detail 独特评估内容。
 
 ## 3. Sprint 1 — 首页实体建设 + Trust
 
@@ -127,7 +132,7 @@ Sprint 1 同步建设 Trust 页面，作为首页 Verified / Scanner 说明的�
 - [x] 首页 5 个知识模块完成
 - [x] 首页 FAQ 完成
 - [x] `/trust` 完成
-- [x] 中英文完成
+- [x] 前端界面中英文完成；canonical Edge HTML 采用英文，避免 localStorage 语言状态产生重复索引 URL
 - [x] 延续现有 Design Language
 - [x] 首页发现主路径不被内容区抢占
 - [x] 真实 Registry / Scanner 数据进入内容区
@@ -153,7 +158,7 @@ SEO：Title / Description / Canonical / OpenGraph / WebPage JSON-LD / Breadcrumb
 ### Sprint 2 验收
 
 - [x] 3 个 Guide 页面完成
-- [x] 中英文内容完成
+- [x] 前端中英文内容完成；canonical Edge HTML 输出英文 Direct Answer / Sections / Sources
 - [x] Direct Answer / Key Facts / Guide Sections / Evidence / Related / Sources 完成
 - [x] 实时 Scanner / DSH / Cordis / Verified Plugin 数据接入
 - [x] 真实 Registry Plugin 示例接入
@@ -170,7 +175,7 @@ SEO：Title / Description / Canonical / OpenGraph / WebPage JSON-LD / Breadcrumb
 
 ## 5. Sprint 3 — Plugin Detail 内容化
 
-**优先级：P0 / P1。**
+**优先级：P0。状态：已完成第一版。**
 
 这是当前最重要的内容 SEO 工作。
 
@@ -216,22 +221,24 @@ README 作为补充内容，而不是页面唯一正文。
 
 ### 验收
 
-- [ ] 详情页首屏包含可读 Direct Answer
-- [ ] Verified / Compatibility / Security / Maintenance 均有自然语言解释
-- [ ] Scan Evidence 可被服务端 HTML 读取
-- [ ] Publisher 双向内链完成
-- [ ] Related Plugins 内链完成
-- [ ] Related Plugins 至少基于 capability / topic / similarity 中一种真实信号
-- [ ] 不生成虚构风险结论或 AI 自由推断
-- [ ] Edge SEO / canonical / JSON-LD 保持一致
+- [x] 详情页首屏包含可读 Direct Answer
+- [x] Verified / Compatibility / Security / Maintenance 均有自然语言解释
+- [x] Scan Evidence、scanner version、last scan 可被服务端 HTML 读取
+- [x] Publisher 双向内链完成
+- [x] Related Plugins 基于 capability 或同 Publisher 的真实 Registry 信号
+- [x] pinned install command 与 scanned commit 一致
+- [x] 不生成虚构风险结论或 AI 自由推断，Unknown 保持 Unknown
+- [x] Edge SEO / canonical / JSON-LD 保持一致
+
+Edge SEO 以英文作为 canonical crawlable 文档，前端界面继续支持中英文切换。这样避免 localStorage 语言偏好制造重复 URL；如将来需要独立双语收录，必须先增加 locale URL、canonical 和 hreflang，而不是仅切换浏览器状态。
 
 ## 6. Sprint 4 — Capability Landing Page
 
-**优先级：P1。**
+**优先级：P1。状态：已完成可索引版本。**
 
 当前长尾入口不足，下一阶段通过真实 Registry 分类数据建设有限数量的 Capability 页面。
 
-仅当某 capability 至少有 **3–5 个有效 Plugin** 时创建页面，避免 Thin Content。
+仅当某 capability 至少有 **3 个可索引 Plugin** 时创建页面，且必须有独特 capability 定义、选择说明、Trust 说明和真实插件链接，避免 Thin Content。页面是否进入 sitemap 与页面本身使用同一索引门槛。
 
 推荐路由：
 
@@ -240,19 +247,18 @@ README 作为补充内容，而不是页面唯一正文。
 /plugins/developer-tools
 /plugins/productivity
 /plugins/themes
-/plugins/ai
 /plugins/git
 /plugins/memory
 /plugins/browser
 /plugins/database
 ```
 
-实际是否创建必须由当前 Registry 数据决定，不强行覆盖以上全部分类。
+实际是否创建必须由当前 Registry 数据决定，不强行覆盖以上全部分类。路由必须映射到 Scanner 的真实 taxonomy：`developer-tools → DEVELOPMENT`、`git → GIT_GITHUB`、`browser → BROWSER_WEB`、`database → DATA`；没有真实 `AI` capability 时不创建 `/plugins/ai`。
 
 ### 页面结构
 
 ```text
-H1: Best DSH <Capability> Plugins
+H1: DSH <Capability> Plugins
 ↓
 Direct Answer / capability 定义
 ↓
@@ -274,7 +280,6 @@ FAQ / Sources / Last Updated
 优先覆盖有真实内容支撑的长尾：
 
 - `dsh plugins`
-- `best dsh plugins`
 - `dsh security plugins`
 - `dsh memory plugin`
 - `dsh git plugin`
@@ -284,21 +289,22 @@ FAQ / Sources / Last Updated
 
 ### 验收
 
-- [ ] 每个页面至少 3–5 个有效插件
-- [ ] 每页均有独特概念说明和选择建议
-- [ ] Plugin 列表由真实 Registry 数据动态生成
-- [ ] 页面与 Plugin Detail 双向内链
-- [ ] sitemap / canonical / JSON-LD 完成
-- [ ] 空分类 / 低内容分类不进入索引
+- [x] 每个页面至少 3 个可索引插件
+- [x] 每页均有独特概念说明和选择建议
+- [x] Plugin 列表由真实 Registry 数据动态生成
+- [x] 页面与 Plugin Detail 双向内链
+- [x] sitemap / canonical / JSON-LD 完成
+- [x] 空分类 / 低内容分类返回 404 + noindex 且不进入 sitemap
+
+初期不用 “Best” 作为结论性标题；页面使用中性的 capability 名称。只有建立可复现的排序和评价方法后，才考虑 “Best” 词组。
 
 ## 7. Sprint 5 — Discovery Landing Page
 
-**优先级：P1 / P2。**
+**优先级：P1 / P2。状态：Popular / New / Verified 已完成；Trending 延后。**
 
 在 `/plugins` 现有发现能力之上增加少量稳定入口：
 
 ```text
-/plugins/trending
 /plugins/popular
 /plugins/new
 /plugins/verified
@@ -306,11 +312,11 @@ FAQ / Sources / Last Updated
 
 ### 原则
 
-这些页面必须有稳定、透明、可解释的排序逻辑，而不是仅复制 `/plugins`。
+这些页面必须有稳定、透明、可解释的排序逻辑，而不是仅复制 `/plugins`。当前只有 Popular（Stars）、New（discovered_at）和 Verified（格式验证 + evidence）满足条件。
 
 建议：
 
-**Trending**
+**Trending（后置）**
 
 ```text
 recent GitHub growth
@@ -341,10 +347,12 @@ format verified
 
 ### 验收
 
-- [ ] 排序算法有明确说明
-- [ ] 页面服务端输出真实插件内链
-- [ ] 不与 `/plugins` 形成完全重复内容
-- [ ] 可通过内部导航稳定发现
+- [x] 排序算法有明确说明
+- [x] 页面服务端输出真实插件内链
+- [x] 不与 `/plugins` 形成完全重复内容
+- [x] 可通过内部导航稳定发现
+
+`/plugins/trending` 暂不作为 SEO Landing Page。现有 Stars 和更新时间只能支持 Popular / New，不能推导真实增长；待建立历史指标快照后再增加 Trending。
 
 ## 8. 品牌实体与主域信号
 
@@ -378,6 +386,8 @@ logo: canonical logo URL
 alternateName: 仅保留真实长期使用别名
 sameAs: GitHub / 其他官方可控页面
 ```
+
+代码中同时输出 `Organization`、`WebSite`、`WebPage`，并通过 `@id` 关联；不把社区项目写成 DeepSeek 官方产品。
 
 ### Host 统一
 
@@ -436,7 +446,7 @@ Publisher Related Plugins
 - Capability → Plugin
 - Plugin → Publisher
 - Publisher → Plugin
-- Plugin → Related Plugins
+- Plugin → Related Plugins（基于 capability 或同 Publisher 的真实信号）
 - Guide / Trust → 相关 Capability / Plugin 示例
 
 ### Related Plugins
@@ -454,7 +464,7 @@ Publisher Related Plugins
 
 **优先级：P2。**
 
-当前 metadata 优化的边际收益已经较低，下一阶段需要建立外部实体信号。
+当前 metadata 优化的边际收益已经较低，下一阶段需要建立外部实体信号。外链只能作为实体确认信号，不作为未经验证的安全背书。
 
 优先渠道：
 
@@ -499,7 +509,7 @@ src/react-app/content/
   guide-content.ts
 ```
 
-不引入 CMS。
+不引入 CMS。Edge SEO 复用同一套内容源；不能只更新 React 内容而让抓取 HTML 继续输出旧的通用摘要。
 
 ### 动态事实
 
@@ -523,6 +533,7 @@ Metadata
 - Query 变体一页一个
 - Next.js 重构
 - 为 SEO 重写完整 React SSR
+- 没有增长历史时伪造 Trending 排名
 - 未达到内容阈值就创建 Capability Page
 - 仅复制 GitHub README 的详情页
 
@@ -530,7 +541,7 @@ Metadata
 
 下一阶段不再只看“收录页面数量”。
 
-核心 KPI：
+核心 KPI（每项需记录统计口径、时间周期、数据来源和目标值）：
 
 1. **有效索引 Plugin Detail 数量**
 2. **非品牌词 Impression**
@@ -538,6 +549,11 @@ Metadata
 4. **Organic Clicks**
 5. **Capability / Plugin Detail 的自然流量占比**
 6. **www URL 在索引中的残留比例**
+7. **Indexable URL coverage**：可索引数据库记录进入 sitemap 的比例
+8. **Evidence coverage**：被索引详情页包含 scanned commit / scanner version / scan time 的比例
+9. **Freshness lag**：扫描完成到页面/sitemap 可见的延迟
+10. **Qualified outbound clicks**：详情页到 GitHub / pinned install 的点击率
+11. **D1 quota headroom**：按日记录 rows read / 请求量、定时任务消耗和额度余量；付费额度提高后仍需保留告警，避免把额度提升误当成无限资源
 
 ### Search Console 建议观察维度
 
@@ -551,14 +567,14 @@ Metadata
 /guide/*
 /trust
 /plugins/<capability>
-/plugins/trending|popular|new|verified
+/plugins/popular|new|verified
 ```
 
 按 Query 拆分：
 
 ```text
 brand: dsh plugin market
-category: dsh plugins / best dsh plugins
+category: dsh plugins / dsh security plugins / dsh memory plugin / ...
 capability: dsh memory plugin / dsh git plugin / ...
 entity: <plugin name>
 ```
@@ -567,20 +583,23 @@ entity: <plugin name>
 
 ### P0 — 立即保持稳定
 
-- [ ] 线上验证 www → non-www 301
-- [ ] canonical / sitemap / JSON-LD / SSR 内链全部 non-www
+- [ ] 线上验证 www → non-www 301（代码已有回归测试，仍需生产 smoke test）
+- [x] canonical / sitemap / JSON-LD / Edge 内链全部 non-www
+- [x] 统一 Plugin / Publisher / Landing Page indexability predicate
+- [x] Organization / WebSite / WebPage 实体关联
+- [x] Edge HTML 输出完整知识内容和详情证据
 - [ ] Search Console 重新提交 sitemap
 - [ ] 对首页、`/plugins`、Guide、Trust 请求重新抓取
 - [ ] 暂停无必要的首页 title / description 调整
 
-### P1 — 下一阶段开发
+### P1 — 已完成与后置项
 
-1. Plugin Detail 内容化
-2. Related Plugins
-3. Publisher ↔ Plugin 双向内链
-4. Capability Landing Page
-5. 首页 / `/plugins` 增强 Capability 入口
-6. Trending / Popular / New / Verified
+1. [x] Plugin Detail 内容化与证据覆盖
+2. [x] Related Plugins / Publisher ↔ Plugin 双向内链
+3. [x] Capability Landing Page（真实 taxonomy + 3 个插件门槛）
+4. [x] 首页增强 Capability 入口
+5. [x] Popular / New / Verified Discovery Landing Page
+6. [ ] 有历史指标后再启用 Trending
 
 ### P2 — 权重建设
 

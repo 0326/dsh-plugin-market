@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dsh-plugin-market",
   "main": "./src/worker/index.ts",
-  "compatibility_date": "2025-11-25",
+  "compatibility_date": "2026-09-02",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
@@ -17,6 +17,8 @@
       "/",
       "/plugins",
       "/plugins/*",
+		"/compare",
+		"/changes",
       "/plugin/*",
       "/publisher/*",
       "/guide",
@@ -44,15 +46,22 @@
       {
         "queue": "dsh-plugin-scan",
         "max_batch_size": 5,
-        "max_concurrency": 5,
-        "max_retries": 5
+        "max_batch_timeout": 10,
+        "max_concurrency": 1,
+        "max_retries": 5,
+        "retry_delay": 60,
+        "dead_letter_queue": "dsh-plugin-scan-dlq"
       }
     ]
   },
   "vars": {
-    "AUTO_FEATURE_MIN_STARS": "100"
+    "AUTO_FEATURE_MIN_STARS": "100",
+    "DISCOVERY_INCREMENTAL_LIMIT": "100",
+    "DISCOVERY_RECONCILE_LIMIT": "800",
+    "RESCAN_DAILY_BUDGET": "250",
+    "GITHUB_REQUEST_DELAY_MS": "900"
   },
   "triggers": {
-    "crons": ["0 * * * *", "30 0 * * *"]
+    "crons": ["15 * * * *", "20 2 * * *", "5 */6 * * *", "35 3 * * *", "50 3 * * *"]
   }
 }

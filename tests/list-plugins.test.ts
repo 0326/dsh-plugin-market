@@ -51,4 +51,34 @@ describe("listPlugins multi-select facets", () => {
 		expect(getSql()).toContain("(p.capabilities_json LIKE ? OR p.capabilities_json LIKE ?)");
 		expect(getParams()).toEqual(['%"SEARCH"%', '%"DATA"%', 50, 0]);
 	});
+
+	it("uses FTS and excludes candidates for a public installable search", async () => {
+		const { db, getSql, getParams } = mockDb();
+
+		await listPlugins(db, { q: "deep seek", installableOnly: true });
+
+		expect(getSql()).toContain("p.id IN (SELECT rowid FROM plugin_search WHERE plugin_search MATCH ?)");
+		expect(getSql()).toContain("p.verification_status IN ('DETECTED', 'FORMAT_VERIFIED')");
+		expect(getParams()).toEqual(['"deep" AND "seek"', 50, 0]);
+	});
+
+	it("does not issue a trigram query for fragments shorter than three characters", async () => {
+		const { db, getSql } = mockDb();
+
+		const items = await listPlugins(db, { q: "ds", installableOnly: true });
+
+		expect(items).toEqual([]);
+		expect(getSql()).toBe("");
+	});
+
+	it("uses daily snapshots for genuine trending ranking", async () => {
+		const { db, getSql, getParams } = mockDb();
+
+		await listPlugins(db, { sort: "trending" });
+
+		expect(getSql()).toContain("JOIN plugin_metrics_daily current_metric");
+		expect(getSql()).toContain("current_metric.stars > previous_metric.stars");
+		expect(getSql()).toContain("current_metric.stars - previous_metric.stars");
+		expect(getParams()).toEqual([50, 0]);
+	});
 });

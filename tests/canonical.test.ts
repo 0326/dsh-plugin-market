@@ -9,6 +9,12 @@ describe("canonical URL redirects", () => {
 		expect(response?.headers.get("location")).toBe("https://dsh-plugin.market/plugins?q=trust");
 	});
 
+	it("normalizes trailing slashes on capability landing pages", () => {
+		const response = canonicalRedirect(new Request("https://dsh-plugin.market/plugins/security/"));
+		expect(response?.status).toBe(301);
+		expect(response?.headers.get("location")).toBe("https://dsh-plugin.market/plugins/security");
+	});
+
 	it("normalizes public trailing slashes", () => {
 		const response = canonicalRedirect(new Request("https://dsh-plugin.market/plugin/acme/demo/"));
 		expect(response?.status).toBe(301);

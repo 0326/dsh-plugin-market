@@ -13,6 +13,8 @@ export interface PluginListItem {
 	riskLevel: string;
 	packageName: string | null;
 	latestCommitSha: string | null;
+	pluginTypesJson?: string | null;
+	metadataJson?: string | null;
 	updatedAt: string | null;
 	previewImageUrl: string | null;
 }
@@ -75,6 +77,14 @@ export interface RegistryContext {
 	baseline: CompatibilityBaseline | null;
 }
 
+export interface HomePayload {
+	context: RegistryContext;
+	featured: PluginListItem[];
+	latest: PluginListItem[];
+	popular: PluginListItem[];
+	capabilities: string[];
+}
+
 export interface ScanRow {
 	id: number;
 	commitSha: string;
@@ -83,6 +93,16 @@ export interface ScanRow {
 	startedAt: string;
 	completedAt: string | null;
 	errorCode: string | null;
+}
+
+export interface PluginEvent {
+	owner: string;
+	repo: string;
+	fullName: string;
+	eventType: string;
+	previousValue: string | null;
+	nextValue: string | null;
+	createdAt: string;
 }
 
 export interface Publisher {
@@ -109,6 +129,7 @@ export type Sort = "updated" | "stars" | "new" | "trending";
 export interface ListPluginsOptions {
 	q?: string;
 	verified?: boolean;
+	installable?: boolean;
 	featured?: boolean;
 	status?: string;
 	capability?: string;
@@ -128,6 +149,7 @@ export function listPlugins(opts: ListPluginsOptions = {}): Promise<PluginListRe
 	const params = new URLSearchParams();
 	if (opts.q) params.set("q", opts.q);
 	if (opts.verified) params.set("verified", "1");
+	if (opts.installable) params.set("installable", "1");
 	if (opts.featured) params.set("featured", "1");
 	if (opts.status) params.set("status", opts.status);
 	if (opts.capability) params.set("capability", opts.capability);
@@ -171,12 +193,20 @@ export function getRegistryContext(): Promise<RegistryContext> {
 	return get<RegistryContext>("/context");
 }
 
+export function getHome(): Promise<HomePayload> {
+	return get<HomePayload>("/home");
+}
+
+export function getPluginEvents(): Promise<{ items: PluginEvent[] }> {
+	return get<{ items: PluginEvent[] }>("/changes");
+}
+
 export function getPublisher(owner: string): Promise<Publisher> {
 	return get<Publisher>("/publishers/" + encodeURIComponent(owner));
 }
 
-export function getCategories(): Promise<{ capabilities: string[]; pluginTypes: string[] }> {
-	return get<{ capabilities: string[]; pluginTypes: string[] }>("/categories");
+export function getCategories(): Promise<{ capabilities: string[]; pluginTypes: string[]; capabilityCounts: Record<string, number>; trendingAvailable: boolean }> {
+	return get<{ capabilities: string[]; pluginTypes: string[]; capabilityCounts: Record<string, number>; trendingAvailable: boolean }>("/categories");
 }
 
 export function submitPlugin(url: string): Promise<{ owner: string; repo: string; status: string }> {

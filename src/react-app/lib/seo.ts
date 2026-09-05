@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Route } from "./router";
+import { getCapabilityLanding, getDiscoveryLanding } from "../../shared/seo-landings";
 
 const SITE_URL = "https://dsh-plugin.market";
 const SITE_NAME = "DSH Plugin Market";
@@ -76,6 +77,26 @@ function getSeo(route: Route, lang: string): SeoSpec {
 					? "浏览 DeepSeek Harness 插件，查看格式验证、兼容性、安全风险、维护状态与可追溯安装信息。"
 					: "Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.",
 				canonicalPath: "/plugins",
+				};
+		case "landing": {
+				const label = getCapabilityLanding(route.slug) ?? getDiscoveryLanding(route.slug);
+				return {
+					title: `${zh ? label?.titleZh ?? route.slug : label?.title ?? route.slug} DSH Plugins — ${SITE_NAME}`,
+					description: label?.definition ?? "Explore DSH plugins from the current registry.",
+					canonicalPath: `/plugins/${encodeURIComponent(route.slug)}`,
+				};
+			}
+		case "compare":
+			return {
+				title: `Compare DSH Plugins — ${SITE_NAME}`,
+				description: zh ? "并排比较 DSH 插件的格式、兼容性、安全、维护和扫描 commit 信号。" : "Compare DSH plugins side by side using format, compatibility, security, maintenance, and scanned-commit signals.",
+				canonicalPath: "/compare",
+			};
+		case "changes":
+			return {
+				title: `Registry changes — ${SITE_NAME}`,
+				description: zh ? "查看 DSH Plugin Market 中近期记录的扫描状态变化。" : "Review recent scan-status changes recorded by DSH Plugin Market.",
+				canonicalPath: "/changes",
 			};
 		case "plugin":
 			return {
@@ -123,7 +144,7 @@ function getSeo(route: Route, lang: string): SeoSpec {
 }
 
 function shouldPreserveEdgeMetadata(route: Route): boolean {
-	return route.name === "plugin" || route.name === "publisher";
+	return route.name === "plugin" || route.name === "publisher" || route.name === "landing";
 }
 
 export function useSeo(route: Route, lang: string): void {

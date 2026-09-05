@@ -15,13 +15,13 @@ function rescanDb(rows: Array<{ id: number; owner: string; name: string }>) {
 describe("rescan sweep", () => {
 	it("starts a full rescan with one lightweight control message", async () => {
 		const send = vi.fn(async () => {});
-		const env = { SCAN_QUEUE: { send } } as never;
+		const env = { SCAN_QUEUE: { send }, RESCAN_DAILY_BUDGET: "120" } as never;
 
 		const result = await startRescanSweep(env);
 
-		expect(result).toEqual({ status: "started", scannerVersion: SCANNER_VERSION });
+		expect(result).toEqual({ status: "started", scannerVersion: SCANNER_VERSION, budget: 120 });
 		expect(send).toHaveBeenCalledTimes(1);
-		expect(send).toHaveBeenCalledWith({ type: "RESCAN_SWEEP", afterRepositoryId: 0 });
+		expect(send).toHaveBeenCalledWith({ type: "RESCAN_SWEEP", afterRepositoryId: 0, remainingBudget: 120 });
 	});
 
 	it("enqueues a partial stale-repository page without scheduling another control page", async () => {
@@ -34,7 +34,7 @@ describe("rescan sweep", () => {
 		const sendBatch = vi.fn(async () => {});
 		const env = { DB: db, SCAN_QUEUE: { send, sendBatch } } as never;
 
-		const result = await processRescanSweepJob(env, { type: "RESCAN_SWEEP", afterRepositoryId: 10 });
+		const result = await processRescanSweepJob(env, { type: "RESCAN_SWEEP", afterRepositoryId: 10, remainingBudget: 250 });
 
 		expect(bind).toHaveBeenCalledWith(10, buildScanRevision(DEFAULT_BASELINE), RESCAN_SWEEP_PAGE_SIZE);
 		expect(sendBatch).toHaveBeenCalledTimes(1);
@@ -56,11 +56,11 @@ describe("rescan sweep", () => {
 		const sendBatch = vi.fn(async () => {});
 		const env = { DB: db, SCAN_QUEUE: { send, sendBatch } } as never;
 
-		const result = await processRescanSweepJob(env, { type: "RESCAN_SWEEP", afterRepositoryId: 0 });
+		const result = await processRescanSweepJob(env, { type: "RESCAN_SWEEP", afterRepositoryId: 0, remainingBudget: RESCAN_SWEEP_PAGE_SIZE * 2 });
 
 		expect(sendBatch).toHaveBeenCalledTimes(1);
 		expect(sendBatch.mock.calls[0][0]).toHaveLength(RESCAN_SWEEP_PAGE_SIZE);
-		expect(send).toHaveBeenCalledWith({ type: "RESCAN_SWEEP", afterRepositoryId: RESCAN_SWEEP_PAGE_SIZE });
+		expect(send).toHaveBeenCalledWith({ type: "RESCAN_SWEEP", afterRepositoryId: RESCAN_SWEEP_PAGE_SIZE, remainingBudget: RESCAN_SWEEP_PAGE_SIZE });
 		expect(result).toEqual({
 			enqueued: RESCAN_SWEEP_PAGE_SIZE,
 			nextAfterRepositoryId: RESCAN_SWEEP_PAGE_SIZE,
@@ -74,7 +74,7 @@ describe("rescan sweep", () => {
 		const sendBatch = vi.fn(async () => {});
 		const env = { DB: db, SCAN_QUEUE: { send, sendBatch } } as never;
 
-		const result = await processRescanSweepJob(env, { type: "RESCAN_SWEEP", afterRepositoryId: 100 });
+		const result = await processRescanSweepJob(env, { type: "RESCAN_SWEEP", afterRepositoryId: 100, remainingBudget: 250 });
 
 		expect(result).toEqual({ enqueued: 0, nextAfterRepositoryId: null, done: true });
 		expect(sendBatch).not.toHaveBeenCalled();

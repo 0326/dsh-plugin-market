@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -8,7 +8,7 @@
 		<meta name="theme-color" content="#ffffff" />
 
 		<title>DSH Plugin Market — DeepSeek Harness Plugin Registry</title>
-		<meta name="description" content="DSH Plugin Market 是面向 DeepSeek Harness 生态的插件市场与可信注册表，用于发现、验证、评估和安装 DSH plugins。Discover, verify and install DeepSeek Harness plugins with compatibility, security and maintenance signals." />
+		<meta name="description" content="Discover, verify and install DeepSeek Harness plugins with compatibility, security, maintenance and traceable scan signals." />
 		<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
 		<link rel="canonical" href="https://dsh-plugin.market/" />
 		<link rel="sitemap" type="application/xml" title="Sitemap" href="https://dsh-plugin.market/sitemap.xml" />
@@ -30,8 +30,7 @@
 		<meta property="og:url" content="https://dsh-plugin.market/" />
 		<meta property="og:image" content="https://dsh-plugin.market/kun.png" />
 		<meta property="og:image:alt" content="DSH Plugin Market" />
-		<meta property="og:locale" content="zh_CN" />
-		<meta property="og:locale:alternate" content="en_US" />
+		<meta property="og:locale" content="en_US" />
 
 		<meta name="twitter:card" content="summary" />
 		<meta name="twitter:image" content="https://dsh-plugin.market/kun.png" />
@@ -43,6 +42,15 @@
 			"@context": "https://schema.org",
 			"@graph": [
 				{
+					"@type": "Organization",
+					"@id": "https://dsh-plugin.market/#organization",
+					"url": "https://dsh-plugin.market/",
+					"name": "DSH Plugin Market",
+					"description": "An independent community registry for discovering and assessing DeepSeek Harness plugins.",
+					"logo": { "@type": "ImageObject", "url": "https://dsh-plugin.market/kun.png" },
+					"sameAs": ["https://github.com/0326/dsh-plugin-market"]
+				},
+				{
 					"@type": "WebSite",
 					"@id": "https://dsh-plugin.market/#website",
 					"url": "https://dsh-plugin.market/",
@@ -51,6 +59,7 @@
 					"description": "A trusted plugin registry and discovery platform for the DeepSeek Harness ecosystem.",
 					"inLanguage": ["zh-CN", "en"],
 					"sameAs": ["https://github.com/0326/dsh-plugin-market"],
+					"publisher": { "@id": "https://dsh-plugin.market/#organization" },
 					"about": {
 						"@type": "SoftwareApplication",
 						"name": "DeepSeek Harness",

@@ -7,7 +7,7 @@ import { HomeSkeleton } from "../components/Skeletons";
 import { getContentSeoCopy } from "../content/seo-content";
 import { formatDateTime, useI18n, type Language } from "../lib/i18n";
 import { navigate } from "../lib/router";
-import { getCategories, getRegistryContext, listPlugins, type PluginListItem, type RegistryContext } from "../lib/api";
+import { getHome, type HomePayload, type PluginListItem, type RegistryContext } from "../lib/api";
 
 interface HomeData {
 	context: RegistryContext;
@@ -15,7 +15,37 @@ interface HomeData {
 	latest: PluginListItem[];
 	popular: PluginListItem[];
 	capabilities: string[];
+	degraded: boolean;
 }
+
+function readHomeBootstrap(): HomeData | null {
+	const element = document.getElementById("dsh-home-bootstrap");
+	if (!element?.textContent) return null;
+	try {
+		const payload = JSON.parse(element.textContent) as HomePayload;
+		if (!payload.context?.stats || !Array.isArray(payload.featured) || !Array.isArray(payload.latest) || !Array.isArray(payload.popular) || !Array.isArray(payload.capabilities)) return null;
+		return { ...payload, degraded: false };
+	} catch {
+		return null;
+	}
+}
+
+const EMPTY_CONTEXT: RegistryContext = {
+	stats: {
+		total: 0,
+		githubTotal: null,
+		discovered: 0,
+		scanned: 0,
+		detected: 0,
+		verified: 0,
+		featured: 0,
+		updatedThisWeek: 0,
+		lastScanAt: null,
+		discoveryCheckedAt: null,
+	},
+	scannerVersion: "Unknown",
+	baseline: null,
+};
 
 const CATEGORY_LABELS: Record<string, Record<Language, string>> = {
 	DEVELOPMENT: { zh: "开发", en: "Development" }, GIT_GITHUB: { zh: "Git / GitHub", en: "Git / GitHub" },
@@ -83,29 +113,22 @@ function Pipeline({ steps }: { steps: string[] }) {
 export default function Home() {
 	const { t, lang } = useI18n();
 	const copy = getContentSeoCopy(lang).home;
-	const [data, setData] = useState<HomeData | null>(null);
-	const [error, setError] = useState<string | null>(null);
+	const [data, setData] = useState<HomeData | null>(() => readHomeBootstrap());
 	const [query, setQuery] = useState("");
 
 	useEffect(() => {
+		if (data) return;
 		let ignore = false;
-		Promise.all([
-			getRegistryContext(),
-			listPlugins({ featured: true, limit: 3, includeTotal: false }),
-			listPlugins({ sort: "new", limit: 6, includeTotal: false }),
-			listPlugins({ sort: "stars", limit: 6, includeTotal: false }),
-			getCategories(),
-		])
-			.then(([context, featured, latest, popular, cats]) => {
-				if (!ignore) setData({ context, featured: featured.items, latest: latest.items, popular: popular.items, capabilities: cats.capabilities });
+		getHome()
+			.then((payload) => {
+				if (!ignore) setData({ ...payload, degraded: false });
 			})
-			.catch((err) => {
-				if (!ignore) setError(err instanceof Error ? err.message : String(err));
+			.catch(() => {
+				if (!ignore) setData({ context: EMPTY_CONTEXT, featured: [], latest: [], popular: [], capabilities: [], degraded: true });
 			});
 		return () => { ignore = true; };
-	}, []);
+	}, [data]);
 
-	if (error) return <p className="text-error">{t("home.loadError", { msg: error })}</p>;
 	if (!data) return <HomeSkeleton />;
 
 	const { stats, baseline, scannerVersion } = data.context;
@@ -113,13 +136,15 @@ export default function Home() {
 	// scan/discovery activity so this status does not appear frozen between scans.
 	const activityValues = [stats.lastScanAt, stats.discoveryCheckedAt].filter((value): value is string => Boolean(value)).sort();
 	const activityAt = activityValues.length > 0 ? activityValues[activityValues.length - 1] : null;
-	const lastScanTime = activityAt ? formatDateTime(activityAt, lang) : t("home.noScanYet");
+	const lastScanTime = data.degraded ? "—" : activityAt ? formatDateTime(activityAt, lang) : t("home.noScanYet");
 	const baselineLabel = baseline ? `DSH ${baseline.dshVersion} · Cordis ${baseline.cordisVersion}` : "—";
 	const progressLabels = lang === "zh"
 		? ["GitHub 总量", "已发现仓库", "已扫描仓库", "已检测插件", "格式已验证"]
 		: ["GitHub total", "discovered repos", "scanned repos", "detected plugins", "format verified"];
 	const discoveredLabel = lang === "zh" ? "已发现仓库" : "Discovered repositories";
-	const progressValues: Array<number | string> = [stats.githubTotal ?? "—", stats.discovered, stats.scanned, stats.detected, stats.verified];
+	const progressValues: Array<number | string> = data.degraded
+		? ["—", "—", "—", "—", "—"]
+		: [stats.githubTotal ?? "—", stats.discovered, stats.scanned, stats.detected, stats.verified];
 
 	function onSearch(e: React.FormEvent) {
 		e.preventDefault();
@@ -142,6 +167,7 @@ export default function Home() {
 
 	return (
 		<div>
+			{data.degraded && <p role="status" className="mb-4 border border-warning/40 bg-warning/10 px-4 py-3 text-sm">{lang === "zh" ? "实时 Registry 数据暂时不可用，页面内容仍可浏览。" : "Live registry data is temporarily unavailable; the page content remains available."}</p>}
 			<section className="home-hero">
 				<div className="hero-copy">
 					<p className="hero-updated mb-5">{t("home.lastScanLabel")}：<time dateTime={activityAt ?? undefined}>{lastScanTime}</time></p>
@@ -212,10 +238,10 @@ export default function Home() {
 					<div className="works-grid">
 						<Pipeline steps={copy.works.steps} />
 						<FactList items={[
-							{ label: discoveredLabel, value: stats.discovered },
-							{ label: copy.works.facts.verified, value: stats.verified },
-							{ label: copy.works.facts.scanner, value: scannerVersion },
-							{ label: copy.works.facts.baseline, value: baselineLabel },
+							{ label: discoveredLabel, value: data.degraded ? "—" : stats.discovered },
+							{ label: copy.works.facts.verified, value: data.degraded ? "—" : stats.verified },
+							{ label: copy.works.facts.scanner, value: data.degraded ? "—" : scannerVersion },
+							{ label: copy.works.facts.baseline, value: data.degraded ? "—" : baselineLabel },
 							{ label: copy.works.facts.lastScan, value: lastScanTime },
 						]} />
 					</div>
@@ -232,9 +258,27 @@ export default function Home() {
 				<ContentSection kicker={copy.verified.kicker} title={copy.verified.title} answer={<p>{copy.verified.body}</p>} actions={<RelatedLinks links={[{ href: "/trust", label: copy.verified.learn }, { href: "/guide/choose-dsh-plugin", label: chooseGuideLabel }]} />}>
 					<div className="verified-panel"><strong>{copy.verified.warning}</strong>{copy.verified.items.map((item) => <div key={item.label}><span>{item.label}</span><p>{item.text}</p></div>)}</div>
 				</ContentSection>
-			</div>
+				</div>
 
-			<FAQ title={copy.faqTitle} items={faqItems} />
+				<section className="knowledge-intro" aria-labelledby="capability-landing-title">
+					<p className="content-kicker">DISCOVER BY CAPABILITY</p>
+					<div>
+						<h2 id="capability-landing-title">{lang === "zh" ? "按能力发现插件" : "Discover by capability"}</h2>
+						<p>{lang === "zh" ? "这些入口只在 Registry 有足够真实插件时进入索引。" : "These landing pages are indexed only when the registry has enough real, indexable plugins."}</p>
+						<nav className="flex flex-wrap gap-2 pt-3" aria-label="Plugin capabilities">
+							{[
+								["security", lang === "zh" ? "安全" : "Security"],
+								["developer-tools", lang === "zh" ? "开发工具" : "Developer tools"],
+								["productivity", lang === "zh" ? "效率工具" : "Productivity"],
+								["git", "Git / GitHub"],
+								["memory", lang === "zh" ? "记忆" : "Memory"],
+								["browser", lang === "zh" ? "浏览器 / Web" : "Browser / Web"],
+							].map(([slug, label]) => <a className="btn btn-sm btn-outline" key={slug} href={`/plugins/${slug}`}>{label}</a>)}
+						</nav>
+					</div>
+				</section>
+
+				<FAQ title={copy.faqTitle} items={faqItems} />
 		</div>
 	);
 }

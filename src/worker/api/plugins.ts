@@ -1,11 +1,12 @@
 import { Hono } from "hono";
-import { countPlugins, getBaseline, getPlugin, getPublisher, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
+import { countPlugins, getBaseline, getPlugin, getPublisher, listPluginEvents, listPlugins, listPluginScans, updateRepositoryPreviewImage, upsertRepository } from "../db/repository";
 import { getRegistryStats } from "../db/registry";
 import { CAPABILITY, PLUGIN_TYPE } from "../domain/plugin";
 import { SCANNER_VERSION } from "../domain/scan";
 import type { Env } from "../env";
 import { GithubClient, GithubError, type GithubRepo } from "../github/client";
 import { loadPluginReadme, type ReadmeLanguage } from "../github/readme-content";
+import { getHomePayload } from "../registry-home";
 
 export const api = new Hono<{ Bindings: Env }>();
 
@@ -46,6 +47,7 @@ api.get("/plugins", async (c) => {
 	const options = {
 		q: q.q,
 		verifiedOnly: q.verified === "1" || q.verified === "true",
+		installableOnly: q.installable === "1" || q.installable === "true",
 		featured: q.featured === "1" || q.featured === "true",
 		status: q.status,
 		capability: q.capability,
@@ -64,6 +66,10 @@ api.get("/plugins", async (c) => {
 	const [items, total] = await Promise.all([listPlugins(c.env.DB, options), countPlugins(c.env.DB, options)]);
 	return c.json({ items, total, limit: options.limit, offset: options.offset, hasMore: options.offset + items.length < total });
 });
+
+api.get("/home", async (c) => c.json(await getHomePayload(c.env.DB)));
+
+api.get("/changes", async (c) => c.json({ items: await listPluginEvents(c.env.DB, clampInt(c.req.query("limit"), 30, 1, 100)) }));
 
 api.get("/plugins/:owner/:repo/readme", async (c) => {
 	const owner = c.req.param("owner");
@@ -121,7 +127,14 @@ api.get("/context", async (c) => {
 	});
 });
 
-api.get("/categories", (c) => c.json({ capabilities: CAPABILITY, pluginTypes: PLUGIN_TYPE }));
+api.get("/categories", async (c) => {
+	const [rows, trending] = await Promise.all([
+		c.env.DB.prepare("SELECT capability, plugin_count AS pluginCount FROM registry_category_stats").all<{ capability: string; pluginCount: number }>(),
+		c.env.DB.prepare("SELECT COUNT(*) AS total FROM (SELECT DISTINCT metric_date FROM plugin_metrics_daily) WHERE metric_date <= date('now', '-7 days')").first<{ total: number }>(),
+	]);
+	const capabilityCounts = Object.fromEntries((rows.results ?? []).map((row) => [row.capability, row.pluginCount]));
+	return c.json({ capabilities: CAPABILITY, pluginTypes: PLUGIN_TYPE, capabilityCounts, trendingAvailable: (trending?.total ?? 0) > 0 });
+});
 
 api.get("/publishers/:owner", async (c) => {
 	const pub = await getPublisher(c.env.DB, c.req.param("owner"));
@@ -132,7 +145,8 @@ api.get("/publishers/:owner", async (c) => {
 api.get("/search", async (c) => {
 	const q = c.req.query("q");
 	if (!q) return c.json({ items: [], total: 0, limit: 50, offset: 0, hasMore: false });
-	const options = { q, limit: 50, offset: 0 };
+	if (q.trim().length < 3) return c.json({ items: [], total: 0, limit: 50, offset: 0, hasMore: false });
+	const options = { q, installableOnly: true, limit: 50, offset: 0 };
 	const [items, total] = await Promise.all([listPlugins(c.env.DB, options), countPlugins(c.env.DB, options)]);
 	return c.json({ items, total, limit: 50, offset: 0, hasMore: items.length < total });
 });

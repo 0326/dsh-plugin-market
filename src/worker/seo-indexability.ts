@@ -1,59 +1,14 @@
-import { getPlugin, getPublisher, type PluginDetail, type PluginListItem } from "./db/repository";
-import { buildSitemapXml, isPublisherIndexable } from "./seo";
+import { getPlugin, getPublisher, listPlugins, type PluginDetail, type PluginListItem } from "./db/repository";
+import { buildSitemapXml, SITEMAP_PLUGIN_LIMIT } from "./seo";
+import { INDEXABLE_VERIFICATION_STATUSES, isPluginIndexable, isPublisherIndexable } from "./seo-policy";
+import { CAPABILITY_LANDINGS, DISCOVERY_LANDINGS, LANDING_MINIMUM_PLUGINS } from "./seo-landings";
 
-const SITEMAP_PLUGIN_LIMIT = 45_000;
-
-export const INDEXABLE_VERIFICATION_STATUSES = ["DETECTED", "FORMAT_VERIFIED", "FEATURED"] as const;
 export const NOINDEX_ROBOTS = "noindex,follow";
-
-export interface PluginIndexabilityInput {
-	verificationStatus: string;
-	pluginTypes?: readonly string[] | null;
-	pluginTypesJson?: string | null;
-	metadataJson?: string | null;
-	description?: string | null;
-	packageName?: string | null;
-	latestCommitSha?: string | null;
-}
+export { INDEXABLE_VERIFICATION_STATUSES, isPluginIndexable } from "./seo-policy";
 
 export interface SitemapCandidate extends PluginListItem {
 	pluginTypesJson: string | null;
 	metadataJson: string | null;
-}
-
-function parseStringArray(raw: string | null | undefined): string[] {
-	if (!raw) return [];
-	try {
-		const value = JSON.parse(raw) as unknown;
-		return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-	} catch {
-		return [];
-	}
-}
-
-function parseMetadataPluginTypes(raw: string | null | undefined): string[] {
-	if (!raw) return [];
-	try {
-		const value = JSON.parse(raw) as { pluginTypes?: unknown };
-		return Array.isArray(value.pluginTypes)
-			? value.pluginTypes.filter((item): item is string => typeof item === "string")
-			: [];
-	} catch {
-		return [];
-	}
-}
-
-function hasMinimumDetectedEvidence(plugin: PluginIndexabilityInput): boolean {
-	return Boolean(plugin.description?.trim()) && Boolean(plugin.packageName || plugin.latestCommitSha);
-}
-
-export function isPluginIndexable(plugin: PluginIndexabilityInput): boolean {
-	if (!(INDEXABLE_VERIFICATION_STATUSES as readonly string[]).includes(plugin.verificationStatus)) return false;
-	if (plugin.verificationStatus === "DETECTED" && !hasMinimumDetectedEvidence(plugin)) return false;
-	const pluginTypes =
-		plugin.pluginTypes ??
-		(plugin.pluginTypesJson ? parseStringArray(plugin.pluginTypesJson) : parseMetadataPluginTypes(plugin.metadataJson));
-	return !pluginTypes.includes("NON_PLUGIN");
 }
 
 export function filterIndexableSitemapItems(items: SitemapCandidate[]): PluginListItem[] {
@@ -87,6 +42,9 @@ async function listSitemapCandidates(db: D1Database): Promise<SitemapCandidate[]
 	JOIN repositories r ON r.id = p.repository_id
 	LEFT JOIN scans s ON s.id = p.latest_scan_id
 	WHERE p.verification_status IN (${placeholders})
+		AND (COALESCE(TRIM(r.description), '') <> '' OR COALESCE(TRIM(p.package_name), '') <> '' OR s.commit_sha IS NOT NULL)
+		AND NOT (p.plugin_types_json LIKE '%"NON_PLUGIN"%' OR p.metadata_json LIKE '%"NON_PLUGIN"%')
+		AND (p.verification_status <> 'DETECTED' OR (COALESCE(TRIM(r.description), '') <> '' AND (COALESCE(TRIM(p.package_name), '') <> '' OR s.commit_sha IS NOT NULL)))
 	ORDER BY r.updated_at DESC
 	LIMIT ?`;
 	const result = await db
@@ -99,7 +57,13 @@ async function listSitemapCandidates(db: D1Database): Promise<SitemapCandidate[]
 export async function renderIndexableSitemap(db: D1Database): Promise<Response> {
 	const candidates = await listSitemapCandidates(db);
 	const items = filterIndexableSitemapItems(candidates);
-	return new Response(buildSitemapXml(items), {
+	const landingPaths = (await Promise.all([...CAPABILITY_LANDINGS, ...DISCOVERY_LANDINGS].map(async (landing) => {
+		const filtered = "capability" in landing
+			? await listPlugins(db, { capability: landing.capability, installableOnly: true, limit: 50 })
+			: await listPlugins(db, { sort: landing.sort, verifiedOnly: landing.verified, installableOnly: true, limit: 50 });
+		return filtered.filter(isPluginIndexable).length >= LANDING_MINIMUM_PLUGINS ? `/plugins/${landing.slug}` : null;
+	}))).filter((path): path is string => path !== null);
+	return new Response(buildSitemapXml(items, landingPaths), {
 		headers: {
 			"content-type": "application/xml; charset=utf-8",
 			"cache-control": "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400",

@@ -32,7 +32,8 @@ export const GITHUB_REPOSITORY_EPOCH = "2008-01-01T00:00:00.000Z";
  * per repo (~800 for 400 repos) + a few sendBatch + search calls stay under
  * the 1000 Cloudflare-service and 50 external subrequest budgets.
  */
-const MAX_REPOS_PER_RUN = 400;
+/** Conservative default for a D1 account shared with other Cloudflare apps. */
+const MAX_REPOS_PER_RUN = 100;
 
 export interface DiscoveryRun {
 	githubTotal: number;
