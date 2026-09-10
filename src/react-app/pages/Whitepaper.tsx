@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { WhitepaperLayout } from "../components/whitepaper/WhitepaperLayout";
 import type { Route } from "../lib/router";
 import { chapterForSlug, resolveWhitepaperVersion, whitepaperHref, WHITEPAPER_LATEST_VERSION, WHITEPAPER_VERSIONS } from "../lib/whitepaper";
@@ -8,6 +9,14 @@ interface WhitepaperProps {
 
 export default function Whitepaper({ route }: WhitepaperProps) {
 	const version = resolveWhitepaperVersion(route.version);
+	const requested = version ? chapterForSlug(version, route.slug) : undefined;
+	const chapter = requested ?? version?.chapters[0];
+
+	useEffect(() => {
+		if (!version || !chapter || route.version !== "latest") return;
+		window.history.replaceState({}, "", whitepaperHref(version, chapter));
+	}, [chapter, route.version, version]);
+
 	if (!version) {
 		return (
 			<section className="wp-missing-version">
@@ -19,13 +28,6 @@ export default function Whitepaper({ route }: WhitepaperProps) {
 		);
 	}
 
-	const requested = chapterForSlug(version, route.slug);
-	const chapter = requested ?? version.chapters[0];
 	if (!chapter) return null;
-
-	if (route.version === "latest" && typeof window !== "undefined") {
-		window.history.replaceState({}, "", whitepaperHref(version, chapter));
-	}
-
 	return <WhitepaperLayout version={version} chapter={chapter} notFound={Boolean(route.slug && !requested)} />;
 }

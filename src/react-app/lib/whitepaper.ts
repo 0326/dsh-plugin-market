@@ -33,7 +33,7 @@ const V015: WhitepaperVersion = {
 	upstreamTag: "dsh-v0.1.5-alpha.1",
 	upstreamCommit: "5dda764ed3aa172535a7967b06ff95d9cbfe536a",
 	releasedAt: "2026-09-08",
-	status: "preview",
+	status: "published",
 	chapters: [
 		{
 			id: "overview",
