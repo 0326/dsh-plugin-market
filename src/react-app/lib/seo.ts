@@ -5,6 +5,7 @@ import { getCapabilityLanding, getDiscoveryLanding } from "../../shared/seo-land
 const SITE_URL = "https://dsh-plugin.market";
 const SITE_NAME = "DSH Plugin Market";
 const DEFAULT_IMAGE = `${SITE_URL}/kun.png`;
+const WHITEPAPER_LATEST = "v0.1.5-alpha.1";
 
 interface SeoSpec {
 	title: string;
@@ -77,69 +78,42 @@ function getSeo(route: Route, lang: string): SeoSpec {
 					? "浏览 DeepSeek Harness 插件，查看格式验证、兼容性、安全风险、维护状态与可追溯安装信息。"
 					: "Explore DeepSeek Harness plugins with format verification, compatibility, security, maintenance and traceable install signals.",
 				canonicalPath: "/plugins",
-				};
+			};
 		case "landing": {
-				const label = getCapabilityLanding(route.slug) ?? getDiscoveryLanding(route.slug);
-				return {
-					title: `${zh ? label?.titleZh ?? route.slug : label?.title ?? route.slug} DSH Plugins — ${SITE_NAME}`,
-					description: label?.definition ?? "Explore DSH plugins from the current registry.",
-					canonicalPath: `/plugins/${encodeURIComponent(route.slug)}`,
-				};
-			}
+			const label = getCapabilityLanding(route.slug) ?? getDiscoveryLanding(route.slug);
+			return {
+				title: `${zh ? label?.titleZh ?? route.slug : label?.title ?? route.slug} DSH Plugins — ${SITE_NAME}`,
+				description: label?.definition ?? "Explore DSH plugins from the current registry.",
+				canonicalPath: `/plugins/${encodeURIComponent(route.slug)}`,
+			};
+		}
 		case "compare":
-			return {
-				title: `Compare DSH Plugins — ${SITE_NAME}`,
-				description: zh ? "并排比较 DSH 插件的格式、兼容性、安全、维护和扫描 commit 信号。" : "Compare DSH plugins side by side using format, compatibility, security, maintenance, and scanned-commit signals.",
-				canonicalPath: "/compare",
-			};
+			return { title: `Compare DSH Plugins — ${SITE_NAME}`, description: zh ? "并排比较 DSH 插件的格式、兼容性、安全、维护和扫描 commit 信号。" : "Compare DSH plugins side by side using format, compatibility, security, maintenance, and scanned-commit signals.", canonicalPath: "/compare" };
 		case "changes":
-			return {
-				title: `Registry changes — ${SITE_NAME}`,
-				description: zh ? "查看 DSH Plugin Market 中近期记录的扫描状态变化。" : "Review recent scan-status changes recorded by DSH Plugin Market.",
-				canonicalPath: "/changes",
-			};
+			return { title: `Registry changes — ${SITE_NAME}`, description: zh ? "查看 DSH Plugin Market 中近期记录的扫描状态变化。" : "Review recent scan-status changes recorded by DSH Plugin Market.", canonicalPath: "/changes" };
 		case "plugin":
-			return {
-				title: `${route.owner}/${route.repo} — ${SITE_NAME}`,
-				description: zh
-					? `查看 ${route.owner}/${route.repo} 的 DSH Plugin 格式验证、兼容性、安全与维护信号，以及绑定扫描 commit 的安装信息。`
-					: `Review DSH plugin compatibility, security, maintenance and commit-bound install information for ${route.owner}/${route.repo}.`,
-				canonicalPath: `/plugin/${encodeURIComponent(route.owner)}/${encodeURIComponent(route.repo)}`,
-			};
+			return { title: `${route.owner}/${route.repo} — ${SITE_NAME}`, description: zh ? `查看 ${route.owner}/${route.repo} 的 DSH Plugin 格式验证、兼容性、安全与维护信号，以及绑定扫描 commit 的安装信息。` : `Review DSH plugin compatibility, security, maintenance and commit-bound install information for ${route.owner}/${route.repo}.`, canonicalPath: `/plugin/${encodeURIComponent(route.owner)}/${encodeURIComponent(route.repo)}` };
 		case "publisher":
-			return {
-				title: `${route.owner} DSH Plugins — ${SITE_NAME}`,
-				description: zh
-					? `浏览发布者 ${route.owner} 在 DSH Plugin Market 中的 DeepSeek Harness 插件与可信扫描信息。`
-					: `Explore DeepSeek Harness plugins and trust signals from publisher ${route.owner}.`,
-				canonicalPath: `/publisher/${encodeURIComponent(route.owner)}`,
-			};
+			return { title: `${route.owner} DSH Plugins — ${SITE_NAME}`, description: zh ? `浏览发布者 ${route.owner} 在 DSH Plugin Market 中的 DeepSeek Harness 插件与可信扫描信息。` : `Explore DeepSeek Harness plugins and trust signals from publisher ${route.owner}.`, canonicalPath: `/publisher/${encodeURIComponent(route.owner)}` };
 		case "guide":
 			return guideSeo(route.slug, zh);
 		case "submit":
-			return {
-				title: `Submit a DSH Plugin — ${SITE_NAME}`,
-				description: zh
-					? "向 DSH Plugin Market 提交 DeepSeek Harness 插件仓库，进入发现、验证和可信扫描流程。"
-					: "Submit a DeepSeek Harness plugin repository to DSH Plugin Market for discovery, verification and trust scanning.",
-				canonicalPath: "/submit",
-			};
+			return { title: `Submit a DSH Plugin — ${SITE_NAME}`, description: zh ? "向 DSH Plugin Market 提交 DeepSeek Harness 插件仓库，进入发现、验证和可信扫描流程。" : "Submit a DeepSeek Harness plugin repository to DSH Plugin Market for discovery, verification and trust scanning.", canonicalPath: "/submit" };
 		case "about":
-			return {
-				title: `About ${SITE_NAME} — DeepSeek Harness Plugin Registry`,
-				description: zh
-					? "了解 DSH Plugin Market 如何发现、验证和评估 DeepSeek Harness 插件，以及 Format Verified 与安全信号的边界。"
-					: "Learn how DSH Plugin Market discovers, verifies and assesses DeepSeek Harness plugins and how to interpret its trust signals.",
-				canonicalPath: "/about",
-			};
+			return { title: `About ${SITE_NAME} — DeepSeek Harness Plugin Registry`, description: zh ? "了解 DSH Plugin Market 如何发现、验证和评估 DeepSeek Harness 插件，以及 Format Verified 与安全信号的边界。" : "Learn how DSH Plugin Market discovers, verifies and assesses DeepSeek Harness plugins and how to interpret its trust signals.", canonicalPath: "/about" };
 		case "trust":
+			return { title: `How ${SITE_NAME} Verifies Plugins — Trust Model`, description: zh ? "了解 DSH Plugin Market 如何进行格式验证、兼容性分析、安全信号扫描、维护状态判断，并将结果绑定到具体 commit。" : "Learn how DSH Plugin Market verifies plugin format, checks compatibility, surfaces security and maintenance signals, and binds evidence to a concrete commit.", canonicalPath: "/trust" };
+		case "whitepaper": {
+			const version = route.version === "latest" ? WHITEPAPER_LATEST : route.version;
+			const slug = route.slug ?? "overview";
 			return {
-				title: `How ${SITE_NAME} Verifies Plugins — Trust Model`,
-				description: zh
-					? "了解 DSH Plugin Market 如何进行格式验证、兼容性分析、安全信号扫描、维护状态判断，并将结果绑定到具体 commit。"
-					: "Learn how DSH Plugin Market verifies plugin format, checks compatibility, surfaces security and maintenance signals, and binds evidence to a concrete commit.",
-				canonicalPath: "/trust",
+				title: zh ? `DSH ${version} 开发者白皮书 — ${SITE_NAME}` : `DSH ${version} Developer Whitepaper — ${SITE_NAME}`,
+				description: zh ? "基于 DeepSeek Harness 官方源码与官方文档的版本化开发者白皮书，覆盖架构、运行机制与插件扩展。" : "Versioned DeepSeek Harness developer whitepaper sourced only from official code and documentation.",
+				canonicalPath: `/whitepaper/${encodeURIComponent(version)}/${encodeURIComponent(slug)}`,
 			};
+		}
+		case "whitepaper-versions":
+			return { title: `DSH Whitepaper Versions — ${SITE_NAME}`, description: zh ? "查看 DSH 开发者白皮书支持的完整版本快照。" : "Browse complete version snapshots of the DSH Developer Whitepaper.", canonicalPath: "/whitepaper/versions" };
 	}
 }
 

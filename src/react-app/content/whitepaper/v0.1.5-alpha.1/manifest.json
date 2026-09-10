@@ -1,0 +1,10 @@
+{
+  "version": "v0.1.5-alpha.1",
+  "upstreamRepo": "deepseek-ai/deepseek-harness",
+  "upstreamTag": "dsh-v0.1.5-alpha.1",
+  "upstreamCommit": "5dda764ed3aa172535a7967b06ff95d9cbfe536a",
+  "whitepaperRevision": 1,
+  "verifiedAt": "2026-09-10",
+  "sourcePolicy": "official-only",
+  "status": "preview"
+}

@@ -12,7 +12,9 @@ export type Route =
 	| { name: "submit" }
 	| { name: "about" }
 	| { name: "trust" }
-	| { name: "guide"; slug: GuideSlug };
+	| { name: "guide"; slug: GuideSlug }
+	| { name: "whitepaper"; version: string; slug?: string }
+	| { name: "whitepaper-versions" };
 
 export function parseRoute(pathname: string, search: string): Route {
 	const path = (pathname || "/").replace(/\/+$/, "") || "/";
@@ -22,6 +24,10 @@ export function parseRoute(pathname: string, search: string): Route {
 	if (segments.length === 1 && segments[0] === "plugins") return { name: "explore", query };
 	if (segments.length === 1 && segments[0] === "compare") return { name: "compare", query };
 	if (segments.length === 1 && segments[0] === "changes") return { name: "changes" };
+	if (segments.length === 1 && segments[0] === "whitepaper") return { name: "whitepaper", version: "latest" };
+	if (segments.length === 2 && segments[0] === "whitepaper" && segments[1] === "versions") return { name: "whitepaper-versions" };
+	if (segments.length === 2 && segments[0] === "whitepaper" && segments[1]) return { name: "whitepaper", version: segments[1] };
+	if (segments.length === 3 && segments[0] === "whitepaper" && segments[1] && segments[2]) return { name: "whitepaper", version: segments[1], slug: segments[2] };
 	if (segments.length === 2 && segments[0] === "plugins" && segments[1]) return { name: "landing", slug: segments[1] };
 	if (segments.length === 3 && segments[0] === "plugin" && segments[1] && segments[2]) return { name: "plugin", owner: segments[1], repo: segments[2] };
 	if (segments.length === 2 && segments[0] === "publisher" && segments[1]) return { name: "publisher", owner: segments[1] };

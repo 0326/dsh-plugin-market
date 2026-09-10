@@ -1,0 +1,6 @@
+[
+  { "id": "overview", "slug": "overview", "title": "DSH 全貌", "file": "00-overview.md" },
+  { "id": "composition", "slug": "composition", "title": "Cordis 与组合模型", "file": "01-composition.md" },
+  { "id": "runtime", "slug": "runtime", "title": "Agent 运行机制", "file": "04-runtime.md" },
+  { "id": "plugin-development", "slug": "plugin-development", "title": "插件开发与扩展面", "file": "12-plugin-development.md" }
+]
