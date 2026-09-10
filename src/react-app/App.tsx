@@ -18,6 +18,8 @@ const PluginDetail = lazy(() => import("./pages/PluginDetail"));
 const Publisher = lazy(() => import("./pages/Publisher"));
 const Submit = lazy(() => import("./pages/Submit"));
 const Trust = lazy(() => import("./pages/Trust"));
+const Whitepaper = lazy(() => import("./pages/Whitepaper"));
+const WhitepaperVersions = lazy(() => import("./pages/WhitepaperVersions"));
 
 function navClass(active: boolean): string {
 	return "btn btn-sm " + (active ? "bg-neutral text-neutral-content" : "btn-ghost");
@@ -47,7 +49,10 @@ function App() {
 
 	const isMarket = route.name === "explore" || route.name === "landing" || route.name === "compare" || route.name === "changes" || route.name === "plugin" || route.name === "publisher";
 	const isDocs = route.name === "guide" || route.name === "trust";
+	const isWhitepaper = route.name === "whitepaper" || route.name === "whitepaper-versions";
 	const docsLabel = lang === "zh" ? "文档" : "Docs";
+	const whitepaperLabel = lang === "zh" ? "白皮书" : "Whitepaper";
+	const mainClass = isWhitepaper ? "mx-auto w-full max-w-[1500px] flex-1 px-4 py-5 md:px-6" : "mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-6";
 
 	return (
 		<div className="app-frame flex min-h-screen flex-col bg-base-100 text-base-content">
@@ -63,6 +68,7 @@ function App() {
 					<a className={navClass(isMarket)} href="/plugins">{t("nav.explore")}</a>
 					<a className={navClass(route.name === "submit")} href="/submit">{t("nav.submit")}</a>
 					<a className={navClass(isDocs)} href="/guide/what-is-dsh-plugin">{docsLabel}</a>
+					<a className={navClass(isWhitepaper)} href="/whitepaper">{whitepaperLabel}</a>
 					<a className={navClass(route.name === "about")} href="/about">{t("nav.about")}</a>
 				</nav>
 				<div className="navbar-end gap-2">
@@ -74,6 +80,7 @@ function App() {
 							<li><a href="/plugins">{t("nav.explore")}</a></li>
 							<li><a href="/submit">{t("nav.submit")}</a></li>
 							<li><a href="/guide/what-is-dsh-plugin">{docsLabel}</a></li>
+							<li><a href="/whitepaper">{whitepaperLabel}</a></li>
 							<li><a href="/about">{t("nav.about")}</a></li>
 							<li><button type="button" onClick={toggleTheme}><Icon name={theme === "light" ? "moon" : "sun"} size={16} stroke={2} />{theme === "light" ? t("theme.dark") : t("theme.light")}</button></li>
 						</ul>
@@ -88,7 +95,7 @@ function App() {
 				</div>
 			</header>
 
-			<main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-6">
+			<main className={mainClass}>
 				<Suspense fallback={<div className="min-h-[40vh] animate-pulse border border-base-300 bg-base-200/40" aria-label="Loading" />}>
 				{route.name === "home" && <Home />}
 				{route.name === "explore" && <Explore key={route.query} query={route.query} />}
@@ -108,6 +115,8 @@ function App() {
 						<Trust />
 					</DocsLayout>
 				)}
+				{route.name === "whitepaper" && <Whitepaper key={`${route.version}/${route.slug ?? ""}`} route={route} />}
+				{route.name === "whitepaper-versions" && <WhitepaperVersions />}
 				{route.name === "about" && <About />}
 				</Suspense>
 			</main>
@@ -122,6 +131,7 @@ function App() {
 				</div>
 				<nav className="flex flex-wrap items-center gap-x-6 gap-y-3 md:justify-end" aria-label={t("footerLinks")}>
 					<a className="link-hover link" href="/guide/what-is-dsh-plugin">{docsLabel}</a>
+					<a className="link-hover link" href="/whitepaper">{whitepaperLabel}</a>
 					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/0326/dsh-plugin-market" target="_blank" rel="noreferrer"><Icon name="github" size={16} stroke={2} />{t("footerSource")}</a>
 					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noreferrer"><Icon name="external-link" size={14} stroke={2} />DeepSeek Harness</a>
 				</nav>

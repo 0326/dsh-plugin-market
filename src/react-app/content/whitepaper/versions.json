@@ -1,0 +1,12 @@
+{
+  "latestPublished": "v0.1.5-rc.1",
+  "versions": [
+    {
+      "id": "v0.1.5-rc.1",
+      "tag": "dsh-v0.1.5-rc.1",
+      "commit": "183f08e9c6dde7e36cd2318eaee70b0da08fb35e",
+      "releasedAt": "2026-09-10",
+      "status": "published"
+    }
+  ]
+}

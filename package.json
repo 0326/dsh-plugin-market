@@ -3,9 +3,7 @@
 	"description": "DSH Plugin Market — a trusted plugin registry for the DeepSeek Harness ecosystem",
 	"cloudflare": {
 		"label": "Vite React Template",
-		"products": [
-			"Workers"
-		],
+		"products": ["Workers"],
 		"categories": [],
 		"preview_icon_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/532a5378-9717-4964-385b-5fafd2160200/public",
 		"preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/ec7f4be5-d1d6-4e94-0851-126341745400/preview",
@@ -40,7 +38,7 @@
 	},
 	"private": true,
 	"scripts": {
-		"build": "tsc -b && vite build && node scripts/clean-build-secrets.mjs",
+		"build": "npm run whitepaper:validate && tsc -b && vite build && node scripts/clean-build-secrets.mjs",
 		"cf-typegen": "wrangler types",
 		"check": "npm run build && wrangler deploy --dry-run",
 		"deploy": "npm run build && wrangler deploy",
@@ -48,7 +46,8 @@
 		"lint": "eslint .",
 		"preview": "npm run build && vite preview",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"whitepaper:validate": "node scripts/whitepaper/validate-content.mjs"
 	},
 	"type": "module"
 }
