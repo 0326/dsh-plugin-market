@@ -1,7 +1,7 @@
-import overviewMarkdown from "../content/whitepaper/v0.1.5-alpha.1/00-overview.md?raw";
-import compositionMarkdown from "../content/whitepaper/v0.1.5-alpha.1/01-composition.md?raw";
-import runtimeMarkdown from "../content/whitepaper/v0.1.5-alpha.1/04-runtime.md?raw";
-import pluginsMarkdown from "../content/whitepaper/v0.1.5-alpha.1/12-plugin-development.md?raw";
+import overviewMarkdown from "../content/whitepaper/v0.1.5-rc.1/00-overview.md?raw";
+import compositionMarkdown from "../content/whitepaper/v0.1.5-rc.1/01-composition.md?raw";
+import runtimeMarkdown from "../content/whitepaper/v0.1.5-rc.1/04-runtime.md?raw";
+import pluginsMarkdown from "../content/whitepaper/v0.1.5-rc.1/12-plugin-development.md?raw";
 
 export interface WhitepaperSource {
 	path: string;
@@ -27,12 +27,12 @@ export interface WhitepaperVersion {
 	chapters: WhitepaperChapter[];
 }
 
-const V015: WhitepaperVersion = {
-	id: "v0.1.5-alpha.1",
-	label: "v0.1.5-alpha.1",
-	upstreamTag: "dsh-v0.1.5-alpha.1",
-	upstreamCommit: "5dda764ed3aa172535a7967b06ff95d9cbfe536a",
-	releasedAt: "2026-09-08",
+const V015RC1: WhitepaperVersion = {
+	id: "v0.1.5-rc.1",
+	label: "v0.1.5-rc.1",
+	upstreamTag: "dsh-v0.1.5-rc.1",
+	upstreamCommit: "183f08e9c6dde7e36cd2318eaee70b0da08fb35e",
+	releasedAt: "2026-09-10",
 	status: "published",
 	chapters: [
 		{
@@ -62,7 +62,7 @@ const V015: WhitepaperVersion = {
 			id: "runtime",
 			slug: "runtime",
 			title: "Agent 运行机制",
-			summary: "从 Inbox 到 Turn、Step、LLM Stream、Tool Execution 与 Session settlement。",
+			summary: "从 Inbox 到 Turn、Step、LLM Stream、Tool Execution、SessionHandle 与持久化 settlement。",
 			markdown: runtimeMarkdown,
 			sources: [
 				{ path: "docs/architecture.zh.md", label: "Turn flow" },
@@ -79,14 +79,15 @@ const V015: WhitepaperVersion = {
 			sources: [
 				{ path: "docs/architecture.zh.md", label: "Extension points" },
 				{ path: "docs/cookbook/extension-cookbook.zh.md", label: "Extension cookbook" },
+				{ path: "docs/subsystems/slots.zh.md", label: "Slot map" },
 				{ path: "packages/client/ui-slots/README.zh.md", label: "Client UI slots" },
 			],
 		},
 	],
 };
 
-export const WHITEPAPER_VERSIONS: WhitepaperVersion[] = [V015];
-export const WHITEPAPER_LATEST_VERSION = V015.id;
+export const WHITEPAPER_VERSIONS: WhitepaperVersion[] = [V015RC1];
+export const WHITEPAPER_LATEST_VERSION = V015RC1.id;
 
 export function resolveWhitepaperVersion(requested: string): WhitepaperVersion | undefined {
 	const id = requested === "latest" ? WHITEPAPER_LATEST_VERSION : requested;
