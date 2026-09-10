@@ -2,14 +2,44 @@
 
 > 面向开发者的 DeepSeek Harness（DSH）版本化技术白皮书。
 >
-> 本方案只定义白皮书产品与工程实现。白皮书的事实来源严格限定为 DeepSeek Harness 官方源码、官方文档、官方 Release / Tag / Commit，不使用社区文章、社区教程或第三方二次解读作为内容来源。
+> 白皮书事实来源严格限定为 DeepSeek Harness 官方源码、官方文档、官方 Release / Tag / Commit。社区文章、第三方教程、搜索摘要不进入采集、生成、引用和校验链路。
 
 - 所属项目：`0326/dsh-plugin-market`
 - 上游事实源：`deepseek-ai/deepseek-harness`
-- 形态：站内独立 Whitepaper 模块 + Markdown 内容仓库 + 版本快照 + 官方源同步流水线
-- 默认版本：最新已发布 DSH Release
-- 开发版本：可选 `next`，固定到官方 `master` 的具体 commit SHA
-- 文档状态：Technical Plan v1
+- 产品形态：站内独立 Whitepaper 模块 + Markdown 内容库 + 完整版本快照 + 持续更新流水线
+- 默认版本：最新**已验证并发布**的白皮书版本
+- 开发版本：可选 `next`，绑定官方 `master` 的具体 Commit SHA
+- 文档状态：Technical Plan v2
+
+---
+
+## 0. 本项目特点
+
+本白皮书不是官方文档镜像，也不是一次性技术长文。它围绕“快速理解 DSH、准确定位源码、持续跟随版本”设计。
+
+### 0.1 官方事实源唯一
+
+所有架构结论、运行机制、接口说明和版本变化都必须能回溯到同一 DSH 版本的官方源码或官方文档。AI 只参与归纳、改写和结构化，不产生无官方依据的技术事实。
+
+### 0.2 整体版本切换
+
+每个 DSH Release 对应一套完整白皮书快照。切换版本时，目录、正文、架构图、源码链接、接口说明和版本演进同时切换，不采用“最新正文 + 局部旧版本补丁”的混合模式。
+
+### 0.3 从全貌进入源码
+
+内容按“全貌 → 机制 → 模块 → 接口 → 源码入口”组织。首页用于建立完整心智模型，模块页用于按需深入，不重复搬运完整 API Reference。
+
+### 0.4 架构图是一等内容
+
+复杂结构统一使用 Mermaid 源码维护，并构建为 SVG。架构图、时序图、状态图与正文一起版本化；不使用 ASCII / 文本线条图。
+
+### 0.5 内容与工程共同版本化
+
+Markdown、图、来源清单、版本 Manifest、校验结果均进入 Git。任一版本都可以定位到对应 DSH Tag / Commit 和白皮书修订记录。
+
+### 0.6 持续生成而非持续手工维护
+
+GitHub Action 负责版本检测、Diff、影响分析输入、校验和 PR 编排；Codex 定时任务负责读取官方材料并生成或修订正文与 Mermaid；最终通过 CI 和 Review 发布。更新链路既能自动运行，也保留明确的人审门禁。
 
 ---
 
@@ -20,9 +50,9 @@
 1. **快速建立全貌**：先理解 DSH 的组成、边界和关键概念，再按模块进入源码级说明。
 2. **理解运行机制**：完整说明 DSH 从启动、Profile 组装、Agent 创建、Turn / Step、LLM、Tool、Session Event 到 UI 投影的运行链路。
 3. **理解开放能力**：说明 Plugin、Service、Event、Capability Seam、Preset、Hooks、Client Slot、SDK 等扩展面，以及各扩展点的适用范围。
-4. **保持版本一致**：每个 DSH Release 对应完整白皮书快照。切换版本后，目录、正文、架构图、源码链接、API 说明、版本演进全部切换到同一版本。
+4. **保持版本一致**：每个支持版本是一套完整内容快照，可独立阅读、验证、引用和回滚。
 
-白皮书不是 DSH 官方文档的镜像，也不逐页翻译官方文档。它提供开发者需要的结构化认知路径，并且每一个技术事实都能回到对应版本的官方材料验证。
+白皮书提供开发者认知路径和源码导航，不替代官方 API Reference。
 
 ---
 
@@ -35,40 +65,36 @@
 - `github.com/deepseek-ai/deepseek-harness` 下的源码；
 - 同仓库 `docs/`、`packages/**/README*`、`.agents/notes/implemented/**` 等官方维护内容；
 - 同仓库 Release、Tag、Commit、Compare；
-- DeepSeek Harness 官方文档站，且内容可回溯到上述官方仓库。
+- DeepSeek Harness 官方文档站，且内容可回溯到官方仓库。
 
 不允许：
 
 - 社区白皮书；
-- 博客、知乎、公众号、论坛；
+- 博客、论坛、公众号等二次资料；
 - 第三方 DSH 教程；
 - 搜索结果摘要；
-- 无法定位到官方版本的二次转述。
-
-社区内容可以帮助发现问题，但不能进入白皮书的采集、生成、引用和校验链路。
+- 无法定位到官方版本的转述。
 
 ### 2.2 版本一致性优先于内容复用
 
-白皮书不采用“公共正文 + 局部版本差异”的模型。每个版本拥有一套完整内容快照。
+每个版本拥有完整内容快照。任何页面在当前版本不存在时：
 
-任何页面在当前版本不存在时：
-
-- 不从其他版本读取正文；
-- 不显示其他版本的架构图；
+- 不读取其他版本正文；
+- 不复用其他版本架构图；
 - 不复用其他版本源码链接；
-- 明确提示“该章节在此版本尚不存在”，并提供该版本目录入口。
+- 返回当前版本首页或对应上级章节，并提示该章节在此版本不存在。
 
 ### 2.3 面向阅读，不面向展示
 
 正文要求：
 
-- 先给定义，再给机制，再给接口和源码入口；
+- 先定义，再说明机制，再给接口和源码入口；
 - 一个段落只表达一个主题；
-- 优先图、表、接口和调用链，减少重复解释；
-- 避免“我们来看看”“可以想象成”“简单来说”“本质上就是”等对话式、AI 式铺垫；
-- 不为了完整而重复官方 API Reference；
-- 不使用 ASCII / 文本线条架构图；
-- 复杂结构统一使用 Mermaid 或正式图片资源。
+- 图、表、接口、调用链优先；
+- 不使用对话式铺垫和无信息量总结；
+- 不为了完整重复官方 Reference；
+- 不用不准确类比换取“易懂”；
+- 复杂结构使用 Mermaid / SVG。
 
 ### 2.4 可验证
 
@@ -76,11 +102,20 @@
 
 - DSH 版本；
 - 官方 Tag / Commit SHA；
-- 官方来源文件；
-- 白皮书内容修订号；
+- 官方来源；
+- 内容状态；
+- 白皮书修订号；
 - 最后验证时间。
 
-CI 校验来源、版本和正文之间的一致性。
+### 2.5 AI 不直接决定发布
+
+AI 可以生成正文、图、摘要和迁移说明，但不能绕过：
+
+- 官方来源约束；
+- 版本一致性校验；
+- Markdown / Mermaid 构建校验；
+- 内容状态门禁；
+- PR Review。
 
 ---
 
@@ -90,28 +125,26 @@ CI 校验来源、版本和正文之间的一致性。
 
 **白皮书 / Whitepaper**
 
-不归入现有“文档 / Docs”二级目录。现有 Docs 面向插件市场使用说明；Whitepaper 面向 DSH 架构与开发者学习，两者信息边界不同。
+Whitepaper 不放入现有 Docs 二级目录。现有 Docs 面向插件市场使用说明；Whitepaper 面向 DSH 架构、运行机制和插件开发。
 
-建议路由：
+### 3.1 路由
 
 | 路由 | 含义 |
 |---|---|
-| `/whitepaper` | 跳转到最新已发布版本首页 |
+| `/whitepaper` | 跳转到最新已发布白皮书版本 |
 | `/whitepaper/latest` | 最新已发布版本别名 |
-| `/whitepaper/next` | 官方 master 开发快照，可选 |
+| `/whitepaper/next` | 官方 master 开发快照 |
 | `/whitepaper/:version` | 指定版本首页 |
 | `/whitepaper/:version/:slug` | 指定版本章节 |
-| `/whitepaper/versions` | 版本列表与发布时间 |
+| `/whitepaper/versions` | 版本列表 |
 
-推荐 canonical URL 始终使用明确版本：
+Canonical URL 始终使用明确版本：
 
-`/whitepaper/v0.1.5-alpha.1/architecture`
+`/whitepaper/v0.1.5-alpha.1/runtime`
 
-`latest` 只负责解析当前最新版本，不作为长期 canonical 地址。
+`latest` 仅用于导航，不作为长期 canonical。
 
-### 3.1 白皮书目录
-
-第一版建议固定为以下主目录。版本变化时允许章节增删，但同一版本目录必须自洽。
+### 3.2 白皮书目录
 
 | 章节 | 目标 |
 |---|---|
@@ -120,39 +153,37 @@ CI 校验来源、版本和正文之间的一致性。
 | 02. 启动与配置组装 | CLI、Profile、Bundle、Patch、Plugin Tree |
 | 03. Agent Core | Session、System Prompt、Tools、Agent、Agent Loop |
 | 04. 运行机制 | Inbox、Turn、Step、Request、Stream、Tool、Stop |
-| 05. Session 与状态 | Durable Event Log、Projection、Persistence、Fork、Migration |
+| 05. Session 与状态 | Event Log、Projection、Persistence、Fork、Migration |
 | 06. Capability Seam | Definition、Provider、Consumer 与替换边界 |
 | 07. 核心能力模块 | LLM、FS、Shell、Terminal、LSP、Skill、Web、Sandbox 等 |
 | 08. Preset 与 Agent 组装 | per-session preset、scope、persona、tool presentation |
-| 09. Subagent / Workflow / Jobs | 多 Agent、工作流和后台任务 |
+| 09. Subagent / Workflow / Jobs | 多 Agent、工作流、后台任务 |
 | 10. Hooks 与拦截 | Agent / Tool events、Claude Code / Codex hooks |
 | 11. Web 架构 | Host、RPC、Client Model、UI Slot、Conversation |
 | 12. 插件开发 | 插件结构、依赖、生命周期、调试、发布 |
 | 13. 扩展能力地图 | Tool / Provider / UI / Prompt / Command / Persistence 等 |
-| 14. SDK / ACP / Webhook | 外部系统接入方式 |
+| 14. SDK / ACP / Webhook | 外部系统接入 |
 | 15. 安全与权限 | Interaction、Approval、Permission、Sandbox、Guard |
 | 16. 调试与观测 | Config dump、Session log、diagnostics、事件定位 |
-| 17. 版本演进 | 当前版本相对上一版本的结构与 API 变化 |
+| 17. 版本演进 | 当前版本相对上一支持版本的结构与 API 变化 |
 
-首页只展示核心路径，不把全部章节一次性展开为长列表。
+首页展示核心学习路径和全景架构，不把全部章节平铺成长列表。
 
 ---
 
 ## 4. 版本模型
 
-### 4.1 版本是完整内容快照
-
-每个版本使用独立目录：
+### 4.1 完整版本快照
 
 ```text
 content/whitepaper/
+  source-registry.json
+  upstream-map.yml
   versions.json
   v0.1.3-alpha.2/
     manifest.json
     nav.json
     00-overview.md
-    01-cordis.md
-    02-boot.md
     ...
     17-evolution.md
   v0.1.5-alpha.1/
@@ -166,26 +197,51 @@ content/whitepaper/
     ...
 ```
 
-`versions.json` 只保存版本索引：
+### 4.2 上游最新版本与白皮书最新版本分离
+
+不能在检测到新 DSH Release 后立即修改 `/whitepaper/latest`。
+
+`versions.json` 同时记录：
+
+- `upstreamLatest`：官方已检测到的最新 Release；
+- `latestPublished`：白皮书已经验证并发布的最新版本。
 
 ```json
 {
-  "latest": "v0.1.5-alpha.1",
+  "upstreamLatest": "v0.1.6-alpha.1",
+  "latestPublished": "v0.1.5-alpha.1",
   "versions": [
     {
+      "id": "v0.1.6-alpha.1",
+      "status": "drafting"
+    },
+    {
       "id": "v0.1.5-alpha.1",
-      "tag": "dsh-v0.1.5-alpha.1",
-      "commit": "<official-sha>",
-      "releasedAt": "2026-09-08",
-      "status": "release"
+      "status": "published"
     }
   ]
 }
 ```
 
-### 4.2 Manifest
+只有 `published` 版本可以成为 `latestPublished`。
 
-每个版本必须有 `manifest.json`：
+### 4.3 版本生命周期
+
+```text
+detected
+  -> preparing
+  -> drafting
+  -> review
+  -> verified
+  -> published
+```
+
+异常状态：
+
+- `blocked`：官方材料不足、构建失败或存在未处理 Breaking Change；
+- `superseded`：开发态 `next` 已被正式 Release 替代。
+
+### 4.4 Manifest
 
 ```json
 {
@@ -193,86 +249,94 @@ content/whitepaper/
   "upstreamRepo": "deepseek-ai/deepseek-harness",
   "upstreamTag": "dsh-v0.1.5-alpha.1",
   "upstreamCommit": "<sha>",
-  "whitepaperRevision": 1,
+  "whitepaperRevision": 2,
+  "status": "published",
   "verifiedAt": "2026-09-10T00:00:00Z",
   "sourcePolicy": "official-only"
 }
 ```
 
-DSH version 和白皮书修订号分离。修正文案错误时可以增加 `whitepaperRevision`，但不能改变该版本绑定的上游 commit。
+DSH 版本和白皮书修订号分离。修正文案时增加 `whitepaperRevision`，不改变绑定的上游 Tag / Commit。
 
-### 4.3 页面 Frontmatter
+### 4.5 稳定 Chapter ID
+
+章节使用稳定 `chapterId`，slug 只负责 URL：
 
 ```yaml
 ---
-title: Agent 运行机制
+chapter_id: runtime
 slug: runtime
+title: Agent 运行机制
 order: 4
 dsh_version: v0.1.5-alpha.1
 upstream_tag: dsh-v0.1.5-alpha.1
 upstream_commit: <sha>
+status: verified
 verified_at: 2026-09-10
 sources:
-  - path: docs/architecture.zh.md
-  - path: docs/agent-lifecycle.md
-  - path: packages/core/agent-loop/README.zh.md
+  - id: architecture
+    path: docs/architecture.zh.md
+  - id: lifecycle
+    path: docs/agent-lifecycle.md
+  - id: agent-loop
+    path: packages/core/agent-loop/README.zh.md
 ---
 ```
 
-来源链接由渲染层根据 `upstream_tag` 自动拼成固定版本 GitHub URL，正文作者不手写 master 链接。
+版本切换以 `chapterId` 查找目标版本对应页面。这样即使某个版本更改 slug，仍能跳到同一概念章节。
 
 ---
 
 ## 5. 版本切换机制
 
-版本选择器固定在 Whitepaper Header 中。
+切换过程：
 
-切换逻辑：
-
-1. 当前 URL 为 `/whitepaper/vA/runtime`；
-2. 用户切换到 `vB`；
-3. 路由尝试进入 `/whitepaper/vB/runtime`；
-4. 若 `runtime` 在 vB 存在，加载 vB 的正文、目录、来源、架构图；
-5. 若不存在，进入 `/whitepaper/vB`，并提示该章节在 vB 不存在；
-6. 禁止任何跨版本正文 fallback。
+1. 当前页面解析为 `version + chapterId`；
+2. 用户选择目标版本；
+3. 读取目标版本 `nav.json`；
+4. 根据 `chapterId` 找目标 slug；
+5. 存在则加载目标版本完整页面资产；
+6. 不存在则进入目标版本首页并提示该模块在该版本尚不存在；
+7. 不进行任何跨版本正文 fallback。
 
 ```mermaid
 flowchart LR
-    A[Current version + slug] --> B[Select target version]
-    B --> C{Slug exists in target manifest?}
-    C -- Yes --> D[Load target nav + markdown + sources]
-    C -- No --> E[Open target version overview]
-    D --> F[Render one coherent version snapshot]
-    E --> F
+    A[Current version + chapterId] --> B[Select target version]
+    B --> C[Load target manifest + nav]
+    C --> D{chapterId exists?}
+    D -- Yes --> E[Resolve target slug]
+    D -- No --> F[Open target overview]
+    E --> G[Load target markdown + SVG + sources]
+    F --> G
 ```
 
-浏览器可记录用户最近使用版本，但从外部打开明确版本 URL 时，以 URL 为准。
+浏览器可以记录最近使用版本，但明确版本 URL 始终优先。
 
 ---
 
 ## 6. 内容渲染架构
 
-### 6.1 技术选型
+### 6.1 Markdown 技术栈
 
-当前项目为 React + Vite，白皮书继续使用现有前端工程，不引入独立文档框架。
+当前项目继续使用 React + Vite，不引入独立文档框架。
 
 建议增加：
 
 - `react-markdown`：Markdown → React；
-- `remark-gfm`：表格、任务列表、脚注等 GFM；
-- `remark-frontmatter`：识别 Frontmatter；
-- `gray-matter`：构建期读取 metadata；
+- `remark-gfm`：GFM；
+- `remark-frontmatter`：Frontmatter；
+- `gray-matter`：构建期读取 Metadata；
 - `rehype-slug`：标题锚点；
 - `rehype-autolink-headings`：标题链接；
-- `mermaid`：Markdown 内架构图；
 - `shiki`：代码高亮；
-- `minisearch`：可选，P1 用于版本内全文搜索。
+- Mermaid 构建工具：将 fenced Mermaid 转换为 SVG；
+- `minisearch`：P1 版本内全文搜索。
 
-不启用任意 HTML 直通。Markdown 中的 HTML 默认不执行，减少 XSS 和样式污染。
+Markdown 不开启任意 HTML 直通。
 
-### 6.2 Markdown 架构图
+### 6.2 Mermaid 构建为 SVG
 
-架构图统一使用 Mermaid fenced code：
+Markdown 仍以 Mermaid 作为图的源码：
 
 ````markdown
 ```mermaid
@@ -283,62 +347,54 @@ flowchart LR
 ```
 ````
 
-渲染为 SVG，不显示原始文本线条图。
+推荐在构建阶段解析 Mermaid 并生成 SVG，而不是在页面运行时加载完整 Mermaid Runtime。
 
-允许的图类型：
+收益：
 
-- `flowchart`：架构和数据流；
-- `sequenceDiagram`：Turn / Step / Tool 调用链；
-- `stateDiagram-v2`：Session / Agent 状态；
-- `classDiagram`：核心接口关系；
-- `gitGraph`：版本演进，仅在表达确有价值时使用。
+- 首屏更轻；
+- 图无需等待客户端二次渲染；
+- 静态预渲染和 SEO 更稳定；
+- SVG 可以直接放大、复制和缓存；
+- Mermaid 语法错误在 CI 阶段暴露。
 
-Mermaid 使用单独的 Whitepaper Theme Variables，跟随站点明暗主题。图支持：
+允许图类型：
 
-- 点击放大；
-- 横向滚动兜底；
-- SVG 清晰缩放；
-- 移动端自适应；
-- 复制 Mermaid 源码；
-- 可选下载 SVG。
+- `flowchart`：架构、数据流；
+- `sequenceDiagram`：运行时序；
+- `stateDiagram-v2`：状态模型；
+- `classDiagram`：接口关系；
+- `gitGraph`：版本演进。
 
-### 6.3 加载方式
+不使用 Mermaid 默认视觉主题。构建阶段注入 Whitepaper Light / Dark Theme Variables，并保留必要的响应式属性。
 
-Vite 构建时使用 `import.meta.glob` 收集：
-
-`content/whitepaper/**/*.md`
-
-构建阶段生成：
+### 6.3 构建产物
 
 ```text
 src/generated/whitepaper/
   versions.generated.json
   nav.generated.json
-  search-index.generated.json
+  content-manifest.generated.json
+  search-index/
+  diagrams/
 ```
 
-运行时只加载当前版本当前章节，避免把所有版本 Markdown 打入首屏 bundle。
+构建流程：
 
 ```mermaid
 flowchart TD
-    A[Versioned Markdown] --> B[Build content index]
-    B --> C[Version manifest]
-    B --> D[Navigation index]
-    B --> E[Search index]
-    C --> F[Whitepaper Router]
-    D --> F
-    F --> G[Load current Markdown only]
-    G --> H[React Markdown Renderer]
-    H --> I[Mermaid SVG]
-    H --> J[Shiki Code]
-    H --> K[Tables / Notes / Source Links]
+    A[Versioned Markdown] --> B[Parse Frontmatter]
+    B --> C[Validate version and source metadata]
+    C --> D[Compile Mermaid to SVG]
+    D --> E[Build nav / TOC / source index]
+    E --> F[Build version search index]
+    F --> G[Whitepaper page bundle]
 ```
+
+正文按当前版本、当前章节懒加载，不把所有历史版本打进首屏 Bundle。
 
 ---
 
 ## 7. 前端模块设计
-
-建议新增：
 
 ```text
 src/react-app/
@@ -351,7 +407,7 @@ src/react-app/
     WhitepaperHeader.tsx
     VersionSelector.tsx
     MarkdownRenderer.tsx
-    MermaidDiagram.tsx
+    Diagram.tsx
     CodeBlock.tsx
     TableOfContents.tsx
     OfficialSources.tsx
@@ -361,18 +417,14 @@ src/react-app/
   whitepaper.css
 ```
 
-### 7.1 路由
+### 7.1 Router
 
-扩展现有轻量 Router，不引入 React Router。
-
-新增 Route：
+扩展现有轻量 Router，不引入 React Router：
 
 ```ts
 | { name: "whitepaper"; version: string; slug?: string }
 | { name: "whitepaper-versions" }
 ```
-
-路由解析由 `versions.generated.json` 校验合法版本和 slug。
 
 ### 7.2 Layout
 
@@ -380,68 +432,59 @@ src/react-app/
 
 - 左侧：章节导航；
 - 中间：正文；
-- 右侧：当前页目录 / 官方来源；
-- 顶部：白皮书标题、版本选择器、当前版本状态。
+- 右侧：本页目录 + 官方来源；
+- 顶部：Whitepaper 标识 + 版本选择器 + 当前版本状态。
 
-正文宽度控制在约 `760–820px`，避免沿用插件市场卡片式高密度布局。
+正文宽度控制在 `760–820px`。
 
 移动端：
 
-- 左侧目录收进 Drawer；
-- 右侧 TOC 收进“本页目录”；
+- 左侧目录进入 Drawer；
+- 右侧 TOC 折叠为“本页目录”；
 - 版本切换始终可见；
-- Mermaid 超宽图允许横向滚动和全屏查看。
+- 超宽 SVG 支持横向滚动和全屏查看。
 
 ---
 
 ## 8. 视觉与阅读规范
 
-Whitepaper 与主站共享：
+Whitepaper 复用主站 Header、Theme、语言基础设施和 Footer，但使用独立阅读主题。
 
-- 顶部品牌 Header；
-- 明暗主题；
-- 语言切换基础设施；
-- 全站导航和 Footer。
+### 8.1 字体与排版
 
-Whitepaper 内部使用独立阅读主题：
+不额外引入大型字体资源。优先使用系统字体栈：
 
-### 8.1 排版
+- 正文：`-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`；
+- 章节大标题：`ui-serif, "Songti SC", "STSong", serif`；
+- Code：系统等宽字体。
 
-- 正文：16–18px，中文行高约 1.75；
-- 正文最大宽度：760–820px；
-- H1 / H2 有明显层级，但减少大面积装饰；
-- 中文正文优先系统无衬线字体；
-- 大标题可使用开源中文衬线字体的精简子集，形成与主站的轻度区分；
-- Code 使用等宽字体；
-- 表格保留足够行距，默认不做密集数据表样式。
+规范：
+
+- 正文 16–18px；
+- 中文行高约 1.75；
+- 正文最大宽度 760–820px；
+- H1 / H2 层级明确，不做营销式大标题；
+- 表格保留足够行距；
+- 代码块、接口和图是主要视觉信息。
 
 ### 8.2 视觉语言
 
-避免：
+采用 Editorial / Technical Manual 风格：
 
-- 大面积营销渐变；
-- Dashboard 式卡片堆叠；
-- 过多 Badge；
-- 高饱和背景；
-- ASCII 架构图；
-- Mermaid 默认主题直接裸用。
-
-推荐：
-
-- Editorial / Technical Manual 风格；
 - 大留白；
 - 细分隔线；
 - 低对比辅助文字；
-- 代码、接口、架构图作为主要视觉信息；
-- Note / Warning / Version Change 只使用少量固定语义样式。
+- 固定 Note / Warning / Version Change 语义样式；
+- 不堆 Dashboard 卡片；
+- 不使用大面积渐变、高饱和背景和装饰 Badge。
 
-### 8.3 页面固定结构
+### 8.3 页面结构
 
-模块型章节尽量采用统一结构：
+模块型章节优先采用：
 
 1. 定义
-2. 解决的问题
-3. 架构位置
+2. 架构位置
+3. 解决的问题
 4. 运行机制
 5. 核心接口 / Event / Service
 6. 与其他模块的关系
@@ -450,56 +493,46 @@ Whitepaper 内部使用独立阅读主题：
 9. 当前版本变化
 10. 官方来源
 
-不是每页强制十段；无信息的段落直接省略，不填充模板化文字。
+没有内容的部分直接省略，不为模板完整度填充文字。
 
 ---
 
 ## 9. 内容写作规范
 
-白皮书需要“深入浅出”，但不使用对话式解释。
+### 9.1 写法
 
-### 9.1 推荐写法
+每节开头用 1–2 句给出定义或结论，随后直接进入机制、图和接口。
 
-定义：
+示例：
 
 > `Agent Loop` 是 DSH 默认的 Agent Driver，负责推进 Turn / Step 生命周期，并协调 Request、LLM Stream、Tool Execution 和 Session Event 的提交。
-
-随后直接进入生命周期图和接口关系。
 
 ### 9.2 禁止写法
 
 避免：
 
-- “让我们先来理解一下……”；
-- “你可以把它想象成……”；
-- “简单来说……”连续出现；
+- “让我们先来理解一下”；
+- “你可以把它想象成”；
+- “简单来说”反复出现；
 - “这就是 DSH 强大的地方”；
-- 无依据的优劣评价；
+- 无官方依据的优劣评价；
 - 同义反复；
-- 为了显得易懂而引入不准确类比。
+- 为了易懂引入不准确类比；
+- 总结型空话和宣传文案。
 
 ### 9.3 信息密度
 
-- 每节开头 1–2 句给结论；
 - 一般段落不超过 4 句；
-- 能用表格说明模块边界时，不写长段落；
-- 能用时序图说明调用链时，不重复写完整步骤列表；
-- API 只展示理解机制所需的关键签名；
-- 细节通过“源码入口 / 官方来源”继续深入。
+- 模块边界优先用表格；
+- 调用链优先用时序图；
+- API 只展示理解机制所需的签名；
+- 细节通过源码入口继续深入。
 
 ---
 
-## 10. 官方来源追踪与校验
+## 10. 官方来源追踪
 
 ### 10.1 Source Registry
-
-新增：
-
-```text
-content/whitepaper/source-registry.json
-```
-
-记录允许的上游：
 
 ```json
 {
@@ -512,102 +545,145 @@ content/whitepaper/source-registry.json
 }
 ```
 
-CI 不接受其他 source host / repository。
+CI 拒绝其他仓库或 Host 作为白皮书事实来源。
 
-### 10.2 Pin 到版本
+### 10.2 固定版本
 
-所有 GitHub 源码链接必须指向：
+Release 页面中的源码链接必须指向：
 
-- Release Tag；或
-- 对应 Manifest 的 commit SHA。
+- 对应 Release Tag；或
+- Manifest 中的 Commit SHA。
 
-禁止白皮书发布页引用 `master` 作为 release 版本事实依据。
+禁止正式版本正文引用浮动 `master`。
 
-`next` 是唯一允许绑定 `master` 的通道，但实际仍保存同步时的精确 commit SHA。
+`next` 可以跟踪官方 `master`，但每次快照必须记录精确 SHA。
 
-### 10.3 校验脚本
+### 10.3 Source Manifest
 
-新增：
+不需要把整个 DSH 仓库复制进本站。每个版本生成 `source-manifest.json`，记录实际引用文件及其 Blob SHA：
 
-```text
-scripts/whitepaper/
-  build-content.mjs
-  validate-content.mjs
-  sync-upstream.mjs
-  diff-upstream.mjs
-  build-search-index.mjs
+```json
+{
+  "upstreamCommit": "<sha>",
+  "files": [
+    {
+      "path": "docs/architecture.zh.md",
+      "blob": "<blob-sha>"
+    }
+  ]
+}
 ```
 
-`validate-content.mjs` 至少检查：
+这样可以验证来源没有漂移，同时避免维护上游源码副本。
 
-- Frontmatter 必填字段；
-- 页面 DSH version 与目录版本一致；
-- upstream tag / commit 与 manifest 一致；
-- source repository 在 allowlist；
-- source path 在对应官方 tag 中真实存在；
-- 不存在跨版本 include；
-- Mermaid syntax 可解析；
-- 内部链接目标存在；
-- release 页面无 `master` 源链接；
-- 页面不存在社区来源链接作为 citation。
+### 10.4 章节级引用
+
+Frontmatter 给出章节全部官方来源；关键定义、Breaking Change 和 API 行为可以使用 source id 做节级引用。渲染器统一生成固定 Tag / SHA 链接，正文不手写浮动 GitHub URL。
 
 ---
 
-## 11. 官方更新同步机制
+## 11. GitHub Action + Codex 内容生成闭环
 
-白皮书同时跟踪两个官方变化面：
+更新链路分成三个职责层：
 
-1. **Release / Tag**：产生新的可切换正式白皮书版本；
-2. **master / 官方文档更新**：更新 `next`，提前识别架构变化。
+1. **GitHub Action：工程编排**；
+2. **Codex 定时任务：内容生成与修订**；
+3. **CI + Review：验证与发布**。
 
-### 11.1 更新流水线
-
-新增 GitHub Action：
+### 11.1 GitHub Action 负责什么
 
 `.github/workflows/whitepaper-upstream-sync.yml`
 
-建议每 6 小时检查一次，也支持手动触发。
+建议：
+
+- Release 检查：每 6 小时；
+- `next` / master 检查：每天或按实际更新频率调整；
+- 支持手动触发。
+
+Action 只处理确定性的工程任务：
+
+- 检测官方 Release / Tag / Commit；
+- 获取 Tag Compare；
+- 扫描 package / docs / API 文件变化；
+- 根据 Impact Map 标记受影响章节；
+- 创建新版本目录和 Manifest；
+- 生成 `impact.json` / `source-manifest.json`；
+- 创建或更新 Draft PR；
+- 运行来源、版本、Markdown、Mermaid、链接校验；
+- 构建预览站点。
+
+Action 不负责写技术正文。
+
+### 11.2 Codex 定时任务负责什么
+
+Codex 定时任务周期性检查带指定 Label 的 Whitepaper Draft PR，例如：
+
+`whitepaper:needs-content`
+
+读取输入仅限：
+
+- 当前版本官方 Tag / Commit；
+- 上一支持版本官方 Tag / Commit；
+- `impact.json`；
+- 当前白皮书版本内容；
+- `source-registry.json` 和 `upstream-map.yml`。
+
+任务负责：
+
+- 判断变化是否影响已有架构描述；
+- 更新受影响正文；
+- 新增 / 删除能力说明；
+- 更新 Mermaid 图；
+- 生成版本演进章节；
+- 更新 Frontmatter sources；
+- 对复制自上一版本的章节重新验证；
+- 执行内容校验；
+- 将结果提交到 Draft PR 分支。
+
+生成规则写成仓库内固定 Prompt / Skill，不依赖临时聊天上下文。
+
+建议新增：
+
+```text
+.agents/whitepaper/
+  WRITING_RULES.md
+  SOURCE_POLICY.md
+  UPDATE_PLAYBOOK.md
+  REVIEW_CHECKLIST.md
+```
+
+### 11.3 PR 状态机
 
 ```mermaid
 flowchart TD
-    A[Scheduled / Manual Trigger] --> B[Read official DSH releases and master SHA]
-    B --> C{New release?}
-    C -- Yes --> D[Fetch official tag snapshot]
-    D --> E[Generate upstream diff and impact report]
-    E --> F[Create new full whitepaper version workspace]
-    F --> G[Validate official sources]
-    G --> H[Open update PR]
-    C -- No --> I{master SHA changed?}
-    I -- Yes --> J[Refresh next source snapshot]
-    J --> K[Generate next impact report]
-    K --> L[Open / update next PR]
+    A[Action detects official change] --> B[Create update branch]
+    B --> C[Generate source manifest + impact report]
+    C --> D[Open Draft PR: needs-content]
+    D --> E[Codex scheduled task]
+    E --> F[Update markdown + diagrams + evolution]
+    F --> G[CI validation]
+    G --> H{Pass?}
+    H -- No --> E
+    H -- Yes --> I[PR: needs-review]
+    I --> J[Human review]
+    J --> K{Approved?}
+    K -- No --> E
+    K -- Yes --> L[Merge]
+    L --> M[Mark version published]
+    M --> N[Update latestPublished]
 ```
 
-### 11.2 自动化边界
+### 11.4 为什么分两层自动化
 
-允许自动完成：
+Action 擅长检测、Diff、构建、校验和 PR 生命周期；正文生成需要理解多个官方文件之间的语义关系，应由具备代码库阅读能力的 Agent 完成。两者通过 Git 分支、Manifest、Impact Report 和 PR 状态交接，不把生成逻辑塞进 CI 脚本。
 
-- 检测 Release / Tag / Commit；
-- 获取官方文件；
-- 生成两个版本的源码 diff；
-- 生成 package / service / event / tool 变化清单；
-- 创建新版本目录骨架；
-- 复制未受影响章节作为“待验证副本”；
-- 标记受影响章节；
-- 运行来源校验；
-- 创建 PR。
+---
 
-不直接自动 merge 白皮书正文。
-
-原因：DSH 当前处于快速演进阶段，源码变化可能改变概念边界。仅根据文件 diff 自动改写正文容易产生语义漂移。
-
-### 11.3 Impact Map
+## 12. Impact Map 与变化分析
 
 维护：
 
 `content/whitepaper/upstream-map.yml`
-
-示例：
 
 ```yaml
 chapters:
@@ -626,49 +702,57 @@ chapters:
     - docs/subsystems/web-client*.md
 ```
 
-上游变更后先通过路径映射得到受影响章节，再做语义 Review。
+Action 先通过路径映射生成候选影响集；Codex 再做语义判断。
+
+`impact.json` 建议记录：
+
+```json
+{
+  "from": "dsh-v0.1.5-alpha.1",
+  "to": "dsh-v0.1.6-alpha.1",
+  "changedFiles": [],
+  "candidateChapters": [],
+  "releaseNotes": [],
+  "breakingCandidates": []
+}
+```
+
+Impact Map 是加速器，不是事实判断器。未命中映射的新目录、新包仍必须进入“未归类变化”列表，防止新增架构能力被漏掉。
 
 ---
 
-## 12. 新版本生成策略
+## 13. 新版本生成策略
 
-新 Release 出现时，不从空白开始，也不直接复用旧版本运行时内容。
+新 Release 出现后：
 
-流程：
-
-1. 创建新版本完整目录；
-2. 复制上一版本内容，状态统一改为 `needs-verification`；
-3. 对比官方两个 Tag；
-4. 根据 Impact Map 标记章节：
-   - `unchanged-source`
-   - `source-changed`
-   - `new-capability`
-   - `removed-capability`
-   - `breaking-change`
-5. 逐章重新绑定新版本 official source；
+1. Action 创建新版本完整目录；
+2. 复制上一版本正文，所有章节状态改为 `needs-verification`；
+3. 固定新 Tag / Commit；
+4. 生成官方 Tag Compare、Source Manifest 和 Impact Report；
+5. Codex 重新验证每章来源；
 6. 受影响章节更新正文和 Mermaid；
-7. 未受影响章节也必须通过新 Tag 的 source existence 校验；
-8. 生成“版本演进”章节；
-9. 全量校验；
-10. Review 后发布。
+7. 新能力增加新章节或扩展现有章节；
+8. 删除能力在对应版本正文中删除，并记录到 Evolution；
+9. 生成版本演进章节；
+10. 所有章节状态达到 `verified`；
+11. CI 全量通过；
+12. Review 后发布。
 
-因此“完整版本快照”不会导致每次全量重写，同时避免运行时跨版本拼接。
+即使源码路径未变化，复制章节也不能直接视为 verified。接口语义可能因依赖、配置或上层生命周期变化而改变。
 
 ---
 
-## 13. 版本演进章节
+## 14. 版本演进章节
 
-每个版本的 `17-evolution.md` 只描述：
+`17-evolution.md` 只描述当前版本相对上一**白皮书支持版本**发生的变化。
 
-**当前版本相对上一白皮书支持版本发生了什么。**
-
-信息来源限定为：
+来源限定为：
 
 - 官方 Release Notes；
 - 官方 Tag Compare；
-- 官方源码 / 文档变化。
+- 官方源码和官方文档。
 
-按影响分类：
+分类：
 
 - Architecture
 - Runtime
@@ -680,194 +764,236 @@ chapters:
 - Security / Permission
 - Breaking Changes
 
-每个变化尽量回答三件事：
+每项变化回答：
 
 1. 变了什么；
 2. 影响哪个模块 / API；
 3. 插件开发者是否需要迁移。
 
-版本演进页不替代完整版本切换。要查看旧机制，直接切换到旧版本阅读完整章节。
+版本演进页不替代完整版本切换。
 
 ---
 
-## 14. 搜索设计
+## 15. 搜索设计
 
-P1 增加 Whitepaper 全文搜索。
-
-规则：
+P1 增加全文搜索：
 
 - 默认只搜索当前版本；
-- 可以显式选择“全部版本”；
-- 搜索结果明确显示版本；
-- 当前版本结果优先；
-- 不把插件市场 README、Guide、社区内容混入白皮书知识搜索。
+- 可显式选择全部版本；
+- 结果始终显示版本；
+- 当前版本优先；
+- 不混入插件市场 Guide、README 或社区内容；
+- 每个版本独立索引。
 
-构建时为每个版本生成独立索引，避免搜索结果跨版本污染。
+搜索结果跳转到明确版本 URL，不使用 `latest`。
 
 ---
 
-## 15. SEO 与静态可读性
+## 16. SEO 与静态可读性
 
-Whitepaper 是长期技术内容，不应只依赖客户端交互后才可发现。
+Whitepaper 是长期技术内容，不能只依赖客户端渲染后才可抓取。
 
-最低要求：
+要求：
 
 - 每个版本章节有稳定 URL；
 - 独立 title / description / canonical；
-- sitemap 收录最新版本全部章节；
-- 历史版本保留可访问 URL；
-- `latest` 不与 canonical 产生重复索引；
-- 页面 Heading、正文和来源在无 JS 情况下至少应有可抓取退化方案。
+- `latest` canonical 指向明确版本；
+- sitemap 收录最新 published 版本全部章节；
+- 历史版本保持可访问，但默认 `noindex,follow`，减少高度相似内容重复收录；
+- 版本列表页允许索引；
+- Whitepaper 页面支持构建期 prerender。
 
-如果现有站点继续保持 SPA，P1 建议对白皮书路由增加构建期 prerender；不为白皮书单独引入完整 SSR 框架。
+P0 可以先完成客户端渲染；P1 增加 prerender，不单独引入完整 SSR 框架。
 
 ---
 
-## 16. 国际化策略
+## 17. 国际化
 
-第一阶段建议：
+第一阶段：
 
-- 中文作为主白皮书；
-- 技术标识符、Service、Event、Package 名保持官方英文；
-- 官方英文源码名不翻译；
-- 不为了现有全站语言切换而阻塞首版。
+- 中文为主；
+- Package、Service、Event、Interface 名保持官方英文；
+- 官方源码标识符不翻译；
+- 不因现有全站语言切换阻塞首版。
 
-后续英文版采用独立 Markdown：
+后续英文版使用独立正文：
 
 ```text
 content/whitepaper/v0.1.5-alpha.1/zh/...
 content/whitepaper/v0.1.5-alpha.1/en/...
 ```
 
-不同语言共享同一 `manifest` 和官方来源，不共享正文。
+同语言版本共享 Manifest、Source Manifest 和版本状态，不共享正文。
 
 ---
 
-## 17. 与现有 dsh-plugin.market 的集成
+## 18. 与现有 dsh-plugin.market 集成
 
 当前站点已有：
 
+- React + Vite；
 - 自定义轻量 Router；
-- `DocsLayout`；
 - Guide / Trust 文档区域；
 - 独立页面 CSS；
-- 全站明暗主题；
-- 中英文切换；
+- 明暗主题；
+- 中英文基础设施；
 - Cloudflare Worker 部署。
 
-Whitepaper 复用基础设施，但不直接复用 `DocsLayout`。
+Whitepaper 复用 Header / Theme / Router / 部署基础设施，不直接复用 `DocsLayout`。
 
 原因：
 
-- Docs 当前侧栏规模小；
-- Whitepaper 有 15+ 章节、多级目录和版本切换；
-- Whitepaper 需要右侧 TOC、Source、版本状态；
-- 阅读排版应与插件市场功能页保持明显区分。
-
-建议新增 `WhitepaperLayout`，只复用 Header / Theme / I18n / Router 基础能力。
+- Whitepaper 有 15+ 章节和多级目录；
+- 需要全局版本切换；
+- 需要右侧 TOC 和官方来源；
+- 需要版本状态；
+- 阅读排版与插件市场功能页不同。
 
 ---
 
-## 18. 架构边界
+## 19. 系统架构
 
 ```mermaid
 flowchart TB
     subgraph Official[Official DSH Sources]
       Repo[deepseek-ai/deepseek-harness]
-      Releases[Official Releases / Tags]
+      Release[Release / Tag / Commit]
       Docs[Official Docs]
     end
 
-    subgraph Sync[Whitepaper Source Pipeline]
-      Detector[Version Detector]
-      Snapshot[Official Source Snapshot]
-      Diff[Change / Impact Analyzer]
-      Validator[Source Validator]
+    subgraph Detect[GitHub Action]
+      VersionDetector[Version Detector]
+      Compare[Tag / Commit Compare]
+      Impact[Impact Report]
+      SourceManifest[Source Manifest]
     end
 
-    subgraph Content[Versioned Whitepaper Content]
+    subgraph Generate[Codex Scheduled Task]
+      Reader[Official Source Reader]
+      Writer[Chapter Updater]
+      Diagram[Mermaid Updater]
+      Evolution[Evolution Generator]
+    end
+
+    subgraph Content[Versioned Content]
       Versions[versions.json]
-      Manifest[Version Manifest]
-      Markdown[Markdown Chapters]
-      Navigation[Navigation]
+      Manifest[manifest.json]
+      Markdown[Markdown]
+      SVG[Compiled SVG]
+    end
+
+    subgraph Quality[Quality Gate]
+      SourceCheck[Official Source Check]
+      VersionCheck[Version Consistency]
+      BuildCheck[Markdown / Mermaid / Links]
+      Review[Human Review]
     end
 
     subgraph Site[dsh-plugin.market]
-      Router[Whitepaper Router]
+      Router[Version Router]
       Layout[Whitepaper Layout]
       Renderer[Markdown Renderer]
-      Mermaid[Mermaid SVG]
       Search[Version Search]
     end
 
-    Repo --> Detector
-    Releases --> Detector
-    Docs --> Snapshot
-    Detector --> Snapshot
-    Snapshot --> Diff
-    Diff --> Content
-    Content --> Validator
-    Validator --> Router
+    Repo --> VersionDetector
+    Release --> VersionDetector
+    Docs --> Compare
+    VersionDetector --> Compare
+    Compare --> Impact
+    Compare --> SourceManifest
+    Impact --> Reader
+    SourceManifest --> Reader
+    Reader --> Writer
+    Writer --> Diagram
+    Diagram --> Evolution
+    Evolution --> Markdown
+    Markdown --> SourceCheck
+    SourceManifest --> SourceCheck
+    SourceCheck --> VersionCheck
+    VersionCheck --> BuildCheck
+    BuildCheck --> Review
+    Review --> Manifest
+    Manifest --> Versions
+    Markdown --> Renderer
+    SVG --> Renderer
+    Versions --> Router
     Router --> Layout
     Layout --> Renderer
-    Renderer --> Mermaid
     Content --> Search
 ```
 
-核心边界：
+边界：
 
 - Official Sources 决定事实；
-- Content 层决定开发者如何理解这些事实；
-- Renderer 不承担技术事实转换；
-- 版本选择发生在 Content 层之前，避免跨版本混合。
+- Action 负责确定性工程工作；
+- Codex 负责基于官方事实生成内容；
+- CI 负责机器可验证约束；
+- Review 决定是否发布；
+- Renderer 不参与事实转换。
 
 ---
 
-## 19. 测试与质量门禁
+## 20. 校验与质量门禁
 
-### 19.1 单元测试
+### 20.1 工程校验
+
+新增：
+
+```text
+scripts/whitepaper/
+  build-content.mjs
+  validate-content.mjs
+  compile-diagrams.mjs
+  sync-upstream.mjs
+  diff-upstream.mjs
+  build-search-index.mjs
+```
+
+`validate-content.mjs` 至少检查：
+
+- Frontmatter 必填字段；
+- `chapterId` 唯一；
+- 页面版本与目录一致；
+- upstream Tag / Commit 与 Manifest 一致；
+- Source Host / Repo 在 Allowlist；
+- Source Path 在对应 Tag 中存在；
+- Source Blob 与 Source Manifest 一致；
+- Release 页面不存在 `master` 事实链接；
+- 不存在跨版本 include；
+- Mermaid 可构建；
+- 内链存在；
+- Nav 与 Markdown 一致；
+- `latestPublished` 指向 published 版本；
+- 不存在社区来源 citation。
+
+### 20.2 内容门禁
+
+发布版本要求：
+
+- 所有必选章节状态为 `verified`；
+- 所有 Breaking Change 已归类；
+- 所有未归类上游变化已处理或明确标记为不影响白皮书；
+- Evolution 与 Tag Compare 一致；
+- 关键 API / 行为有官方来源；
+- 不包含无依据推断。
+
+### 20.3 视觉测试
 
 覆盖：
 
-- route parse；
-- version resolution；
-- latest alias；
-- slug existence；
-- Markdown metadata；
-- source URL generation；
-- TOC generation；
-- Mermaid component error boundary。
-
-### 19.2 内容测试
-
-每次 PR：
-
-- 所有版本 manifest 可解析；
-- nav 与 Markdown 一一对应；
-- 当前版本无跨版本引用；
-- source path 在官方 tag 中存在；
-- Mermaid 可解析；
-- 内链无 404；
-- `latest` 指向真实版本；
-- evolution 的 previous version 存在；
-- 禁止社区来源 citation。
-
-### 19.3 视觉测试
-
-重点页面：
-
 - Overview；
-- 大型 Mermaid 架构图；
+- 大型架构图；
 - Sequence Diagram；
 - 长代码块；
 - 宽表格；
 - 版本切换；
-- mobile sidebar；
-- dark mode。
+- Mobile Sidebar；
+- Dark Mode。
 
 ---
 
-## 20. 实施阶段
+## 21. 实施阶段
 
 ### P0：Whitepaper 阅读框架
 
@@ -875,17 +1001,17 @@ flowchart TB
 
 - 顶部新增“白皮书”菜单；
 - `/whitepaper/:version/:slug` 路由；
-- WhitepaperLayout；
+- `WhitepaperLayout`；
 - 版本选择器；
 - Markdown 渲染；
-- Mermaid SVG；
+- Mermaid → SVG；
 - Shiki 代码块；
 - 左侧章节树 + 右侧 TOC；
 - 官方来源区；
-- 第一版版本目录结构；
-- content validator。
+- Version Manifest；
+- Content Validator。
 
-验收：可以在站内阅读一个完整 DSH 版本，版本切换没有内容串用。
+验收：站内可完整阅读一个 DSH 版本，切换版本不会串用内容。
 
 ### P1：第一版高质量白皮书
 
@@ -902,52 +1028,53 @@ flowchart TB
 9. Web / Slot；
 10. 版本演进。
 
-其余章节随后补齐。
+同时完成版本内搜索和 Whitepaper prerender。
 
-### P2：Living Whitepaper
+### P2：Living Whitepaper 闭环
 
 完成：
 
-- upstream sync Action；
-- Release 检测；
-- `next` 检测；
-- Tag Diff；
+- Upstream Sync Action；
+- Release / master 检测；
+- Tag Compare；
+- Source Manifest；
 - Impact Map；
-- 自动创建版本目录；
-- 自动生成更新 PR；
-- 版本内搜索。
+- Draft PR 自动创建；
+- Codex 定时内容更新任务；
+- PR Label / 状态机；
+- 自动校验和预览；
+- 发布后自动更新 `latestPublished`。
 
 ### P3：长期能力
 
 可选：
 
-- 构建期 prerender；
 - 英文版；
-- 架构图 SVG 下载；
 - 两版本章节 Diff；
 - 官方源码符号级跳转；
-- Package / Service / Event 自动索引。
+- Package / Service / Event 自动索引；
+- 图谱化 Capability Map；
+- 架构图 SVG 导出。
 
 ---
 
-## 21. 首版不做
+## 22. 首版不做
 
 第一阶段不做：
 
-- 把官方全部 API Reference 搬进市场站；
+- 镜像官方全部 API Reference；
 - 社区教程聚合；
-- 用户编辑白皮书；
-- 在线 WYSIWYG 编辑器；
-- 运行时从 GitHub 拉 Markdown 后直接渲染；
-- 每次访问实时读取 upstream；
-- 跨版本内容 fallback；
-- 未 Review 的自动正文直接发布。
-
-内容应在仓库内版本化，构建时进入站点，保证可审查、可回滚、可追踪。
+- 用户在线编辑白皮书；
+- WYSIWYG 编辑器；
+- 运行时实时读取 GitHub Markdown；
+- 每次访问查询 upstream；
+- 跨版本正文 fallback；
+- 未 Review 的自动正文直接发布；
+- 由 GitHub Action 脚本直接生成技术正文。
 
 ---
 
-## 22. 推荐最终目录
+## 23. 推荐目录
 
 ```text
 content/
@@ -957,6 +1084,7 @@ content/
     versions.json
     v0.1.5-alpha.1/
       manifest.json
+      source-manifest.json
       nav.json
       00-overview.md
       01-cordis.md
@@ -964,6 +1092,13 @@ content/
       17-evolution.md
     next/
       ...
+
+.agents/
+  whitepaper/
+    WRITING_RULES.md
+    SOURCE_POLICY.md
+    UPDATE_PLAYBOOK.md
+    REVIEW_CHECKLIST.md
 
 src/react-app/
   pages/
@@ -975,10 +1110,11 @@ src/react-app/
     WhitepaperHeader.tsx
     VersionSelector.tsx
     MarkdownRenderer.tsx
-    MermaidDiagram.tsx
+    Diagram.tsx
     CodeBlock.tsx
     TableOfContents.tsx
     OfficialSources.tsx
+    VersionNotice.tsx
   lib/
     whitepaper.ts
   whitepaper.css
@@ -986,10 +1122,14 @@ src/react-app/
 src/generated/whitepaper/
   versions.generated.json
   nav.generated.json
+  content-manifest.generated.json
+  diagrams/
+  search-index/
 
 scripts/whitepaper/
   build-content.mjs
   validate-content.mjs
+  compile-diagrams.mjs
   sync-upstream.mjs
   diff-upstream.mjs
   build-search-index.mjs
@@ -1000,23 +1140,25 @@ scripts/whitepaper/
 
 ---
 
-## 23. 技术决策摘要
+## 24. 技术决策摘要
 
 | 议题 | 决策 |
 |---|---|
 | 信息源 | 只允许 DSH 官方源码 / 文档 / Release / Tag / Commit |
 | 内容模型 | 每个 DSH 版本一套完整 Markdown 快照 |
-| 版本切换 | URL 驱动，全目录、正文、图、来源整体切换 |
-| 最新版本 | `/whitepaper/latest` 解析后使用明确版本 canonical |
-| 开发版本 | 可选 `next`，固定官方 master commit SHA |
+| 版本切换 | `chapterId` 对齐，目录、正文、图、来源整体切换 |
+| 最新版本 | 区分 `upstreamLatest` 与 `latestPublished` |
+| 开发版本 | `next` 绑定官方 master 的具体 SHA |
 | Markdown | `react-markdown + remark/rehype` |
-| 架构图 | Mermaid → SVG，禁止 ASCII 架构图 |
+| 架构图 | Mermaid 源码，构建期编译 SVG |
 | 代码高亮 | Shiki |
-| Layout | 新建 WhitepaperLayout，不复用现有 DocsLayout |
-| 阅读风格 | Editorial / Technical Manual，正文窄栏，高可读性 |
-| 上游同步 | GitHub Action 定时检测官方 Release + master |
-| 自动更新 | 自动 diff / impact / PR，不直接自动 merge 正文 |
-| 质量门禁 | Source pin、版本一致性、Mermaid、内链、来源 allowlist |
-| 搜索 | P1/P2 版本内独立索引 |
+| Layout | 新建 `WhitepaperLayout` |
+| 阅读风格 | Editorial / Technical Manual |
+| 工程同步 | GitHub Action 检测 / Diff / Manifest / PR / CI |
+| 内容更新 | Codex 定时任务读取官方源并修订 Markdown / Mermaid |
+| 发布 | CI 全量通过 + Human Review 后发布 |
+| 来源追踪 | Source Registry + Source Manifest + 固定 Tag / SHA |
+| 搜索 | 每版本独立索引 |
+| SEO | 最新 published 版本索引，历史版本默认 noindex |
 
-该方案的核心不是增加一个 Markdown 页面，而是在 `dsh-plugin.market` 内建立一套 **官方事实可追溯、版本完全隔离、适合长期阅读和持续演进的 DSH Developer Whitepaper 系统**。
+核心目标是在 `dsh-plugin.market` 内形成一套 **官方事实可追溯、完整版本可切换、正文适合开发者阅读、能够持续生成与验证的 DSH Living Whitepaper 系统**。
