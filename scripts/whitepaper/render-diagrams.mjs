@@ -10,9 +10,21 @@ const versions = JSON.parse(await readFile(join(contentRoot, "versions.json"), "
 const checkOnly = process.argv.includes("--check");
 const mermaidCliVersion = "11.17.0";
 const tempRoot = await mkdtemp(join(tmpdir(), "dsh-whitepaper-mermaid-"));
+const puppeteerConfig = join(tempRoot, "puppeteer-config.json");
+const isCi = process.env.CI === "true";
 let count = 0;
 
 try {
+  if (isCi) {
+    // GitHub-hosted Ubuntu runners restrict Chromium's user-namespace sandbox.
+    // Mermaid only renders repository-owned, validated Markdown in this job.
+    await writeFile(
+      puppeteerConfig,
+      JSON.stringify({ args: ["--no-sandbox", "--disable-setuid-sandbox"] }),
+      "utf8",
+    );
+  }
+
   for (const version of versions.versions) {
     const sourceDir = join(contentRoot, version.id);
     const nav = JSON.parse(await readFile(join(sourceDir, "nav.json"), "utf8"));
@@ -27,11 +39,24 @@ try {
         const input = join(tempRoot, `${version.id}-${id}.mmd`);
         const output = join(targetDir, `${id}.svg`);
         await writeFile(input, source.trimEnd() + "\n", "utf8");
-        const result = spawnSync(
-          "npx",
-          ["--yes", `--package=@mermaid-js/mermaid-cli@${mermaidCliVersion}`, "mmdc", "-i", input, "-o", output, "-b", "transparent", "-t", "neutral"],
-          { stdio: "inherit", env: { ...process.env, PUPPETEER_DISABLE_HEADLESS_WARNING: "true" } },
-        );
+        const args = [
+          "--yes",
+          `--package=@mermaid-js/mermaid-cli@${mermaidCliVersion}`,
+          "mmdc",
+          "-i",
+          input,
+          "-o",
+          output,
+          "-b",
+          "transparent",
+          "-t",
+          "neutral",
+        ];
+        if (isCi) args.push("-p", puppeteerConfig);
+        const result = spawnSync("npx", args, {
+          stdio: "inherit",
+          env: { ...process.env, PUPPETEER_DISABLE_HEADLESS_WARNING: "true" },
+        });
         if (result.status !== 0) throw new Error(`Mermaid render failed: ${version.id}/${item.file}#${id}`);
         count += 1;
       }
