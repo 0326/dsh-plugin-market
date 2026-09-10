@@ -2,6 +2,10 @@ import overviewMarkdown from "../content/whitepaper/v0.1.5-rc.1/00-overview.md?r
 import compositionMarkdown from "../content/whitepaper/v0.1.5-rc.1/01-composition.md?raw";
 import runtimeMarkdown from "../content/whitepaper/v0.1.5-rc.1/04-runtime.md?raw";
 import pluginsMarkdown from "../content/whitepaper/v0.1.5-rc.1/12-plugin-development.md?raw";
+import overviewHtml from "../content/whitepaper/generated/v0.1.5-rc.1/00-overview.html?raw";
+import compositionHtml from "../content/whitepaper/generated/v0.1.5-rc.1/01-composition.html?raw";
+import runtimeHtml from "../content/whitepaper/generated/v0.1.5-rc.1/04-runtime.html?raw";
+import pluginsHtml from "../content/whitepaper/generated/v0.1.5-rc.1/12-plugin-development.html?raw";
 
 export interface WhitepaperSource {
 	path: string;
@@ -14,6 +18,7 @@ export interface WhitepaperChapter {
 	title: string;
 	summary: string;
 	markdown: string;
+	html: string;
 	sources: WhitepaperSource[];
 }
 
@@ -41,6 +46,7 @@ const V015RC1: WhitepaperVersion = {
 			title: "DSH 全貌",
 			summary: "从组合模型、Agent Runtime、能力 seam 与 Web Client 四个面建立整体结构。",
 			markdown: overviewMarkdown,
+			html: overviewHtml,
 			sources: [
 				{ path: "README.zh.md", label: "README" },
 				{ path: "docs/architecture.zh.md", label: "Architecture" },
@@ -53,6 +59,7 @@ const V015RC1: WhitepaperVersion = {
 			title: "Cordis 与组合模型",
 			summary: "理解 Plugin Tree、Profile、Bundle、Patch 以及可逆生命周期。",
 			markdown: compositionMarkdown,
+			html: compositionHtml,
 			sources: [
 				{ path: "docs/architecture.zh.md", label: "Architecture" },
 				{ path: "docs/cordis-primer.zh.md", label: "Cordis primer" },
@@ -64,6 +71,7 @@ const V015RC1: WhitepaperVersion = {
 			title: "Agent 运行机制",
 			summary: "从 Inbox 到 Turn、Step、LLM Stream、Tool Execution、SessionHandle 与持久化 settlement。",
 			markdown: runtimeMarkdown,
+			html: runtimeHtml,
 			sources: [
 				{ path: "docs/architecture.zh.md", label: "Turn flow" },
 				{ path: "docs/agent-lifecycle.zh.md", label: "Agent lifecycle" },
@@ -76,6 +84,7 @@ const V015RC1: WhitepaperVersion = {
 			title: "插件开发与扩展面",
 			summary: "按 Service、Event、Tool、Provider、Preset、Hook 与 Client Slot 选择扩展位置。",
 			markdown: pluginsMarkdown,
+			html: pluginsHtml,
 			sources: [
 				{ path: "docs/architecture.zh.md", label: "Extension points" },
 				{ path: "docs/cookbook/extension-cookbook.zh.md", label: "Extension cookbook" },

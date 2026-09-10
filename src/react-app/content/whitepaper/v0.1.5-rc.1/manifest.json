@@ -3,6 +3,7 @@
   "upstreamRepo": "deepseek-ai/deepseek-harness",
   "upstreamTag": "dsh-v0.1.5-rc.1",
   "upstreamCommit": "183f08e9c6dde7e36cd2318eaee70b0da08fb35e",
+  "releaseChannel": "rc",
   "whitepaperRevision": 1,
   "verifiedAt": "2026-09-10",
   "sourcePolicy": "official-only",

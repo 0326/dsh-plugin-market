@@ -1,4 +1,9 @@
 {
+  "releasePolicy": {
+    "channels": ["rc", "stable"],
+    "ignored": ["alpha", "beta", "canary", "dev", "nightly", "master"]
+  },
+  "upstreamLatest": "v0.1.5-rc.1",
   "latestPublished": "v0.1.5-rc.1",
   "versions": [
     {
@@ -6,6 +11,7 @@
       "tag": "dsh-v0.1.5-rc.1",
       "commit": "183f08e9c6dde7e36cd2318eaee70b0da08fb35e",
       "releasedAt": "2026-09-10",
+      "channel": "rc",
       "status": "published"
     }
   ]

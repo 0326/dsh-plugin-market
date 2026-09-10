@@ -77,7 +77,7 @@ export function WhitepaperLayout({ version, chapter, notFound = false }: Whitepa
 
 				<article className="wp-article">
 					{notFound && <div className="wp-version-notice">当前版本不存在请求的章节，已返回该版本首页。</div>}
-					<MarkdownRenderer markdown={chapter.markdown} version={version.id} />
+					<MarkdownRenderer html={chapter.html} />
 					<footer className="wp-article-footer">
 						<span>DSH {version.label}</span>
 						<span>Upstream {version.upstreamCommit.slice(0, 8)}</span>
