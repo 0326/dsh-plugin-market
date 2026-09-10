@@ -16,6 +16,17 @@ sources:
 
 Capability Seam 是 DSH 保持开放性的核心边界：能力的接口、默认实现与消费方分离，使同一个 Agent 能在不同组合中使用本地、远程、受限或第三方 Provider，而 Consumer 不需要改写业务逻辑。
 
+## Seam 结构
+
+```mermaid id=capability-seam
+flowchart LR
+  X["Profile / Bundle composition"] --> P["Provider"]
+  P --> D["Service Definition / ctx.* contract"]
+  D --> C1["Consumer: Tool"]
+  D --> C2["Consumer: Runtime / UI"]
+  P2["Alternative Provider"] --> D
+```
+
 ## Definition、Provider、Consumer
 
 一个典型 Seam 包含三种角色：

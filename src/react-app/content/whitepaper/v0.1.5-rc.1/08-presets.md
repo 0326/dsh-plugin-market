@@ -16,6 +16,18 @@ sources:
 
 Agent Preset 解决“同一个 DSH 进程里，不同 Session 使用不同 Agent 能力集合”的问题。它不是启动 Profile：Profile 决定整个进程装什么，Preset 决定某个 Agent 作用域里启用什么。
 
+## Scope 关系
+
+```mermaid id=preset-scope
+flowchart TB
+  G["Global Profile / Providers"] --> A1["Agent A Scope"]
+  G --> A2["Agent B Scope"]
+  P1["Preset: analyst / agent.cordis.yml"] --> A1
+  P2["Preset: coder / agent.cordis.yml"] --> A2
+  A1 --> T1["Tools / Skills / Prompt / Persona A"]
+  A2 --> T2["Tools / Skills / Prompt / Persona B"]
+```
+
 ## Preset 的基本结构
 
 一个 Agent Preset 是一个目录，核心文件为 `agent.cordis.yml`。从该 Preset 创建的 Session 会在自己的 Agent Scope 中挂载对应 Tool、Prompt 段、Skill 与其他插件贡献；同进程其他 Session 保持各自组合。

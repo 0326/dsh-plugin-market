@@ -17,6 +17,20 @@ sources:
 
 Session 是 DSH 的事件溯源事实层。模型看到的历史、Transcript、标题、Telemetry、持久化与多种 Projection 都从 Session Event Log 派生；日志本身保持仅追加，历史重写通过 Surface Projection 表达，而不是删除旧事件。
 
+## 状态主线
+
+```mermaid id=session-model
+flowchart LR
+  R["Runtime facts"] --> L["Append-only Session Event Log"]
+  L --> S["Surface projection"]
+  S --> M["deriveMessages()"]
+  M --> Q["Next LLM request"]
+  L --> H["request/header + request/context"]
+  H --> Q
+  X["surfaceOp: replace"] --> S
+  X -. "does not delete" .-> L
+```
+
 ## Durable facts 与 Model Surface
 
 Session Event 可以分成两类：

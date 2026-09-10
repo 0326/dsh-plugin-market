@@ -17,13 +17,21 @@ sources:
 
 DSH Web Client 自身也是由插件组装的浏览器侧 Cordis 应用。Host 保留权威业务状态，浏览器通过类型化 Remote 构建本地 Model，再由 UI Adapter、Conversation 与 Slots 形成 React 界面。
 
-## 数据方向
+## 数据通路
 
-官方 Web Client 的依赖方向可以概括为：
+```mermaid id=web-client-flow
+flowchart LR
+  H["Host State"] --> R["Remote / API Gateway"]
+  R --> M["Client Model"]
+  M --> U["UI Adapter"]
+  U --> C["Conversation / Presentation"]
+  C --> S["Typed Slots"]
+  S --> V["React UI"]
+  V -. "callbacks / commands" .-> R
+  R -. "authoritative mutation" .-> H
+```
 
-**Host State → Remote Transport → Client Model → UI Adapter → Conversation / Presentation → Slots → React**。
-
-用户操作沿 callback 反向进入 Client Service 或生成的 Remote，再由 Host 完成权威 Mutation，并通过 Stream / Event 回到 Client Model。
+官方 Web Client 的依赖方向就是 **Host State → Remote Transport → Client Model → UI Adapter → Conversation / Presentation → Slots → React**。用户操作沿 callback 反向进入 Client Service 或生成的 Remote，再由 Host 完成权威 Mutation，并通过 Stream / Event 回到 Client Model。
 
 ## 四个基础设施
 

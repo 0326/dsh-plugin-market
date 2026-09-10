@@ -16,6 +16,18 @@ sources:
 
 DSH 启动的结果不是一个固定内核加若干插件，而是一棵由 Profile、Bundle 与 Patch 共同组装出的 Cordis Plugin Tree。CLI 总是启动一个具名 Profile，Profile 决定本次进程包含哪些能力。
 
+## 启动链路
+
+```mermaid id=boot-composition
+flowchart LR
+  CLI["dsh --profile <name>"] --> P["Named Profile"]
+  P --> B["Bundles + Patches"]
+  B --> L["Cordis Loader"]
+  L --> T["Running Plugin Tree"]
+  H["Harness Home patch"] --> B
+  C["CLI --patch"] --> B
+```
+
 ## 启动层次
 
 `packages/boot` 提供应用启动粘合层。`app-boot` 负责读取环境、解析 Harness Home、加载 Profile 与 Patch，并把最终 `cordis.yml` 交给 Cordis Loader；`cmdline` 让具体应用拥有自己的 CLI 参数与退出语义。
