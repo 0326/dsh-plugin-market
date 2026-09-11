@@ -35,7 +35,7 @@ function NavItems({ version, chapter }: { version: WhitepaperVersion; chapter: W
 			{version.chapters.map((item, index) => (
 				<a key={item.id} className={item.id === chapter.id ? "wp-nav-item is-active" : "wp-nav-item"} href={whitepaperHref(version, item)} aria-current={item.id === chapter.id ? "page" : undefined}>
 					<span className="wp-nav-index">{String(index).padStart(2, "0")}</span>
-					<span><strong>{item.title}</strong><small>{item.summary}</small></span>
+					<strong>{item.title}</strong>
 				</a>
 			))}
 		</nav>
