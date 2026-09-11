@@ -7,10 +7,12 @@ on:
       - "src/react-app/components/whitepaper/**"
       - "src/react-app/pages/Whitepaper*"
       - "src/react-app/lib/whitepaper.ts"
+      - "src/react-app/whitepaper.css"
       - "public/whitepaper/**"
       - "scripts/whitepaper/**"
       - ".github/workflows/whitepaper-check.yml"
       - "package.json"
+      - "package-lock.json"
   workflow_dispatch:
 
 permissions:
@@ -26,5 +28,11 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run whitepaper:validate
-      - run: npm run build
+      - name: Validate release/content policy
+        run: npm run whitepaper:validate
+      - name: Compile Markdown + Shiki
+        run: npm run whitepaper:build-content
+      - name: Validate Mermaid source
+        run: npm run whitepaper:diagrams:check
+      - name: Build application
+        run: npm run build

@@ -18,6 +18,12 @@ DeepSeek Harness（DSH）是一个开源 Agent Harness。它建立在 Cordis 之
 
 > 本页固定于 `dsh-v0.1.5-rc.1`，上游 Commit 为 `183f08e9`。白皮书中的目录、正文、架构图和源码链接均以该版本为准。
 
+## 本白皮书的特点
+
+这套白皮书只使用 DSH 官方源码、官方文档与官方 Release 作为事实依据，不采纳社区二次解释。每个版本是一套完整快照，切换版本时正文、目录、图和源码链接一起切换，不把不同版本内容混在同一页面。
+
+内容按“全貌 → 运行机制 → 模块边界 → 扩展接口 → 源码入口”组织。目标不是复制 API Reference，而是帮助开发者先确定一个能力在 DSH 中属于哪个层、由谁拥有、运行时如何经过它，再进入官方源码。
+
 ## 一张图看清 DSH
 
 ```mermaid id=overview-platform
@@ -38,11 +44,11 @@ DSH 的结构可以分成四个面：
 | 组合层 | 决定启动时挂载哪些插件 | Profile、Bundle、Patch、Cordis Context |
 | Agent 主干 | 推进一次对话并沉淀持久事实 | Session、System Prompt、Tools、Agent、Agent Loop |
 | 能力层 | 向 Agent 提供可替换能力 | LLM、FS、Shell、Terminal、Web、Skill、Subagent、Sandbox |
-| 产品层 | 把 Agent 暴露给不同运行形态 | Web、Headless、SDK、ACP、Desktop |
+| 产品层 | 把 Agent 暴露给不同运行形态 | Web、Headless、SDK、ACP |
 
 ## 先掌握五个概念
 
-**Plugin** 是组合单位。插件向共享 Context 注册 Service、Event Listener 或其他 Effect；插件卸载时，对应注册随生命周期撤销。
+**Plugin** 是组合单位。插件向共享 Context 注册 Service、Event Listener 或 Effect；插件卸载时，对应注册随生命周期撤销。
 
 **Profile** 描述一次 DSH 应用启动使用的组合。该版本随发行版提供 `web`、`headless`、`sdk`、`sdk-minimal`、`acp` 等 Profile 模板。
 
@@ -56,14 +62,16 @@ DSH 的结构可以分成四个面：
 
 运行中的 DSH 是一棵启动时按层叠加得到的 Plugin Tree。官方 `web`、`headless`、`sdk`、`acp` 以 `dsh-base` 为共享基础层，`sdk-minimal` 则拥有一套独立的完整配置树。
 
-配置层按顺序应用：Profile 中的 Bundle → Profile Patch → Harness Home Patch → `--patch` Overlay。更高层可以按 Row ID 替换已有配置或插入新配置。
+配置层按顺序应用：Profile 中的 Bundle → Profile Patch → Harness Home Patch → `--patch` Overlay。更高层可以按配置行覆盖或补充已有组合。
 
-## 阅读路径
+## 推荐阅读路径
 
-第一次阅读建议按以下顺序：
+第一次阅读建议依次看：
 
-1. **Cordis 与组合模型**：理解 DSH 如何被组装出来。
-2. **Agent 运行机制**：理解一条输入怎样进入 Turn / Step、模型、Tool 与 Session Log。
-3. **插件开发与扩展面**：确定新增行为应该进入哪个 Service、Event、Tool 或 UI Slot。
-
-P0 先覆盖上述核心链路。Session、Web Client、Preset、Subagent、Workflow、Sandbox、SDK/ACP 等完整模块拆解在后续章节补齐。
+1. **Cordis 与组合模型**、**启动与配置组装**：理解 DSH 怎样成为一棵运行中的 Plugin Tree。
+2. **Agent Core**、**Agent 运行机制**、**Session 与状态**：理解一次请求如何推进并沉淀为可恢复事实。
+3. **Capability Seam**、**核心能力模块**：理解可替换能力的定义边界。
+4. **Preset**、**Subagent / Workflow / Jobs**、**Hooks**：理解 Agent 级组合、委派与拦截。
+5. **Web Client**、**插件开发**、**扩展能力地图**：进入产品扩展与 UI 插件开发。
+6. **SDK / ACP / Webhook**、**安全与权限**、**调试与观测**：完成外部接入与工程化闭环。
+7. **版本演进**：查看 rc.1 相对上一支持基线的开发者影响。

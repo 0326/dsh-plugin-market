@@ -1,6 +1,20 @@
 [
   { "id": "overview", "slug": "overview", "title": "DSH 全貌", "file": "00-overview.md" },
   { "id": "composition", "slug": "composition", "title": "Cordis 与组合模型", "file": "01-composition.md" },
+  { "id": "boot-config", "slug": "boot-config", "title": "启动与配置组装", "file": "02-boot-config.md" },
+  { "id": "agent-core", "slug": "agent-core", "title": "Agent Core", "file": "03-agent-core.md" },
   { "id": "runtime", "slug": "runtime", "title": "Agent 运行机制", "file": "04-runtime.md" },
-  { "id": "plugin-development", "slug": "plugin-development", "title": "插件开发与扩展面", "file": "12-plugin-development.md" }
+  { "id": "session-state", "slug": "session-state", "title": "Session 与状态", "file": "05-session-state.md" },
+  { "id": "capability-seams", "slug": "capability-seams", "title": "Capability Seam", "file": "06-capability-seams.md" },
+  { "id": "core-capabilities", "slug": "core-capabilities", "title": "核心能力模块", "file": "07-core-capabilities.md" },
+  { "id": "presets", "slug": "presets", "title": "Preset 与 Agent 组装", "file": "08-presets.md" },
+  { "id": "subagent-workflow-jobs", "slug": "subagent-workflow-jobs", "title": "Subagent / Workflow / Jobs", "file": "09-subagent-workflow-jobs.md" },
+  { "id": "hooks-interception", "slug": "hooks-interception", "title": "Hooks 与拦截", "file": "10-hooks-interception.md" },
+  { "id": "web-client", "slug": "web-client", "title": "Web Client 架构", "file": "11-web-client.md" },
+  { "id": "plugin-development", "slug": "plugin-development", "title": "插件开发与扩展面", "file": "12-plugin-development.md" },
+  { "id": "extension-map", "slug": "extension-map", "title": "扩展能力地图", "file": "13-extension-map.md" },
+  { "id": "sdk-acp-webhook", "slug": "sdk-acp-webhook", "title": "SDK / ACP / Webhook", "file": "14-sdk-acp-webhook.md" },
+  { "id": "security-permissions", "slug": "security-permissions", "title": "安全与权限", "file": "15-security-permissions.md" },
+  { "id": "diagnostics-observability", "slug": "diagnostics-observability", "title": "调试与观测", "file": "16-diagnostics-observability.md" },
+  { "id": "evolution", "slug": "evolution", "title": "版本演进", "file": "17-evolution.md" }
 ]
