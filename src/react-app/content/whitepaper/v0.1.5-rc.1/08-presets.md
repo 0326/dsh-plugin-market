@@ -6,7 +6,7 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - packages/preset/README.zh.md
   - docs/subsystems/scope.zh.md
@@ -20,10 +20,10 @@ Agent Preset 解决“同一个 DSH 进程里，不同 Session 使用不同 Agen
 
 ```mermaid id=preset-scope
 flowchart TB
-  G["Global Profile / Providers"] --> A1["Agent A Scope"]
+  G["全局 Profile / Providers"] --> A1["Agent A Scope"]
   G --> A2["Agent B Scope"]
-  P1["Preset: analyst / agent.cordis.yml"] --> A1
-  P2["Preset: coder / agent.cordis.yml"] --> A2
+  P1["Preset：analyst\nagent.cordis.yml"] --> A1
+  P2["Preset：coder\nagent.cordis.yml"] --> A2
   A1 --> T1["Tools / Skills / Prompt / Persona A"]
   A2 --> T2["Tools / Skills / Prompt / Persona B"]
 ```
