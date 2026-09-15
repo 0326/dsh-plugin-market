@@ -6,11 +6,15 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - packages/core/session/README.zh.md
   - docs/subsystems/session.zh.md
   - docs/subsystems/persistence.zh.md
+  - docs/subsystems/session-projection.zh.md
+  - docs/subsystems/session-title.zh.md
+  - docs/subsystems/session-reference.zh.md
+  - docs/subsystems/session-telemetry.zh.md
   - packages/session/session-format-v2-to-v3/README.zh.md
 ---
 # Session 与状态
@@ -21,14 +25,14 @@ Session 是 DSH 的事件溯源事实层。模型看到的历史、Transcript、
 
 ```mermaid id=session-model
 flowchart LR
-  R["Runtime facts"] --> L["Append-only Session Event Log"]
-  L --> S["Surface projection"]
+  R["运行时事实"] --> L["仅追加 Session Event Log"]
+  L --> S["Surface Projection"]
   S --> M["deriveMessages()"]
-  M --> Q["Next LLM request"]
+  M --> Q["下一次 LLM 请求"]
   L --> H["request/header + request/context"]
   H --> Q
   X["surfaceOp: replace"] --> S
-  X -. "does not delete" .-> L
+  X -. "遮蔽旧视图，不删除历史" .-> L
 ```
 
 ## Durable facts 与 Model Surface
@@ -50,6 +54,24 @@ Session Event 可以分成两类：
 
 非消息型请求 Envelope 记录在 `request/header`，Provider、Model、Context Window 与系统提示词更新模式等路由信息记录在 `request/context`。模型请求因此不只可以恢复消息，也可以恢复当时使用的调用配置。
 
+## Projection 是读取层，不是第二份事实
+
+Session Projection Seam 用纯函数把 Event Log 投影为一致快照，并通过变化通知给 Host、Client 或其他 Consumer。Projection 适合维护“当前状态视图”，但它不拥有事实；需要恢复或审计时仍以 Session Log 为准。
+
+这也是 Web Client 不应该直接把浏览器 Model 当数据库的原因：浏览器拿到的是 Session Projection 与 Event Window 的消费结果，而不是另一个权威状态源。
+
+## 标题、引用与跨 Session 关系
+
+`session-title` 从已存在的消息生成并持久化标题快照，同时记录标题基于哪条来源消息，避免标题与会话内容失去可追踪关系。
+
+`session-reference` 用结构化引用表达跨 Session 上下文，而不是把另一个会话全文直接拼接为匿名字符串。它负责候选、准备后的消息上下文与稳定错误分类，适合实现“引用上一段会话”“从某个 Session 继续分析”等能力。
+
+## Session Telemetry
+
+Session Telemetry 是面向外部 Sink 的上报 Seam。它与 Session Event Log 的职责不同：Event Log 保存可恢复事实；Telemetry 负责把经过脱敏和分类的观测记录输出到外部系统。
+
+因此，不应为了“方便观测”把任意日志都写成 Session Event，也不应把 Telemetry 当作恢复 Session 的依据。
+
 ## rc.1 的 SessionHandle
 
 rc.1 将持久化写路径改为由生命周期持有的 `SessionHandle`。创建或恢复持久 Session 时，Agent Loop 先取得对应写所有权，再发布可运行 Agent；同一持久 Session 同时至多被一个进程持有写权限。
@@ -65,3 +87,5 @@ rc.1 将持久化写路径改为由生命周期持有的 `SessionHandle`。创�
 ## V3 数据格式
 
 `v0.1.5-rc.1` 使用 Session V3。官方迁移器会从受支持旧日志生成新版日志并保留原文件；迁移后的 Session 不支持降级读取。自定义日志读取器、导出器或分析工具需要按 V3 事件与 Surface 语义适配。
+
+源码定位建议从 `packages/core/session/`、`packages/session/`、`docs/subsystems/session.zh.md`、`docs/subsystems/session-projection.zh.md` 与 `docs/subsystems/persistence.zh.md` 进入。
