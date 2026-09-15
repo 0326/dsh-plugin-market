@@ -11,6 +11,7 @@ import { syncBaseline } from "./npm/baseline";
 import { processRescanSweepJob, processScanJob, startRescanSweep, TransientScanError } from "./queue/scan";
 import { applyPluginIndexability, renderIndexableSitemap } from "./seo-indexability";
 import { isSeoPagePath, renderSeoPage } from "./seo";
+import { isWhitepaperHost, WHITEPAPER_ORIGIN } from "../shared/site-routing";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -24,7 +25,7 @@ const BASELINE_CRON = "5 */6 * * *";
 const DAILY_METRICS_CRON = "35 3 * * *";
 const RESCAN_CRON = "50 3 * * *";
 /** Bump only when a public response shape or SEO document changes. */
-const PUBLIC_CACHE_VERSION = "2026-09-05-ops-v1";
+const PUBLIC_CACHE_VERSION = "2026-09-15-whitepaper-v1";
 
 function positiveInt(raw: string | undefined, fallback: number): number {
 	const value = Number(raw);
@@ -54,6 +55,7 @@ async function trackedPipeline(
  */
 function publicCacheTtl(pathname: string): number | null {
 	if (pathname === "/sitemap.xml") return 1_800;
+	if (pathname === "/robots.txt") return 86_400;
 	if (isSeoPagePath(pathname)) return 600;
 	if (pathname === "/api/stats" || pathname === "/api/context" || pathname === "/api/home") return 600;
 	if (pathname === "/api/categories") return 86_400;
@@ -220,15 +222,32 @@ async function queue(batch: MessageBatch<ScanQueueJob>, env: Env): Promise<void>
 	await Promise.all(Array.from({ length: Math.min(SCAN_CONCURRENCY, messages.length) }, () => worker()));
 }
 
+function whitepaperRobots(): Response {
+	return new Response(`User-agent: *\nAllow: /\n\nSitemap: ${WHITEPAPER_ORIGIN}/sitemap.xml\n`, {
+		headers: { "content-type": "text/plain; charset=utf-8" },
+	});
+}
+
 async function fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const redirect = canonicalRedirect(request);
 	if (redirect) return redirect;
 
 	const url = new URL(request.url);
+	const whitepaperHost = isWhitepaperHost(url.hostname);
 	const ttl = request.method === "GET" ? publicCacheTtl(url.pathname) : null;
 	const load = async (): Promise<Response> => {
+		if (url.pathname === "/robots.txt") {
+			return whitepaperHost ? whitepaperRobots() : env.ASSETS.fetch(request);
+		}
+		if (url.pathname === "/sitemap.xml") {
+			if (whitepaperHost) {
+				const assetUrl = new URL("/whitepaper/sitemap.xml", request.url);
+				return env.ASSETS.fetch(new Request(assetUrl.toString(), request));
+			}
+			return renderIndexableSitemap(env.DB);
+		}
+		if (whitepaperHost) return env.ASSETS.fetch(request);
 		if (url.pathname === "/compare" || url.pathname === "/changes") return env.ASSETS.fetch(request);
-		if (url.pathname === "/sitemap.xml") return renderIndexableSitemap(env.DB);
 		if (isSeoPagePath(url.pathname)) {
 			const response = await renderSeoPage(request, env, ctx);
 			return applyPluginIndexability(response, url.pathname, env.DB);
