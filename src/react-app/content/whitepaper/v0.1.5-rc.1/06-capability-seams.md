@@ -20,11 +20,11 @@ Capability Seam 是 DSH 保持开放性的核心边界：能力的接口、默�
 
 ```mermaid id=capability-seam
 flowchart LR
-  X["Profile / Bundle composition"] --> P["Provider"]
-  P --> D["Service Definition / ctx.* contract"]
-  D --> C1["Consumer: Tool"]
-  D --> C2["Consumer: Runtime / UI"]
-  P2["Alternative Provider"] --> D
+  X["Profile / Bundle 组合"] --> P["Provider"]
+  P --> D["Service Definition / ctx.* 契约"]
+  D --> C1["Consumer：Tool"]
+  D --> C2["Consumer：Runtime / UI"]
+  P2["替代 Provider"] --> D
 ```
 
 ## Definition、Provider、Consumer
@@ -64,3 +64,5 @@ rc.1 中典型 Seam 包括 LLM、Filesystem、Shell、Terminal、Sandbox、Subpr
 ## 不要从 Provider 反向定义业务
 
 例如需要限制文件访问时，不应让 Tool 直接依赖某个 Local FS 实现；应通过 FS / Sandbox / Policy 的公开接口完成。这样同一 Tool 才能在本地、E2B 或后续远程 Provider 下保持一致行为。
+
+源码定位建议从 `docs/capability-seams.zh.md`、`packages/README.zh.md` 和对应能力组的 `packages/<group>/README.zh.md` 进入。
