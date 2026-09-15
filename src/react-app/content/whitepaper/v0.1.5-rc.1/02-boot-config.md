@@ -6,7 +6,7 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - docs/architecture.zh.md
   - packages/boot/README.zh.md
@@ -20,11 +20,11 @@ DSH 启动的结果不是一个固定内核加若干插件，而是一棵由 Pro
 
 ```mermaid id=boot-composition
 flowchart LR
-  CLI["dsh --profile <name>"] --> P["Named Profile"]
-  P --> B["Bundles + Patches"]
+  CLI["dsh --profile <name>"] --> P["具名 Profile"]
+  P --> B["Bundles + Patches 组合"]
   B --> L["Cordis Loader"]
-  L --> T["Running Plugin Tree"]
-  H["Harness Home patch"] --> B
+  L --> T["运行中的 Plugin Tree"]
+  H["Harness Home Patch"] --> B
   C["CLI --patch"] --> B
 ```
 
