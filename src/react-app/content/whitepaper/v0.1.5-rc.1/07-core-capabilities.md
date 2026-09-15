@@ -97,6 +97,12 @@ rc.1 的官方 `docs/subsystems/README.zh.md` 明确声明其目录覆盖 DSH **
 
 这张表是“覆盖检查”，不是建议把所有子系统放进同一层。开发者仍应从目标章节进入，再沿对应 Service Definition、Provider、Consumer 和源码路径下钻。
 
+## Package Group 交叉检查
+
+官方 `packages/README.zh.md` 还包含一些不直接对应单独 Subsystem 页的工程包组。它们同样已有明确落点：`boot` / `bundle` → **启动与配置组装**，`context` → **核心能力模块**，`preset` → **Preset 与 Agent 组装**，`hooks` → **Hooks 与拦截**，`api` / `typert` / `host` / `client` → **Web Client 架构**与 **SDK / ACP / Webhook**，`guard` / `interaction` → **安全与权限**，`identity` / `runtime-diagnostics` → **调试与观测**，`extensions` → **扩展能力地图**，`sdk` / `acp` / `webhook` → **SDK / ACP / Webhook**。
+
+`experimental`、`e2b`、`test-support`、`util` 则作为稳定性边界和实现辅助理解，不单独升格为架构主章节。由此，rc.1 的官方 Subsystem Index 与 Package Group Map 两条线都能映射回现有 00–17 目录。
+
 ## 稳定性边界
 
 官方包地图把大多数组视为产品 API；`experimental` 不属于默认稳定能力，`e2b` 在 rc.1 中仍是 POC，`test-support`、`runtime-diagnostics` 与 `util` 的兼容性预期也更低。
