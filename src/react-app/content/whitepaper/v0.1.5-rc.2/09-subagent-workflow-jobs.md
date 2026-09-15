@@ -1,0 +1,62 @@
+---
+title: Subagent / Workflow / Jobs
+chapter_id: subagent-workflow-jobs
+slug: subagent-workflow-jobs
+dsh_version: v0.1.5-rc.2
+upstream_tag: dsh-v0.1.5-rc.2
+upstream_commit: fb2c4b9e698e30edb738bca4cf0618587db7d203
+status: verified
+verified_at: 2026-09-15
+sources:
+  - packages/subagent/README.zh.md
+  - docs/subsystems/subagent.zh.md
+  - packages/workflow/README.zh.md
+  - docs/subsystems/workflow.zh.md
+  - packages/jobs/README.zh.md
+  - docs/subsystems/jobs.zh.md
+  - docs/subsystems/agent-team.zh.md
+---
+# Subagent / Workflow / Jobs
+
+Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但三者解决的问题不同：Subagent 是任务委派，Workflow 是多 Agent 编排，Jobs 是后台任务生命周期。当前版本还提供实验性的 Agent Teams，用于多个可继续 Agent 之间的长期协作。
+
+## 四者怎么选
+
+| 能力 | 核心抽象 | 适合场景 |
+| --- | --- | --- |
+| Subagent | 子 Agent 会话 | 把一项认知任务交给另一个 Agent |
+| Workflow | 编排脚本 | 并行或按规则组织多个 Subagent |
+| Jobs | 后台任务 | 长时间执行、无需阻塞当前 Turn 的工作 |
+| Agent Teams | Lead + Teammates + Mailbox + Task DAG | 多个持续 Agent 之间长期协作与分工 |
+
+## Subagent
+
+`ctx.subagents` 是委派 Provider 与继续服务。当前版本支持多种后端：全新进程内 Agent、从父级稳定历史 Fork 的进程内 Agent、ACP、Codex、Claude Code，以及通过 DSH SDK 启动的进程外 Harness Agent。
+
+父 Agent 可以发现自己创建的子级；面向模型的控制工具还支持消息、停止与状态查询。可继续子代理支持排队、编辑、删除、Steer 与停止语义，因此 Subagent 已不只是一次性函数调用。
+
+## Workflow
+
+`ctx.workflowEngine` 运行由模型编写的编排脚本。脚本本身负责 fan-out、等待与组合返回值，真正的任务执行仍由 Agent 完成。
+
+默认 Worker Thread Provider 把脚本同步计算移出 Host Event Loop，但官方明确指出这只是隔离，不是安全边界。需要安全执行不可信代码时仍应使用 Sandbox / Remote Runtime 等更强隔离能力。
+
+`tool-workflow` 提供通用脚本化编排；`tool-ralph` 提供固定的全新 Agent 迭代循环。
+
+## Jobs
+
+`ctx.jobs` 管理后台任务的 id、归属与生命周期。任务属于启动它的 Agent Session，一个 Agent 不会看到另一个 Agent 的 Job。
+
+长时间 Tool 可以把工作注册为 Job 后立即返回，拥有者继续自己的 Turn。任务完成时通过 Session 内通知送达，不要求模型持续轮询。`tool-jobs` 负责读取、等待、列出与取消。
+
+## Agent Teams：实验能力
+
+Agent Teams 与 Subagent 的区别在于：它不是“父 Agent 调一个子任务”这么简单，而是维护一个隐式 Lead、多个具名且可继续的 Teammate、持久 Peer Mailbox，以及共享 Task DAG。Agent 之间可以持续交换消息并围绕共享任务状态协作。
+
+当前版本中 Agent Teams 已可作为独立 npm 包安装，但**不在默认 Profile 中启用**，仍属于实验能力。第三方插件不应把它当作稳定基础依赖；需要稳定委派时优先使用 Subagent Seam，需要确定性多任务编排时优先使用 Workflow。
+
+## 组合原则
+
+Workflow 可以创建 Subagent，Subagent 内部也可以启动 Job；Agent Teams 则适合多个持续角色共同维护任务状态。不要因为“异步”就统一使用某一种机制。是否需要独立 Agent 历史、脚本化协调、后台生命周期，还是长期 Peer 协作，是选择这些能力的主要判断依据。
+
+源码定位建议从 `packages/subagent/`、`packages/workflow/`、`packages/jobs/` 与 `docs/subsystems/agent-team.zh.md` 进入。
