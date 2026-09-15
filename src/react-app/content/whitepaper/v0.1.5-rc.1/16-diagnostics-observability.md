@@ -9,6 +9,7 @@ status: verified
 verified_at: 2026-09-15
 sources:
   - packages/runtime-diagnostics/README.zh.md
+  - packages/identity/README.zh.md
   - docs/subsystems/invariants.zh.md
   - docs/subsystems/token-meter.zh.md
   - docs/subsystems/session-telemetry.zh.md
@@ -37,6 +38,12 @@ Token Meter 记录不可变的标量与位置回放度量，并把读数与已�
 Session Telemetry 是面向外部观测系统的能力 Seam。它定义统一的 `SessionTelemetryRecord` / Severity 词汇和 `SessionTelemetrySink`，并通过 `session-telemetry/record` waterfall 在发送前提供脱敏与过滤机会。
 
 这条链路适合输出运行状态、诊断和产品观测记录；敏感 Session 内容不应绕过该 Seam 直接上报。Telemetry 是“记录发生了什么”，Invariant 是“断言什么必须成立”，两者不能互相替代。
+
+## 匿名安装 Identity
+
+`packages/identity` 为每个 Harness Home 维护一个匿名、稳定的安装 ID。Telemetry、Feedback 与 DeepSeek Provider Request 可以携带这个 ID，从而把同一安装产生的记录关联起来，但它不是用户身份，也不要求配置真实个人信息。
+
+这一层要和 Session ID、Workspace ID、账号身份区分开：它表达“来自同一套 Harness Home”，不表达“是谁”。做自定义遥测时不要把它升级成用户标识，也不要把额外敏感信息拼接进该 ID。
 
 ## 官方生成目录
 
