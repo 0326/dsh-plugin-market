@@ -1,13 +1,22 @@
 import type { ReactNode } from "react";
 import { useI18n } from "../../lib/i18n";
 import { navigate } from "../../lib/router";
-import { chapterForId, extractToc, officialSourceUrl, WHITEPAPER_VERSIONS, type WhitepaperChapter, type WhitepaperVersion, whitepaperHref } from "../../lib/whitepaper";
+import { chapterForId, extractToc, officialSourceUrl, WHITEPAPER_VERSIONS, type WhitepaperChapter, type WhitepaperVersion } from "../../lib/whitepaper";
+import { whitepaperHrefForHost, whitepaperVersionsHrefForHost } from "../../../shared/site-routing";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface WhitepaperLayoutProps {
 	version: WhitepaperVersion;
 	chapter: WhitepaperChapter;
 	notFound?: boolean;
+}
+
+function currentHostname(): string {
+	return typeof window === "undefined" ? "" : window.location.hostname;
+}
+
+function chapterHref(version: WhitepaperVersion, chapter?: WhitepaperChapter): string {
+	return whitepaperHrefForHost(currentHostname(), version.id, chapter?.slug ?? version.chapters[0]?.slug ?? "overview");
 }
 
 function VersionSelect({ version, chapter }: { version: WhitepaperVersion; chapter: WhitepaperChapter }) {
@@ -20,7 +29,7 @@ function VersionSelect({ version, chapter }: { version: WhitepaperVersion; chapt
 					const target = WHITEPAPER_VERSIONS.find((item) => item.id === event.target.value);
 					if (!target) return;
 					const nextChapter = chapterForId(target, chapter.id) ?? target.chapters[0];
-					navigate(whitepaperHref(target, nextChapter));
+					navigate(chapterHref(target, nextChapter));
 				}}
 			>
 				{WHITEPAPER_VERSIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
@@ -33,7 +42,7 @@ function NavItems({ version, chapter }: { version: WhitepaperVersion; chapter: W
 	return (
 		<nav className="wp-nav" aria-label="Whitepaper chapters">
 			{version.chapters.map((item, index) => (
-				<a key={item.id} className={item.id === chapter.id ? "wp-nav-item is-active" : "wp-nav-item"} href={whitepaperHref(version, item)} aria-current={item.id === chapter.id ? "page" : undefined}>
+				<a key={item.id} className={item.id === chapter.id ? "wp-nav-item is-active" : "wp-nav-item"} href={chapterHref(version, item)} aria-current={item.id === chapter.id ? "page" : undefined}>
 					<span className="wp-nav-index">{String(index).padStart(2, "0")}</span>
 					<strong>{item.title}</strong>
 				</a>
@@ -55,11 +64,11 @@ export function WhitepaperLayout({ version, chapter, notFound = false }: Whitepa
 		<div className="whitepaper-shell">
 			<header className="wp-local-header">
 				<div>
-					<a href={whitepaperHref(version)} className="wp-kicker">DSH DEVELOPER WHITEPAPER</a>
+					<a href={chapterHref(version)} className="wp-kicker">DSH DEVELOPER WHITEPAPER</a>
 					<p>官方源码驱动 · 版本化 · 面向开发者</p>
 				</div>
 				<div className="wp-header-actions">
-					<a href="/whitepaper/versions">版本</a>
+					<a href={whitepaperVersionsHrefForHost(currentHostname())}>版本</a>
 					<VersionSelect version={version} chapter={chapter} />
 				</div>
 			</header>
