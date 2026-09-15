@@ -52,8 +52,10 @@ function sourceUrl(tag, path) {
 
 function linkInlineSourcePaths(html, tag) {
   return html.replace(
-    /<code>((?:\.agents|docs|packages|profiles|scripts|src)\/[^<\s]+)<\/code>/g,
-    (_all, path) => `<a class="wp-source-link" href="${sourceUrl(tag, path)}" target="_blank" rel="noreferrer"><code>${path}</code></a>`,
+    /<a\b[^>]*>[\s\S]*?<\/a>|<code>((?:\.agents|docs|packages|profiles|scripts|src)\/[^<\s]+)<\/code>/g,
+    (match, path) => path
+      ? `<a class="wp-source-link" href="${sourceUrl(tag, path)}" target="_blank" rel="noreferrer"><code>${path}</code></a>`
+      : match,
   );
 }
 
