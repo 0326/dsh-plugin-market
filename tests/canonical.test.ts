@@ -51,6 +51,13 @@ describe("canonical URL redirects", () => {
 		expect(response?.headers.get("location")).toBe("https://whitepaper.dsh-plugin.market/v0.1.5-rc.1/runtime");
 	});
 
+	it("moves diagram assets to the whitepaper host without treating them as page routes", () => {
+		const response = canonicalRedirect(new Request("https://dsh-plugin.market/whitepaper/diagrams/v0.1.5-rc.2/turn-flow.svg"));
+		expect(response?.status).toBe(301);
+		expect(response?.headers.get("location")).toBe("https://whitepaper.dsh-plugin.market/whitepaper/diagrams/v0.1.5-rc.2/turn-flow.svg");
+		expect(canonicalRedirect(new Request("https://whitepaper.dsh-plugin.market/whitepaper/diagrams/v0.1.5-rc.2/turn-flow.svg"))).toBeNull();
+	});
+
 	it("does not redirect an already canonical market URL", () => {
 		expect(canonicalRedirect(new Request("https://dsh-plugin.market/plugins?q=trust"))).toBeNull();
 	});
