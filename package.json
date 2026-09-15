@@ -42,7 +42,8 @@
 	"scripts": {
 		"build": "npm run whitepaper:prepare && tsc -b && vite build && node scripts/clean-build-secrets.mjs",
 		"cf-typegen": "wrangler types",
-		"check": "npm run build && wrangler deploy --dry-run",
+		"check": "npm run cloudflare:domains:check && npm run build && wrangler deploy --dry-run",
+		"cloudflare:domains:check": "node scripts/ensure-worker-domains.mjs --check",
 		"deploy": "npm run build && wrangler deploy",
 		"dev": "npm run whitepaper:build-content && vite",
 		"lint": "eslint .",
