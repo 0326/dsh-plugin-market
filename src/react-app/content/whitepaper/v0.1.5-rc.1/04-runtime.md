@@ -20,22 +20,22 @@ DSH 把一次连续工作组织为 Turn，把一次模型请求及其 Tool Calls
 
 ```mermaid id=turn-flow
 sequenceDiagram
-  participant U as User / Inbox
+  participant U as 用户 / Inbox
   participant A as Agent Loop
   participant L as LLM
   participant T as Tools
   participant S as Session Log
-  U->>A: message
-  A->>A: turn/start · claim input
-  A->>A: assemble prompt + schemas
+  U->>A: 用户消息
+  A->>A: turn/start · 领取输入
+  A->>A: 组装 Prompt + Tool Schemas
   A->>A: agent/pre-step
   A->>A: step/start · agent/request · prepareCall
-  A->>S: system/user/request events
-  A->>L: frozen prepared request
-  L-->>A: assistant stream
+  A->>S: 写入 System / User / Request 事件
+  A->>L: 冻结后的模型请求
+  L-->>A: Assistant 流式响应
   A->>T: tool/call
   T-->>A: tool/result
-  A->>S: assistant/tool settlement
+  A->>S: 写入 Assistant / Tool 结算结果
   A->>A: step/end
   A->>S: turn/end
 ```
@@ -86,3 +86,5 @@ rc.1 的 Session Persistence API 由生命周期持有的 `SessionHandle` 管理
 进入模型请求的内容必须能够从 Session Log 重建。模型历史由持久事件投影得到，而不是依赖只存在于进程内存中的隐藏上下文。
 
 这条约束把 Resume、Fork、Transcript、Telemetry、Persistence 与模型上下文统一到同一组 durable facts 上。新增模型可见输入时，需要先确定它如何进入 Session Event，或如何由已有事件稳定派生。
+
+源码定位建议从 `packages/core/agent-loop/`、`docs/agent-lifecycle.zh.md` 与 `docs/architecture.zh.md` 进入。
