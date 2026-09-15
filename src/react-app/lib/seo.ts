@@ -1,16 +1,19 @@
 import { useEffect, useRef } from "react";
 import type { Route } from "./router";
 import { getCapabilityLanding, getDiscoveryLanding } from "../../shared/seo-landings";
+import { MARKET_ORIGIN, WHITEPAPER_ORIGIN, whitepaperPath } from "../../shared/site-routing";
+import { WHITEPAPER_LATEST_PUBLISHED } from "../../shared/whitepaper-release";
 
-const SITE_URL = "https://dsh-plugin.market";
+const SITE_URL = MARKET_ORIGIN;
 const SITE_NAME = "DSH Plugin Market";
+const WHITEPAPER_SITE_NAME = "DSH Developer Whitepaper";
 const DEFAULT_IMAGE = `${SITE_URL}/kun.png`;
-const WHITEPAPER_LATEST = "v0.1.5-alpha.1";
 
 interface SeoSpec {
 	title: string;
 	description: string;
 	canonicalPath: string;
+	canonicalOrigin?: string;
 }
 
 function upsertMeta(selector: string, attributes: Record<string, string>): void {
@@ -104,16 +107,17 @@ function getSeo(route: Route, lang: string): SeoSpec {
 		case "trust":
 			return { title: `How ${SITE_NAME} Verifies Plugins — Trust Model`, description: zh ? "了解 DSH Plugin Market 如何进行格式验证、兼容性分析、安全信号扫描、维护状态判断，并将结果绑定到具体 commit。" : "Learn how DSH Plugin Market verifies plugin format, checks compatibility, surfaces security and maintenance signals, and binds evidence to a concrete commit.", canonicalPath: "/trust" };
 		case "whitepaper": {
-			const version = route.version === "latest" ? WHITEPAPER_LATEST : route.version;
+			const version = route.version === "latest" ? WHITEPAPER_LATEST_PUBLISHED : route.version;
 			const slug = route.slug ?? "overview";
 			return {
-				title: zh ? `DSH ${version} 开发者白皮书 — ${SITE_NAME}` : `DSH ${version} Developer Whitepaper — ${SITE_NAME}`,
+				title: zh ? `DSH ${version} 开发者白皮书 — ${WHITEPAPER_SITE_NAME}` : `DSH ${version} Developer Whitepaper — ${WHITEPAPER_SITE_NAME}`,
 				description: zh ? "基于 DeepSeek Harness 官方源码与官方文档的版本化开发者白皮书，覆盖架构、运行机制与插件扩展。" : "Versioned DeepSeek Harness developer whitepaper sourced only from official code and documentation.",
-				canonicalPath: `/whitepaper/${encodeURIComponent(version)}/${encodeURIComponent(slug)}`,
+				canonicalPath: whitepaperPath(version, slug),
+				canonicalOrigin: WHITEPAPER_ORIGIN,
 			};
 		}
 		case "whitepaper-versions":
-			return { title: `DSH Whitepaper Versions — ${SITE_NAME}`, description: zh ? "查看 DSH 开发者白皮书支持的完整版本快照。" : "Browse complete version snapshots of the DSH Developer Whitepaper.", canonicalPath: "/whitepaper/versions" };
+			return { title: `DSH Whitepaper Versions — ${WHITEPAPER_SITE_NAME}`, description: zh ? "查看 DSH 开发者白皮书支持的完整版本快照。" : "Browse complete version snapshots of the DSH Developer Whitepaper.", canonicalPath: "/versions", canonicalOrigin: WHITEPAPER_ORIGIN };
 	}
 }
 
@@ -127,7 +131,8 @@ export function useSeo(route: Route, lang: string): void {
 
 	useEffect(() => {
 		const spec = getSeo(route, lang);
-		const key = `${spec.canonicalPath}|${lang}`;
+		const origin = spec.canonicalOrigin ?? SITE_URL;
+		const key = `${origin}${spec.canonicalPath}|${lang}`;
 		document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
 
 		if (initialEdgeKeyRef.current === undefined) {
@@ -140,7 +145,7 @@ export function useSeo(route: Route, lang: string): void {
 
 		initialEdgeKeyRef.current = null;
 		previousKeyRef.current = key;
-		const canonical = `${SITE_URL}${spec.canonicalPath}`;
+		const canonical = `${origin}${spec.canonicalPath}`;
 		document.title = spec.title;
 		setCanonical(canonical);
 		upsertMeta('meta[name="description"]', { name: "description", content: spec.description });
