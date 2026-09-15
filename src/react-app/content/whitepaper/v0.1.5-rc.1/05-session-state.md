@@ -6,11 +6,15 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - packages/core/session/README.zh.md
   - docs/subsystems/session.zh.md
   - docs/subsystems/persistence.zh.md
+  - docs/subsystems/session-query.zh.md
+  - docs/subsystems/session-title.zh.md
+  - docs/subsystems/session-reference.zh.md
+  - docs/subsystems/session-projection.zh.md
   - packages/session/session-format-v2-to-v3/README.zh.md
 ---
 # Session 与状态
@@ -21,14 +25,14 @@ Session 是 DSH 的事件溯源事实层。模型看到的历史、Transcript、
 
 ```mermaid id=session-model
 flowchart LR
-  R["Runtime facts"] --> L["Append-only Session Event Log"]
-  L --> S["Surface projection"]
+  R["运行时事实"] --> L["只追加 Session Event Log"]
+  L --> S["Surface 投影"]
   S --> M["deriveMessages()"]
-  M --> Q["Next LLM request"]
+  M --> Q["下一次 LLM Request"]
   L --> H["request/header + request/context"]
   H --> Q
   X["surfaceOp: replace"] --> S
-  X -. "does not delete" .-> L
+  X -. "不删除历史" .-> L
 ```
 
 ## Durable facts 与 Model Surface
@@ -49,6 +53,20 @@ Session Event 可以分成两类：
 ## Request 状态也可重建
 
 非消息型请求 Envelope 记录在 `request/header`，Provider、Model、Context Window 与系统提示词更新模式等路由信息记录在 `request/context`。模型请求因此不只可以恢复消息，也可以恢复当时使用的调用配置。
+
+## Session 周边服务
+
+Session Event Log 是事实层，但 DSH 没有把所有查询与产品能力都塞进日志对象本身：
+
+| 子系统 | 作用 |
+| --- | --- |
+| Session Persistence | 负责持久化 Provider、Flush、Crash Recovery 与 `SessionHeader` |
+| Session Query | 在逻辑记录之上提供精确事件读取、关系追踪、语义筛选与全文检索 |
+| Session Title | 持久标题及其来源消息 seq，标题生成可由异步 Provider 完成 |
+| Session Reference | 结构化表达跨 Session 引用，并在模型上下文中准备稳定引用信息 |
+| Session Projection | 用纯函数 Projection 从同一事件序列派生一致的只读切面 |
+
+因此，读取 Session 的分析插件优先使用 Query / Projection 等公开能力，而不是自行扫描底层 JSONL；写入新事实则应进入拥有语义的 `SessionEventMap` 事件。
 
 ## rc.1 的 SessionHandle
 
