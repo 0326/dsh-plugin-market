@@ -6,6 +6,7 @@ const root = process.cwd();
 const contentRoot = join(root, "src/react-app/content/whitepaper");
 const generatedRoot = join(contentRoot, "generated");
 const versions = JSON.parse(await readFile(join(contentRoot, "versions.json"), "utf8"));
+const upstreamRepoUrl = "https://github.com/deepseek-ai/deepseek-harness";
 
 let highlighterPromise;
 const languageAliases = new Map([
@@ -39,6 +40,21 @@ function headingId(value) {
     .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+}
+
+function sourceUrl(tag, path) {
+  const normalized = path.replace(/^\.\//, "");
+  const basenamePart = normalized.split("/").at(-1) ?? "";
+  const kind = basenamePart.includes(".") ? "blob" : "tree";
+  const encodedPath = normalized.split("/").map(encodeURIComponent).join("/");
+  return `${upstreamRepoUrl}/${kind}/${encodeURIComponent(tag)}/${encodedPath}`;
+}
+
+function linkInlineSourcePaths(html, tag) {
+  return html.replace(
+    /<code>((?:\.agents|docs|packages|profiles|scripts|src)\/[^<\s]+)<\/code>/g,
+    (_all, path) => `<a class="wp-source-link" href="${sourceUrl(tag, path)}"><code>${path}</code></a>`,
+  );
 }
 
 async function highlight(code, requestedLanguage) {
@@ -96,18 +112,19 @@ async function renderBlock(block, version) {
 
 async function compile(markdown, version) {
   const body = stripFrontmatter(markdown);
-  const extracted = await extractBlocks(body, version);
+  const extracted = await extractBlocks(body, version.id);
   let html = marked.parse(extracted.markdown, { gfm: true, breaks: false });
   if (typeof html !== "string") html = await html;
 
   for (let index = 0; index < extracted.blocks.length; index += 1) {
     const token = `@@WP_BLOCK_${index}@@`;
-    const fragment = await renderBlock(extracted.blocks[index], version);
+    const fragment = await renderBlock(extracted.blocks[index], version.id);
     html = html.replace(`<p>${token}</p>`, fragment).replace(token, fragment);
   }
 
   html = html.replace(/<h([1-4])>([\s\S]*?)<\/h\1>/g, (_all, level, inner) => `<h${level} id="${headingId(inner)}">${inner}</h${level}>`);
   html = html.replace(/<table>([\s\S]*?)<\/table>/g, '<div class="wp-table-wrap"><table>$1</table></div>');
+  html = linkInlineSourcePaths(html, version.tag);
   html = html.replace(/<a href="(https:\/\/[^\"]+)"/g, '<a href="$1" target="_blank" rel="noreferrer"');
   return html;
 }
@@ -119,7 +136,7 @@ for (const version of versions.versions) {
   const nav = JSON.parse(await readFile(join(sourceDir, "nav.json"), "utf8"));
   for (const item of nav) {
     const markdown = await readFile(join(sourceDir, item.file), "utf8");
-    const html = await compile(markdown, version.id);
+    const html = await compile(markdown, version);
     const output = join(targetDir, `${basename(item.file, extname(item.file))}.html`);
     await writeFile(output, html, "utf8");
   }
