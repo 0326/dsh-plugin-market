@@ -20,11 +20,11 @@ DSH 启动的结果不是一个固定内核加若干插件，而是一棵由 Pro
 
 ```mermaid id=boot-composition
 flowchart LR
-  CLI["dsh --profile <name>"] --> P["Named Profile"]
-  P --> B["Bundles + Patches"]
+  CLI["dsh --profile <name>"] --> P["具名 Profile"]
+  P --> B["Bundle + Patch 叠加"]
   B --> L["Cordis Loader"]
-  L --> T["Running Plugin Tree"]
-  H["Harness Home patch"] --> B
+  L --> T["运行中的 Plugin Tree"]
+  H["Harness Home Patch"] --> B
   C["CLI --patch"] --> B
 ```
 
@@ -68,3 +68,5 @@ rc.1 中 Web Profile 支持开发态的实时重载能力；Headless、SDK、SDK
 ## 开发者落点
 
 新增一个面向所有会话的基础能力时，先判断它是否应该成为独立 Service Definition / Provider，再由 Bundle 把默认 Provider 组合进去。这样业务 Bundle 可以替换 Provider，而 Consumer 仍依赖稳定 Definition。
+
+源码定位可从 `packages/boot/`、`packages/bundle/` 与 `docs/architecture.zh.md` 开始。
