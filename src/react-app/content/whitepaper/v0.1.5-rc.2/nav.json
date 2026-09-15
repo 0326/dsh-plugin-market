@@ -1,20 +1,80 @@
-[
-  { "id": "overview", "slug": "overview", "title": "DSH 全貌", "file": "00-overview.md" },
-  { "id": "composition", "slug": "composition", "title": "Cordis 与组合模型", "file": "01-composition.md" },
-  { "id": "boot-config", "slug": "boot-config", "title": "启动与配置组装", "file": "02-boot-config.md" },
-  { "id": "agent-core", "slug": "agent-core", "title": "Agent Core", "file": "03-agent-core.md" },
-  { "id": "runtime", "slug": "runtime", "title": "Agent 运行机制", "file": "04-runtime.md" },
-  { "id": "session-state", "slug": "session-state", "title": "Session 与状态", "file": "05-session-state.md" },
-  { "id": "capability-seams", "slug": "capability-seams", "title": "Capability Seam", "file": "06-capability-seams.md" },
-  { "id": "core-capabilities", "slug": "core-capabilities", "title": "核心能力模块", "file": "07-core-capabilities.md" },
-  { "id": "presets", "slug": "presets", "title": "Preset 与 Agent 组装", "file": "08-presets.md" },
-  { "id": "subagent-workflow-jobs", "slug": "subagent-workflow-jobs", "title": "Subagent / Workflow / Jobs", "file": "09-subagent-workflow-jobs.md" },
-  { "id": "hooks-interception", "slug": "hooks-interception", "title": "Hooks 与拦截", "file": "10-hooks-interception.md" },
-  { "id": "web-client", "slug": "web-client", "title": "Web Client 架构", "file": "11-web-client.md" },
-  { "id": "plugin-development", "slug": "plugin-development", "title": "插件开发与扩展面", "file": "12-plugin-development.md" },
-  { "id": "extension-map", "slug": "extension-map", "title": "扩展能力地图", "file": "13-extension-map.md" },
-  { "id": "sdk-acp-webhook", "slug": "sdk-acp-webhook", "title": "SDK / ACP / Webhook", "file": "14-sdk-acp-webhook.md" },
-  { "id": "security-permissions", "slug": "security-permissions", "title": "安全与权限", "file": "15-security-permissions.md" },
-  { "id": "diagnostics-observability", "slug": "diagnostics-observability", "title": "调试与观测", "file": "16-diagnostics-observability.md" },
-  { "id": "evolution", "slug": "evolution", "title": "版本演进", "file": "17-evolution.md" }
-]
+{
+  "schemaVersion": 2,
+  "groups": [
+    {
+      "id": "orientation",
+      "title": "一、认识 DSH",
+      "type": "body",
+      "items": [
+        { "id": "overview", "slug": "overview", "title": "DSH 全貌", "file": "00-overview.md" },
+        { "id": "reading-paths", "slug": "reading-paths", "title": "阅读路径与角色入口", "file": "18-reading-paths.md" }
+      ]
+    },
+    {
+      "id": "runtime-foundations",
+      "title": "二、运行时基础",
+      "type": "body",
+      "items": [
+        { "id": "composition", "slug": "composition", "title": "Cordis 与组合模型", "file": "01-composition.md" },
+        { "id": "boot-config", "slug": "boot-config", "title": "启动与配置组装", "file": "02-boot-config.md" },
+        { "id": "agent-core", "slug": "agent-core", "title": "Agent Core", "file": "03-agent-core.md" },
+        { "id": "runtime", "slug": "runtime", "title": "Agent 运行机制", "file": "04-runtime.md" },
+        { "id": "session-state", "slug": "session-state", "title": "Session 与状态", "file": "05-session-state.md" }
+      ]
+    },
+    {
+      "id": "orchestration",
+      "title": "三、编排与能力",
+      "type": "body",
+      "items": [
+        { "id": "capability-seams", "slug": "capability-seams", "title": "Capability Seam", "file": "06-capability-seams.md" },
+        { "id": "core-capabilities", "slug": "core-capabilities", "title": "核心能力模块", "file": "07-core-capabilities.md" },
+        { "id": "presets", "slug": "presets", "title": "Preset 与 Agent 组装", "file": "08-presets.md" },
+        { "id": "subagent-workflow-jobs", "slug": "subagent-workflow-jobs", "title": "编排方式选择", "file": "09-subagent-workflow-jobs.md" },
+        { "id": "subagent-delegation", "slug": "subagent-delegation", "title": "Subagent 委派", "file": "19-subagent-delegation.md" },
+        { "id": "workflow-orchestration", "slug": "workflow-orchestration", "title": "Workflow 编排", "file": "20-workflow-orchestration.md" },
+        { "id": "jobs-background", "slug": "jobs-background", "title": "Jobs 后台执行", "file": "21-jobs-background.md" },
+        { "id": "agent-teams", "slug": "agent-teams", "title": "Agent Teams（实验）", "file": "22-agent-teams.md" },
+        { "id": "hooks-interception", "slug": "hooks-interception", "title": "Hooks 与拦截", "file": "10-hooks-interception.md" }
+      ]
+    },
+    {
+      "id": "product-extension",
+      "title": "四、产品与扩展",
+      "type": "body",
+      "items": [
+        { "id": "web-client", "slug": "web-client", "title": "Web Client 架构", "file": "11-web-client.md" },
+        { "id": "plugin-development", "slug": "plugin-development", "title": "插件开发与扩展面", "file": "12-plugin-development.md" },
+        { "id": "extension-map", "slug": "extension-map", "title": "扩展能力地图", "file": "13-extension-map.md" },
+        { "id": "sdk-acp-webhook", "slug": "sdk-acp-webhook", "title": "外部接入方式选择", "file": "14-sdk-acp-webhook.md" },
+        { "id": "sdk", "slug": "sdk", "title": "SDK 接入", "file": "23-sdk.md" },
+        { "id": "acp", "slug": "acp", "title": "ACP 接入", "file": "24-acp.md" },
+        { "id": "webhook", "slug": "webhook", "title": "Webhook 事件接入", "file": "25-webhook.md" }
+      ]
+    },
+    {
+      "id": "production-evolution",
+      "title": "五、生产、边界与演进",
+      "type": "body",
+      "items": [
+        { "id": "security-permissions", "slug": "security-permissions", "title": "安全与权限", "file": "15-security-permissions.md" },
+        { "id": "diagnostics-observability", "slug": "diagnostics-observability", "title": "调试与观测", "file": "16-diagnostics-observability.md" },
+        { "id": "reliability-evaluation", "slug": "reliability-evaluation", "title": "可靠性与验证", "file": "26-reliability-evaluation.md" },
+        { "id": "limits", "slug": "limits", "title": "已知边界与不适用场景", "file": "27-limits.md" },
+        { "id": "evolution", "slug": "evolution", "title": "版本演进", "file": "17-evolution.md" }
+      ]
+    },
+    {
+      "id": "appendices",
+      "title": "附录与规范",
+      "type": "reference",
+      "items": [
+        { "id": "appendix-glossary", "slug": "appendix-glossary", "title": "术语表", "file": "28-appendix-glossary.md" },
+        { "id": "appendix-conventions", "slug": "appendix-conventions", "title": "文档约定与证据规则", "file": "29-appendix-conventions.md" },
+        { "id": "appendix-lifecycle", "slug": "appendix-lifecycle", "title": "版本与生命周期规范", "file": "30-appendix-lifecycle.md" },
+        { "id": "appendix-capability-index", "slug": "appendix-capability-index", "title": "能力与扩展点索引", "file": "31-appendix-capability-index.md" },
+        { "id": "appendix-source-index", "slug": "appendix-source-index", "title": "官方源码入口索引", "file": "32-appendix-source-index.md" }
+      ]
+    }
+  ]
+}

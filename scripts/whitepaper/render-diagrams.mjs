@@ -14,6 +14,18 @@ const puppeteerConfig = join(tempRoot, "puppeteer-config.json");
 const isCi = process.env.CI === "true";
 let count = 0;
 
+function navItems(nav, versionId) {
+  if (!nav || !Array.isArray(nav.groups)) {
+    throw new Error(`${versionId}: nav.json must use the grouped navigation schema`);
+  }
+  return nav.groups.flatMap((group) => {
+    if (!Array.isArray(group.items)) {
+      throw new Error(`${versionId}: navigation group ${group.id ?? "<unknown>"} must contain items`);
+    }
+    return group.items;
+  });
+}
+
 try {
   if (isCi) {
     // GitHub-hosted Ubuntu runners restrict Chromium's user-namespace sandbox.
@@ -31,7 +43,7 @@ try {
     const targetDir = checkOnly ? join(tempRoot, version.id) : join(outputRoot, version.id);
     await mkdir(targetDir, { recursive: true });
 
-    for (const item of nav) {
+    for (const item of navItems(nav, version.id)) {
       const markdown = await readFile(join(sourceDir, item.file), "utf8");
       const mermaid = [...markdown.matchAll(/```mermaid\s+id=([\w-]+)\r?\n([\s\S]*?)```/g)];
       for (const match of mermaid) {

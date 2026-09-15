@@ -4,7 +4,7 @@
   "upstreamTag": "dsh-v0.1.5-rc.2",
   "upstreamCommit": "fb2c4b9e698e30edb738bca4cf0618587db7d203",
   "releaseChannel": "rc",
-  "whitepaperRevision": 1,
+  "whitepaperRevision": 2,
   "verifiedAt": "2026-09-15",
   "sourcePolicy": "official-only",
   "status": "published"

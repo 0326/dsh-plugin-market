@@ -1,5 +1,5 @@
 ---
-title: Subagent / Workflow / Jobs
+title: 编排方式选择
 chapter_id: subagent-workflow-jobs
 slug: subagent-workflow-jobs
 dsh_version: v0.1.5-rc.1
@@ -16,9 +16,9 @@ sources:
   - docs/subsystems/jobs.zh.md
   - docs/subsystems/agent-team.zh.md
 ---
-# Subagent / Workflow / Jobs
+# 编排方式选择
 
-Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但三者解决的问题不同：Subagent 是任务委派，Workflow 是多 Agent 编排，Jobs 是后台任务生命周期。rc.1 还提供实验性的 Agent Teams，用于多个可继续 Agent 之间的长期协作。
+Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但三者解决的问题不同：Subagent 是任务委派，Workflow 是多 Agent 编排，Jobs 是后台任务生命周期。rc.1 还提供实验性的 Agent Teams，用于多个可继续 Agent 之间的长期协作。本页先帮助选择机制，左侧随后四篇文章分别展开其独立边界。
 
 ## 四者怎么选
 
@@ -59,4 +59,4 @@ rc.1 中 Agent Teams 已可作为独立 npm 包安装，但**不在默认 Profil
 
 Workflow 可以创建 Subagent，Subagent 内部也可以启动 Job；Agent Teams 则适合多个持续角色共同维护任务状态。不要因为“异步”就统一使用某一种机制。是否需要独立 Agent 历史、脚本化协调、后台生命周期，还是长期 Peer 协作，是选择这些能力的主要判断依据。
 
-源码定位建议从 `packages/subagent/`、`packages/workflow/`、`packages/jobs/` 与 `docs/subsystems/agent-team.zh.md` 进入。
+需要进一步落地时，按左侧顺序进入“Subagent 委派”“Workflow 编排”“Jobs 后台执行”和“Agent Teams（实验）”。源码定位建议从 `packages/subagent/`、`packages/workflow/`、`packages/jobs/` 与 `docs/subsystems/agent-team.zh.md` 进入。
