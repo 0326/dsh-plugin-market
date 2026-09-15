@@ -35,6 +35,7 @@ import sdkAcpWebhookHtml from "../content/whitepaper/generated/v0.1.5-rc.1/14-sd
 import securityPermissionsHtml from "../content/whitepaper/generated/v0.1.5-rc.1/15-security-permissions.html?raw";
 import diagnosticsObservabilityHtml from "../content/whitepaper/generated/v0.1.5-rc.1/16-diagnostics-observability.html?raw";
 import evolutionHtml from "../content/whitepaper/generated/v0.1.5-rc.1/17-evolution.html?raw";
+import { V015RC2_ASSETS } from "./whitepaper-v015rc2";
 
 export interface WhitepaperSource {
 	path: string;
@@ -312,8 +313,53 @@ const V015RC1: WhitepaperVersion = {
 	],
 };
 
-export const WHITEPAPER_VERSIONS: WhitepaperVersion[] = [V015RC1];
-export const WHITEPAPER_LATEST_VERSION = V015RC1.id;
+function sourcesForRc2(chapter: WhitepaperChapter): WhitepaperSource[] {
+	if (chapter.id === "core-capabilities") {
+		return [...chapter.sources, { path: "docs/subsystems/feedback.zh.md", label: "Feedback" }];
+	}
+	if (chapter.id === "web-client") {
+		return [
+			...chapter.sources,
+			{ path: "docs/subsystems/feedback.zh.md", label: "Feedback" },
+			{ path: "packages/client/ui-message-feedback/README.zh.md", label: "Message feedback UI" },
+			{ path: "packages/client/ui-deliverables/README.zh.md", label: "Deliverables UI" },
+		];
+	}
+	if (chapter.id === "evolution") {
+		return [
+			{ path: "docs/subsystems/feedback.zh.md", label: "Feedback" },
+			{ path: "packages/client/ui-message-feedback/README.zh.md", label: "Message feedback UI" },
+			{ path: "packages/client/ui-deliverables/README.zh.md", label: "Deliverables UI" },
+			{ path: "packages/client/ui-chat/README.zh.md", label: "Chat UI" },
+			{ path: "packages/client/ui-primitives/README.zh.md", label: "UI primitives" },
+		];
+	}
+	return chapter.sources;
+}
+
+const V015RC2: WhitepaperVersion = {
+	id: "v0.1.5-rc.2",
+	label: "v0.1.5-rc.2",
+	upstreamTag: "dsh-v0.1.5-rc.2",
+	upstreamCommit: "fb2c4b9e698e30edb738bca4cf0618587db7d203",
+	releasedAt: "2026-09-10",
+	status: "published",
+	chapters: V015RC1.chapters.map((chapter) => {
+		const assets = V015RC2_ASSETS[chapter.id as keyof typeof V015RC2_ASSETS];
+		return {
+			...chapter,
+			summary: chapter.id === "evolution"
+				? "v0.1.5-rc.1 到 v0.1.5-rc.2 的变化、兼容性与升级检查。"
+				: chapter.summary,
+			markdown: assets.markdown,
+			html: assets.html,
+			sources: sourcesForRc2(chapter),
+		};
+	}),
+};
+
+export const WHITEPAPER_VERSIONS: WhitepaperVersion[] = [V015RC2, V015RC1];
+export const WHITEPAPER_LATEST_VERSION = V015RC2.id;
 
 export function resolveWhitepaperVersion(requested: string): WhitepaperVersion | undefined {
 	const id = requested === "latest" ? WHITEPAPER_LATEST_VERSION : requested;
