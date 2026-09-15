@@ -6,7 +6,7 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - docs/capability-seams.zh.md
   - docs/architecture.zh.md
@@ -20,11 +20,11 @@ Capability Seam 是 DSH 保持开放性的核心边界：能力的接口、默�
 
 ```mermaid id=capability-seam
 flowchart LR
-  X["Profile / Bundle composition"] --> P["Provider"]
-  P --> D["Service Definition / ctx.* contract"]
-  D --> C1["Consumer: Tool"]
-  D --> C2["Consumer: Runtime / UI"]
-  P2["Alternative Provider"] --> D
+  X["Profile / Bundle 组合"] --> P["Provider"]
+  P --> D["Service Definition / ctx.* 契约"]
+  D --> C1["Consumer：Tool"]
+  D --> C2["Consumer：Runtime / UI"]
+  P2["替代 Provider"] --> D
 ```
 
 ## Definition、Provider、Consumer
