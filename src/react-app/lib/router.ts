@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { isGuideSlug, type GuideSlug } from "../content/guide-content";
+import { isWhitepaperHost, MARKET_HOST } from "../../shared/site-routing";
 
 export type Route =
 	| { name: "home" }
@@ -16,10 +17,19 @@ export type Route =
 	| { name: "whitepaper"; version: string; slug?: string }
 	| { name: "whitepaper-versions" };
 
-export function parseRoute(pathname: string, search: string): Route {
+export function parseRoute(pathname: string, search: string, hostname = MARKET_HOST): Route {
 	const path = (pathname || "/").replace(/\/+$/, "") || "/";
 	const query = search.replace(/^\?/, "");
 	const segments = path.split("/").filter(Boolean);
+
+	if (isWhitepaperHost(hostname)) {
+		if (segments.length === 0) return { name: "whitepaper", version: "latest" };
+		if (segments.length === 1 && segments[0] === "versions") return { name: "whitepaper-versions" };
+		if (segments.length === 1 && segments[0]) return { name: "whitepaper", version: segments[0] };
+		if (segments.length === 2 && segments[0] && segments[1]) return { name: "whitepaper", version: segments[0], slug: segments[1] };
+		return { name: "whitepaper", version: "latest" };
+	}
+
 	if (segments.length === 0) return { name: "home" };
 	if (segments.length === 1 && segments[0] === "plugins") return { name: "explore", query };
 	if (segments.length === 1 && segments[0] === "compare") return { name: "compare", query };
@@ -44,19 +54,26 @@ function subscribe(callback: () => void): () => void {
 }
 
 function getSnapshot(): string {
-	return window.location.pathname + window.location.search;
+	return `${window.location.hostname}\n${window.location.pathname}${window.location.search}`;
 }
 
 export function useRoute(): Route {
 	const snapshot = useSyncExternalStore(subscribe, getSnapshot);
-	const q = snapshot.indexOf("?");
-	const path = q === -1 ? snapshot : snapshot.slice(0, q);
-	const search = q === -1 ? "" : snapshot.slice(q + 1);
-	return parseRoute(path, search);
+	const separator = snapshot.indexOf("\n");
+	const hostname = separator === -1 ? MARKET_HOST : snapshot.slice(0, separator);
+	const location = separator === -1 ? snapshot : snapshot.slice(separator + 1);
+	const q = location.indexOf("?");
+	const path = q === -1 ? location : location.slice(0, q);
+	const search = q === -1 ? "" : location.slice(q + 1);
+	return parseRoute(path, search, hostname);
 }
 
 /** SPA navigation without a full reload (path-based routing). */
 export function navigate(to: string): void {
+	if (/^https?:\/\//.test(to)) {
+		window.location.assign(to);
+		return;
+	}
 	const current = window.location.pathname + window.location.search;
 	if (current === to) return;
 	window.history.pushState({}, "", to);
