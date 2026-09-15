@@ -6,12 +6,13 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - packages/session/session-format-v2-to-v3/README.zh.md
   - packages/core/agent-loop/README.zh.md
   - docs/subsystems/slots.zh.md
   - packages/subagent/README.zh.md
+  - docs/subsystems/agent-team.zh.md
 ---
 # 版本演进
 
@@ -29,12 +30,21 @@ sources:
 | Web Slots | 新增 `main`、`sidebar.panellist` | 全局面板使用新 Slot；Conversation 成为 `main` 的 `conversation` key |
 | Subagent | 可继续会话增加 Queue / Edit / Delete / Steer / Stop | 子代理从一次性委派扩展为可持续控制会话 |
 | System Prompt | 支持不破坏 KV Cache 的动态提示词更新 | 仅在模型 Adapter 显式声明支持时使用对应模式 |
+| Agent Teams | 提供可安装的实验包 | 不在默认 Profile 启用，不应当作稳定基础依赖 |
 
 ## 产品能力变化
 
 rc.1 新增通用文件上传与后台进度；Web 右侧 Sidebar 支持多标签、分栏、全屏以及 Markdown、代码、HTML、PDF、图片预览，并移除旧 Detail Panel。模型可以显式交付文件到 Sidebar。
 
 DeepSeek Adapter 新增 `DeepSeek-V41-Flash`（`deepseek-flash`），支持文本、图片与会话历史中的系统提示词更新，并成为新 Session 默认模型；显式配置仍优先。
+
+Subagent 的继续能力明显增强，同时新增实验性的 Agent Teams，用于 Lead、Teammate、Peer Mailbox 与共享 Task DAG 的长期协作。稳定业务逻辑仍应区分 Subagent、Workflow、Jobs 与实验 Team 能力。
+
+## 平台与运行环境变化
+
+rc.1 增强 Custom Model Provider 的模型发现能力，并支持标准 Proxy 环境变量，使模型与外部请求在代理网络下更容易保持一致配置。
+
+Workspace 菜单新增 “Open in app” 能力，便于把 Workspace 交给本地应用打开；Feedback 相关行为也有调整，依赖自定义反馈 UI 或 Host Remote 的插件需要重新核对对应契约。
 
 SDK、Headless 与 ACP 默认文件工具也发生调整；Web `minimal` 与 Python `sdk-minimal` 的默认能力更收敛，依赖旧默认 Tool 集合的业务 Profile 需要显式检查组合结果。
 
@@ -47,10 +57,17 @@ SDK、Headless 与 ACP 默认文件工具也发生调整；Web `minimal` 与 Pyt
 3. 自定义 Session Persistence / Reader 是否适配 V3 与 `SessionHandle`；
 4. Web 插件是否仍注册旧顶层 Conversation Slot；
 5. Subagent 控制逻辑是否假设委派只能一次性完成；
-6. 是否依赖 Profile 中旧的默认 Tool 集合。
+6. 是否依赖 Profile 中旧的默认 Tool 集合；
+7. 自定义 Model Provider 是否需要适配新的模型发现方式；
+8. Feedback、Sidebar、Workspace 打开行为是否依赖旧 Web API。
 
-## 官方变更入口
+## 源码与官方变更入口
 
+- `packages/session/session-format-v2-to-v3/README.zh.md`
+- `packages/core/agent-loop/README.zh.md`
+- `packages/subagent/README.zh.md`
+- `docs/subsystems/slots.zh.md`
+- `docs/subsystems/agent-team.zh.md`
 - [v0.1.5-rc.1 Release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.1)
 - [v0.1.2-rc.1...v0.1.5-rc.1 Compare](https://github.com/deepseek-ai/deepseek-harness/compare/dsh-v0.1.2-rc.1...dsh-v0.1.5-rc.1)
 
