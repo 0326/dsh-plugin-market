@@ -1,5 +1,5 @@
 import { isSeoPagePath } from "./seo";
-import { MARKET_HOST, WHITEPAPER_HOST, WHITEPAPER_ORIGIN, isMarketHost, isWhitepaperHost, stripLegacyWhitepaperPrefix, whitepaperPath } from "../shared/site-routing";
+import { MARKET_HOST, WHITEPAPER_HOST, isMarketHost, isWhitepaperHost, stripLegacyWhitepaperPrefix, whitepaperPath } from "../shared/site-routing";
 import { WHITEPAPER_LATEST_PUBLISHED } from "../shared/whitepaper-release";
 
 export const CANONICAL_HOST = MARKET_HOST;
@@ -41,16 +41,40 @@ export function canonicalRedirect(request: Request): Response | null {
 	const url = new URL(request.url);
 	const hostname = url.hostname.toLowerCase();
 	const wwwHost = `www.${CANONICAL_HOST}`;
+	const marketHost = isMarketHost(hostname);
+	const whitepaperHost = isWhitepaperHost(hostname);
+
+	// Diagram URLs are physical assets, not legacy page routes. Keep the asset
+	// namespace stable while moving its canonical host to the whitepaper domain.
+	if (url.pathname.startsWith("/whitepaper/diagrams/")) {
+		if (marketHost) {
+			url.protocol = "https:";
+			url.hostname = WHITEPAPER_HOST;
+			return redirect(url, 301);
+		}
+		if (whitepaperHost && url.protocol === "http:") {
+			url.protocol = "https:";
+			return redirect(url, 301);
+		}
+		return null;
+	}
+
+	if (url.pathname === "/whitepaper/sitemap.xml" && (marketHost || whitepaperHost)) {
+		url.protocol = "https:";
+		url.hostname = WHITEPAPER_HOST;
+		url.pathname = "/sitemap.xml";
+		return redirect(url, 301);
+	}
 
 	const legacyWhitepaper = whitepaperDestination(url.pathname);
-	if (legacyWhitepaper && (isMarketHost(hostname) || isWhitepaperHost(hostname))) {
+	if (legacyWhitepaper && (marketHost || whitepaperHost)) {
 		url.protocol = "https:";
 		url.hostname = WHITEPAPER_HOST;
 		url.pathname = legacyWhitepaper.path;
 		return redirect(url, legacyWhitepaper.status);
 	}
 
-	if (isWhitepaperHost(hostname)) {
+	if (whitepaperHost) {
 		if (url.pathname === "/") {
 			url.protocol = "https:";
 			url.pathname = whitepaperPath(WHITEPAPER_LATEST_PUBLISHED, "overview");
@@ -95,5 +119,3 @@ export function canonicalRedirect(request: Request): Response | null {
 	if (!changed) return null;
 	return redirect(url, 301);
 }
-
-export const WHITEPAPER_CANONICAL_ORIGIN = WHITEPAPER_ORIGIN;
