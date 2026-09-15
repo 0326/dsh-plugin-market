@@ -20,10 +20,10 @@ Agent Preset 解决“同一个 DSH 进程里，不同 Session 使用不同 Agen
 
 ```mermaid id=preset-scope
 flowchart TB
-  G["Global Profile / Providers"] --> A1["Agent A Scope"]
+  G["全局 Profile / Providers"] --> A1["Agent A Scope"]
   G --> A2["Agent B Scope"]
-  P1["Preset: analyst / agent.cordis.yml"] --> A1
-  P2["Preset: coder / agent.cordis.yml"] --> A2
+  P1["Preset：analyst / agent.cordis.yml"] --> A1
+  P2["Preset：coder / agent.cordis.yml"] --> A2
   A1 --> T1["Tools / Skills / Prompt / Persona A"]
   A2 --> T2["Tools / Skills / Prompt / Persona B"]
 ```
@@ -56,3 +56,5 @@ Agent 可用能力与模型最终看到的 Tool Schema 不是同一层。Core �
 ## 适合业务插件的方式
 
 业务产品通常应把“部署级能力”与“角色级能力”拆开：Provider 和基础 Service 放 Profile / Bundle，领域 Tool、Skill、Prompt 和 Persona 放 Preset。这样同一部署可以运行多个业务 Agent，同时共享底层基础设施。
+
+源码定位建议从 `packages/preset/`、`docs/subsystems/scope.zh.md` 与 `docs/subsystems/system-prompt.zh.md` 进入。
