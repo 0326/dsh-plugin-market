@@ -6,7 +6,7 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - packages/subagent/README.zh.md
   - docs/subsystems/subagent.zh.md
@@ -14,18 +14,20 @@ sources:
   - docs/subsystems/workflow.zh.md
   - packages/jobs/README.zh.md
   - docs/subsystems/jobs.zh.md
+  - docs/subsystems/agent-team.zh.md
 ---
 # Subagent / Workflow / Jobs
 
-Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但三者解决的问题不同：Subagent 是任务委派，Workflow 是多 Agent 编排，Jobs 是后台任务生命周期。
+Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但三者解决的问题不同：Subagent 是任务委派，Workflow 是多 Agent 编排，Jobs 是后台任务生命周期。rc.1 还提供实验性的 Agent Teams，用于多个可继续 Agent 之间的长期协作。
 
-## 三者怎么选
+## 四者怎么选
 
 | 能力 | 核心抽象 | 适合场景 |
 | --- | --- | --- |
 | Subagent | 子 Agent 会话 | 把一项认知任务交给另一个 Agent |
 | Workflow | 编排脚本 | 并行或按规则组织多个 Subagent |
 | Jobs | 后台任务 | 长时间执行、无需阻塞当前 Turn 的工作 |
+| Agent Teams | Lead + Teammates + Mailbox + Task DAG | 多个持续 Agent 之间长期协作与分工 |
 
 ## Subagent
 
@@ -47,6 +49,14 @@ Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但�
 
 长时间 Tool 可以把工作注册为 Job 后立即返回，拥有者继续自己的 Turn。任务完成时通过 Session 内通知送达，不要求模型持续轮询。`tool-jobs` 负责读取、等待、列出与取消。
 
+## Agent Teams：rc.1 的实验能力
+
+Agent Teams 与 Subagent 的区别在于：它不是“父 Agent 调一个子任务”这么简单，而是维护一个隐式 Lead、多个具名且可继续的 Teammate、持久 Peer Mailbox，以及共享 Task DAG。Agent 之间可以持续交换消息并围绕共享任务状态协作。
+
+rc.1 中 Agent Teams 已可作为独立 npm 包安装，但**不在默认 Profile 中启用**，仍属于实验能力。第三方插件不应把它当作稳定基础依赖；需要稳定委派时优先使用 Subagent Seam，需要确定性多任务编排时优先使用 Workflow。
+
 ## 组合原则
 
-Workflow 可以创建 Subagent，Subagent 内部也可以启动 Job，但不要因为“异步”就统一使用某一种机制。是否需要独立 Agent 历史、是否需要脚本化多任务协调、是否需要后台生命周期，是选择三者的主要判断依据。
+Workflow 可以创建 Subagent，Subagent 内部也可以启动 Job；Agent Teams 则适合多个持续角色共同维护任务状态。不要因为“异步”就统一使用某一种机制。是否需要独立 Agent 历史、脚本化协调、后台生命周期，还是长期 Peer 协作，是选择这些能力的主要判断依据。
+
+源码定位建议从 `packages/subagent/`、`packages/workflow/`、`packages/jobs/` 与 `docs/subsystems/agent-team.zh.md` 进入。
