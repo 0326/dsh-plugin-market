@@ -27,8 +27,36 @@ describe("canonical URL redirects", () => {
 		expect(response?.headers.get("location")).toBe("https://dsh-plugin.market/guide/install-dsh-plugin?lang=en");
 	});
 
-	it("does not redirect an already canonical URL", () => {
+	it("redirects legacy whitepaper chapter URLs to the subdomain and preserves query", () => {
+		const response = canonicalRedirect(new Request("https://dsh-plugin.market/whitepaper/v0.1.5-rc.2/overview?from=old"));
+		expect(response?.status).toBe(301);
+		expect(response?.headers.get("location")).toBe("https://whitepaper.dsh-plugin.market/v0.1.5-rc.2/overview?from=old");
+	});
+
+	it("redirects the whitepaper root to the concrete latest version", () => {
+		const response = canonicalRedirect(new Request("https://whitepaper.dsh-plugin.market/"));
+		expect(response?.status).toBe(302);
+		expect(response?.headers.get("location")).toBe("https://whitepaper.dsh-plugin.market/v0.1.5-rc.2/overview");
+	});
+
+	it("redirects latest aliases to the concrete latest chapter", () => {
+		const response = canonicalRedirect(new Request("https://whitepaper.dsh-plugin.market/latest/runtime"));
+		expect(response?.status).toBe(302);
+		expect(response?.headers.get("location")).toBe("https://whitepaper.dsh-plugin.market/v0.1.5-rc.2/runtime");
+	});
+
+	it("redirects the phase-one whitepaper path on the subdomain to the short path", () => {
+		const response = canonicalRedirect(new Request("https://whitepaper.dsh-plugin.market/whitepaper/v0.1.5-rc.1/runtime"));
+		expect(response?.status).toBe(301);
+		expect(response?.headers.get("location")).toBe("https://whitepaper.dsh-plugin.market/v0.1.5-rc.1/runtime");
+	});
+
+	it("does not redirect an already canonical market URL", () => {
 		expect(canonicalRedirect(new Request("https://dsh-plugin.market/plugins?q=trust"))).toBeNull();
+	});
+
+	it("does not redirect an already canonical whitepaper URL", () => {
+		expect(canonicalRedirect(new Request("https://whitepaper.dsh-plugin.market/v0.1.5-rc.2/overview"))).toBeNull();
 	});
 
 	it("does not rewrite unknown asset-like paths", () => {
