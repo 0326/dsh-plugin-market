@@ -1,0 +1,9 @@
+{
+  "service": "dsh-plugin-market",
+  "domains": [
+    {
+      "hostname": "whitepaper.dsh-plugin.market",
+      "zone_name": "dsh-plugin.market"
+    }
+  ]
+}
