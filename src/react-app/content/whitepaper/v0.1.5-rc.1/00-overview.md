@@ -6,7 +6,7 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - README.zh.md
   - docs/architecture.zh.md
@@ -28,13 +28,13 @@ DeepSeek Harness（DSH）是一个开源 Agent Harness。它建立在 Cordis 之
 
 ```mermaid id=overview-platform
 flowchart TB
-  Composition[Composition\nProfile · Bundle · Patch] --> Tree[Plugin Tree / Cordis Context]
-  Tree --> Core[Agent Core\nSession · Prompt · Tools · Agent Loop]
-  Tree --> Capabilities[Capability Seams\nLLM · FS · Shell · Web · Skill · Sandbox]
-  Tree --> Platform[Platform\nHost · Client · SDK · ACP · Webhook]
-  Core --> Log[Durable Session Log]
+  Composition["组合层\nProfile · Bundle · Patch"] --> Tree["Plugin Tree / Cordis Context"]
+  Tree --> Core["Agent Core\nSession · Prompt · Tools · Agent Loop"]
+  Tree --> Capabilities["能力层 Capability Seams\nLLM · FS · Shell · Web · Skill · Sandbox"]
+  Tree --> Platform["产品接入层\nHost · Client · SDK · ACP · Webhook"]
+  Core --> Log["持久化 Session Log"]
   Capabilities --> Core
-  Log --> Client[Projection / Remote / Web Client]
+  Log --> Client["投影 / Remote / Web Client"]
 ```
 
 DSH 的结构可以分成四个面：
