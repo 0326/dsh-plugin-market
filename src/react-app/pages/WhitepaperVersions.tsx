@@ -1,4 +1,9 @@
-import { WHITEPAPER_LATEST_VERSION, WHITEPAPER_VERSIONS, whitepaperHref } from "../lib/whitepaper";
+import { WHITEPAPER_LATEST_VERSION, WHITEPAPER_VERSIONS } from "../lib/whitepaper";
+import { whitepaperHrefForHost } from "../../shared/site-routing";
+
+function currentHostname(): string {
+	return typeof window === "undefined" ? "" : window.location.hostname;
+}
 
 export default function WhitepaperVersions() {
 	return (
@@ -8,9 +13,9 @@ export default function WhitepaperVersions() {
 			<p className="wp-lead">每个版本是一套独立内容快照。目录、正文、架构图和官方源码链接保持同一 DSH Tag。</p>
 			<div className="wp-version-list">
 				{WHITEPAPER_VERSIONS.map((version) => (
-					<a key={version.id} href={whitepaperHref(version)} className="wp-version-row">
+					<a key={version.id} href={whitepaperHrefForHost(currentHostname(), version.id, version.chapters[0]?.slug ?? "overview")} className="wp-version-row">
 						<div><strong>{version.label}</strong>{version.id === WHITEPAPER_LATEST_VERSION && <span>Latest</span>}</div>
-						<p>{version.chapters.length} 个 P0 章节 · DSH 发布于 {version.releasedAt}</p>
+						<p>{version.chapters.length} 个章节 · DSH 发布于 {version.releasedAt}</p>
 						<code>{version.upstreamCommit}</code>
 					</a>
 				))}

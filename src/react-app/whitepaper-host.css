@@ -1,0 +1,8 @@
+.whitepaper-standalone .site-header,
+.whitepaper-standalone .site-footer {
+	display: none;
+}
+
+.whitepaper-standalone .app-frame {
+	min-height: 100vh;
+}

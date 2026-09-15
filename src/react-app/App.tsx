@@ -7,6 +7,7 @@ import { useI18n } from "./lib/i18n";
 import { navigate, useRoute } from "./lib/router";
 import { useSeo } from "./lib/seo";
 import { useTheme } from "./lib/theme";
+import { isWhitepaperHost, WHITEPAPER_ORIGIN } from "../shared/site-routing";
 import Home from "./pages/Home";
 const About = lazy(() => import("./pages/About"));
 const Explore = lazy(() => import("./pages/Explore"));
@@ -29,6 +30,7 @@ function App() {
 	const route = useRoute();
 	const { t, toggleLang, lang } = useI18n();
 	const { theme, toggleTheme } = useTheme();
+	const standaloneWhitepaper = typeof window !== "undefined" && isWhitepaperHost(window.location.hostname);
 	useSeo(route, lang);
 
 	useEffect(() => {
@@ -56,44 +58,46 @@ function App() {
 
 	return (
 		<div className="app-frame flex min-h-screen flex-col bg-base-100 text-base-content">
-			<header className="site-header navbar sticky top-0 z-30 px-4 md:px-7">
-				<div className="navbar-start">
-					<a className="flex items-center gap-2" href="/" aria-label="DSH-PLUGIN MARKET">
-						<Kun className="h-11 w-11 object-contain" ariaHidden />
-						<span className="brand-lockup">DSH-PLUGIN <strong>MARKET</strong></span>
-					</a>
-				</div>
-				<nav className="navbar-center hidden gap-2 md:flex" aria-label="Primary">
-					<a className={navClass(route.name === "home")} href="/">{t("nav.home")}</a>
-					<a className={navClass(isMarket)} href="/plugins">{t("nav.explore")}</a>
-					<a className={navClass(route.name === "submit")} href="/submit">{t("nav.submit")}</a>
-					<a className={navClass(isDocs)} href="/guide/what-is-dsh-plugin">{docsLabel}</a>
-					<a className={navClass(isWhitepaper)} href="/whitepaper">{whitepaperLabel}</a>
-					<a className={navClass(route.name === "about")} href="/about">{t("nav.about")}</a>
-				</nav>
-				<div className="navbar-end gap-2">
-					<div className="hidden sm:block"><GitHubStar /></div>
-					<div className="dropdown dropdown-end md:hidden">
-						<div tabIndex={0} role="button" className="btn btn-ghost btn-sm text-xl" aria-label="Menu">☰</div>
-						<ul tabIndex={0} className="dropdown-content menu z-50 mt-3 w-52 border border-base-300 bg-base-100 p-2 shadow">
-							<li><a href="/">{t("nav.home")}</a></li>
-							<li><a href="/plugins">{t("nav.explore")}</a></li>
-							<li><a href="/submit">{t("nav.submit")}</a></li>
-							<li><a href="/guide/what-is-dsh-plugin">{docsLabel}</a></li>
-							<li><a href="/whitepaper">{whitepaperLabel}</a></li>
-							<li><a href="/about">{t("nav.about")}</a></li>
-							<li><button type="button" onClick={toggleTheme}><Icon name={theme === "light" ? "moon" : "sun"} size={16} stroke={2} />{theme === "light" ? t("theme.dark") : t("theme.light")}</button></li>
-						</ul>
+			{!standaloneWhitepaper && (
+				<header className="site-header navbar sticky top-0 z-30 px-4 md:px-7">
+					<div className="navbar-start">
+						<a className="flex items-center gap-2" href="/" aria-label="DSH-PLUGIN MARKET">
+							<Kun className="h-11 w-11 object-contain" ariaHidden />
+							<span className="brand-lockup">DSH-PLUGIN <strong>MARKET</strong></span>
+						</a>
 					</div>
-					<button className="btn btn-square btn-ghost btn-sm hidden border border-base-content sm:inline-flex" onClick={toggleTheme} aria-label={theme === "light" ? t("theme.dark") : t("theme.light")}>
-						<Icon name={theme === "light" ? "moon" : "sun"} size={18} stroke={2} />
-					</button>
-					<button className="btn btn-ghost btn-sm gap-1.5 border border-base-content px-3" onClick={toggleLang} aria-label={lang === "zh" ? "Switch to English" : "切换到中文"}>
-						<Icon name="language" size={18} stroke={2} />
-						{t("langSwitch")}
-					</button>
-				</div>
-			</header>
+					<nav className="navbar-center hidden gap-2 md:flex" aria-label="Primary">
+						<a className={navClass(route.name === "home")} href="/">{t("nav.home")}</a>
+						<a className={navClass(isMarket)} href="/plugins">{t("nav.explore")}</a>
+						<a className={navClass(route.name === "submit")} href="/submit">{t("nav.submit")}</a>
+						<a className={navClass(isDocs)} href="/guide/what-is-dsh-plugin">{docsLabel}</a>
+						<a className={navClass(isWhitepaper)} href={WHITEPAPER_ORIGIN}>{whitepaperLabel}</a>
+						<a className={navClass(route.name === "about")} href="/about">{t("nav.about")}</a>
+					</nav>
+					<div className="navbar-end gap-2">
+						<div className="hidden sm:block"><GitHubStar /></div>
+						<div className="dropdown dropdown-end md:hidden">
+							<div tabIndex={0} role="button" className="btn btn-ghost btn-sm text-xl" aria-label="Menu">☰</div>
+							<ul tabIndex={0} className="dropdown-content menu z-50 mt-3 w-52 border border-base-300 bg-base-100 p-2 shadow">
+								<li><a href="/">{t("nav.home")}</a></li>
+								<li><a href="/plugins">{t("nav.explore")}</a></li>
+								<li><a href="/submit">{t("nav.submit")}</a></li>
+								<li><a href="/guide/what-is-dsh-plugin">{docsLabel}</a></li>
+								<li><a href={WHITEPAPER_ORIGIN}>{whitepaperLabel}</a></li>
+								<li><a href="/about">{t("nav.about")}</a></li>
+								<li><button type="button" onClick={toggleTheme}><Icon name={theme === "light" ? "moon" : "sun"} size={16} stroke={2} />{theme === "light" ? t("theme.dark") : t("theme.light")}</button></li>
+							</ul>
+						</div>
+						<button className="btn btn-square btn-ghost btn-sm hidden border border-base-content sm:inline-flex" onClick={toggleTheme} aria-label={theme === "light" ? t("theme.dark") : t("theme.light")}>
+							<Icon name={theme === "light" ? "moon" : "sun"} size={18} stroke={2} />
+						</button>
+						<button className="btn btn-ghost btn-sm gap-1.5 border border-base-content px-3" onClick={toggleLang} aria-label={lang === "zh" ? "Switch to English" : "切换到中文"}>
+							<Icon name="language" size={18} stroke={2} />
+							{t("langSwitch")}
+						</button>
+					</div>
+				</header>
+			)}
 
 			<main className={mainClass}>
 				<Suspense fallback={<div className="min-h-[40vh] animate-pulse border border-base-300 bg-base-200/40" aria-label="Loading" />}>
@@ -121,21 +125,23 @@ function App() {
 				</Suspense>
 			</main>
 
-			<footer className="site-footer bg-neutral p-8 text-neutral-content md:p-10">
-				<div>
-					<div className="flex items-center gap-2">
-						<Kun className="h-8 w-auto" ariaHidden />
-						<span className="text-lg font-extrabold">DSH-PLUGIN MARKET</span>
+			{!standaloneWhitepaper && (
+				<footer className="site-footer bg-neutral p-8 text-neutral-content md:p-10">
+					<div>
+						<div className="flex items-center gap-2">
+							<Kun className="h-8 w-auto" ariaHidden />
+							<span className="text-lg font-extrabold">DSH-PLUGIN MARKET</span>
+						</div>
+						<p className="max-w-md opacity-80">{t("footer")}</p>
 					</div>
-					<p className="max-w-md opacity-80">{t("footer")}</p>
-				</div>
-				<nav className="flex flex-wrap items-center gap-x-6 gap-y-3 md:justify-end" aria-label={t("footerLinks")}>
-					<a className="link-hover link" href="/guide/what-is-dsh-plugin">{docsLabel}</a>
-					<a className="link-hover link" href="/whitepaper">{whitepaperLabel}</a>
-					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/0326/dsh-plugin-market" target="_blank" rel="noreferrer"><Icon name="github" size={16} stroke={2} />{t("footerSource")}</a>
-					<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noreferrer"><Icon name="external-link" size={14} stroke={2} />DeepSeek Harness</a>
-				</nav>
-			</footer>
+					<nav className="flex flex-wrap items-center gap-x-6 gap-y-3 md:justify-end" aria-label={t("footerLinks")}>
+						<a className="link-hover link" href="/guide/what-is-dsh-plugin">{docsLabel}</a>
+						<a className="link-hover link" href={WHITEPAPER_ORIGIN}>{whitepaperLabel}</a>
+						<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/0326/dsh-plugin-market" target="_blank" rel="noreferrer"><Icon name="github" size={16} stroke={2} />{t("footerSource")}</a>
+						<a className="link-hover link inline-flex items-center gap-1.5" href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noreferrer"><Icon name="external-link" size={14} stroke={2} />DeepSeek Harness</a>
+					</nav>
+				</footer>
+			)}
 		</div>
 	);
 }

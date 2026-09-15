@@ -5,8 +5,10 @@ import { marked } from "marked";
 const root = process.cwd();
 const contentRoot = join(root, "src/react-app/content/whitepaper");
 const generatedRoot = join(contentRoot, "generated");
+const publicWhitepaperRoot = join(root, "public/whitepaper");
 const versions = JSON.parse(await readFile(join(contentRoot, "versions.json"), "utf8"));
 const upstreamRepo = "https://github.com/deepseek-ai/deepseek-harness";
+const whitepaperOrigin = "https://whitepaper.dsh-plugin.market";
 
 let highlighterPromise;
 const languageAliases = new Map([
@@ -28,6 +30,15 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function xmlEscape(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
 function headingId(value) {
@@ -131,6 +142,16 @@ async function compile(markdown, version) {
   return html;
 }
 
+function sitemapXml(entries) {
+  const rows = entries.map(({ loc, lastmod }) => {
+    const modified = lastmod ? `\n    <lastmod>${xmlEscape(lastmod)}</lastmod>` : "";
+    return `  <url>\n    <loc>${xmlEscape(loc)}</loc>${modified}\n  </url>`;
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join("\n")}\n</urlset>\n`;
+}
+
+const sitemapEntries = [{ loc: `${whitepaperOrigin}/versions` }];
+
 for (const version of versions.versions) {
   const sourceDir = join(contentRoot, version.id);
   const targetDir = join(generatedRoot, version.id);
@@ -141,7 +162,16 @@ for (const version of versions.versions) {
     const html = await compile(markdown, version);
     const output = join(targetDir, `${basename(item.file, extname(item.file))}.html`);
     await writeFile(output, html, "utf8");
+    if (version.status === "published") {
+      sitemapEntries.push({
+        loc: `${whitepaperOrigin}/${encodeURIComponent(version.id)}/${encodeURIComponent(item.slug)}`,
+        lastmod: version.releasedAt,
+      });
+    }
   }
 }
 
-console.log(`Whitepaper content compiled: ${versions.versions.length} version(s)`);
+await mkdir(publicWhitepaperRoot, { recursive: true });
+await writeFile(join(publicWhitepaperRoot, "sitemap.xml"), sitemapXml(sitemapEntries), "utf8");
+
+console.log(`Whitepaper content compiled: ${versions.versions.length} version(s); sitemap URLs: ${sitemapEntries.length}`);

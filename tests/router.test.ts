@@ -41,4 +41,15 @@ describe("parseRoute", () => {
 		expect(parseRoute("/publisher/acme", "")).toEqual({ name: "publisher", owner: "acme" });
 		expect(parseRoute("/publisher/acme/extra", "")).toEqual({ name: "home" });
 	});
+
+	it("keeps legacy whitepaper routes available on non-production preview hosts", () => {
+		expect(parseRoute("/whitepaper/v0.1.5-rc.2/overview", "", "preview.example.workers.dev")).toEqual({ name: "whitepaper", version: "v0.1.5-rc.2", slug: "overview" });
+	});
+
+	it("uses short version routes on the whitepaper subdomain", () => {
+		expect(parseRoute("/", "", "whitepaper.dsh-plugin.market")).toEqual({ name: "whitepaper", version: "latest" });
+		expect(parseRoute("/versions", "", "whitepaper.dsh-plugin.market")).toEqual({ name: "whitepaper-versions" });
+		expect(parseRoute("/v0.1.5-rc.2", "", "whitepaper.dsh-plugin.market")).toEqual({ name: "whitepaper", version: "v0.1.5-rc.2" });
+		expect(parseRoute("/v0.1.5-rc.2/overview", "", "whitepaper.dsh-plugin.market")).toEqual({ name: "whitepaper", version: "v0.1.5-rc.2", slug: "overview" });
+	});
 });
