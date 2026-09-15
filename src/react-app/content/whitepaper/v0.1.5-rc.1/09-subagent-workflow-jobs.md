@@ -6,10 +6,11 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - packages/subagent/README.zh.md
   - docs/subsystems/subagent.zh.md
+  - docs/subsystems/agent-team.zh.md
   - packages/workflow/README.zh.md
   - docs/subsystems/workflow.zh.md
   - packages/jobs/README.zh.md
@@ -17,13 +18,14 @@ sources:
 ---
 # Subagent / Workflow / Jobs
 
-Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但三者解决的问题不同：Subagent 是任务委派，Workflow 是多 Agent 编排，Jobs 是后台任务生命周期。
+Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但三者解决的问题不同：Subagent 是任务委派，Workflow 是多 Agent 编排，Jobs 是后台任务生命周期。rc.1 还提供实验性的 Agent Teams，用于更长期的同级 Agent 协作。
 
-## 三者怎么选
+## 四者怎么选
 
 | 能力 | 核心抽象 | 适合场景 |
 | --- | --- | --- |
-| Subagent | 子 Agent 会话 | 把一项认知任务交给另一个 Agent |
+| Subagent | 子 Agent 会话 | 把一项认知任务委派给另一个 Agent |
+| Agent Teams | Lead + continuable teammates + peer mailbox + shared task DAG | 多个具名 Agent 长期协作、互发消息并共享任务状态 |
 | Workflow | 编排脚本 | 并行或按规则组织多个 Subagent |
 | Jobs | 后台任务 | 长时间执行、无需阻塞当前 Turn 的工作 |
 
@@ -32,6 +34,14 @@ Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但�
 `ctx.subagents` 是委派 Provider 与继续服务。rc.1 支持多种后端：全新进程内 Agent、从父级稳定历史 Fork 的进程内 Agent、ACP、Codex、Claude Code，以及通过 DSH SDK 启动的进程外 Harness Agent。
 
 父 Agent 可以发现自己创建的子级；面向模型的控制工具还支持消息、停止与状态查询。rc.1 的可继续子代理增加了排队、编辑、删除、Steer 与停止语义，因此 Subagent 已不只是一次性函数调用。
+
+## Agent Teams（实验性）
+
+Agent Teams 在 rc.1 中可以安装，但**默认不启用**。它把单向父子委派提升为团队协作模型：Lead 身份隐式存在，Teammate 是具名、可继续的 Agent；成员之间通过持久 peer mailbox 传递消息，并围绕共享 Task DAG 协作。
+
+它与普通 Subagent 的关键区别不是“能启动更多 Agent”，而是是否需要稳定的团队身份、同级通信和共享任务图。如果只是临时委派一项任务，仍应优先使用 Subagent；如果需要明确的长期多 Agent 协作关系，才考虑 Agent Teams。
+
+由于该能力处于 `experimental` 范围，插件不应把它当作跨版本稳定公共契约。白皮书记录其 rc.1 行为，但版本升级时需要单独复核。
 
 ## Workflow
 
@@ -49,4 +59,4 @@ Subagent、Workflow 与 Jobs 都能让工作脱离当前同步 Tool Call，但�
 
 ## 组合原则
 
-Workflow 可以创建 Subagent，Subagent 内部也可以启动 Job，但不要因为“异步”就统一使用某一种机制。是否需要独立 Agent 历史、是否需要脚本化多任务协调、是否需要后台生命周期，是选择三者的主要判断依据。
+Workflow 可以创建 Subagent，Subagent 内部也可以启动 Job，但不要因为“异步”就统一使用某一种机制。是否需要独立 Agent 历史、是否需要稳定团队身份和同级通信、是否需要脚本化多任务协调、是否需要后台生命周期，是选择四者的主要判断依据。
