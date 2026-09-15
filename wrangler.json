@@ -15,10 +15,14 @@
     "run_worker_first": [
       "/api/*",
       "/",
+      "/whitepaper",
+      "/whitepaper/*",
+      "/latest",
+      "/latest/*",
       "/plugins",
       "/plugins/*",
-		"/compare",
-		"/changes",
+      "/compare",
+      "/changes",
       "/plugin/*",
       "/publisher/*",
       "/guide",
@@ -29,6 +33,7 @@
       "/about/*",
       "/trust",
       "/trust/*",
+      "/robots.txt",
       "/sitemap.xml"
     ]
   },
