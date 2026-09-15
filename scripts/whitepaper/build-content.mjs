@@ -6,6 +6,7 @@ const root = process.cwd();
 const contentRoot = join(root, "src/react-app/content/whitepaper");
 const generatedRoot = join(contentRoot, "generated");
 const versions = JSON.parse(await readFile(join(contentRoot, "versions.json"), "utf8"));
+const upstreamRepo = "https://github.com/deepseek-ai/deepseek-harness";
 
 let highlighterPromise;
 const languageAliases = new Map([
@@ -39,6 +40,23 @@ function headingId(value) {
     .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+}
+
+function sourceUrl(version, path) {
+  const cleanPath = path.replace(/^\/+|\/+$/g, "");
+  const looksLikeFile = /(?:^|\/)(?:[^/]+\.[^/]+|README(?:\.zh)?\.md)$/i.test(cleanPath);
+  return `${upstreamRepo}/${looksLikeFile ? "blob" : "tree"}/${encodeURIComponent(version.tag)}/${cleanPath.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function linkSourceLocations(html, version) {
+  return html.replace(
+    /<code>((?:packages|docs|scripts|\.agents)\/[A-Za-z0-9_@./-]+\/?(?:#[A-Za-z0-9_.:-]+)?)<\/code>/g,
+    (_all, rawPath) => {
+      const [path, hash = ""] = rawPath.split("#", 2);
+      const href = `${sourceUrl(version, path)}${hash ? `#${encodeURIComponent(hash)}` : ""}`;
+      return `<a class="wp-source-link" href="${href}" target="_blank" rel="noreferrer" title="打开 DSH ${escapeHtml(version.id)} 对应源码"><code>${escapeHtml(rawPath)}</code></a>`;
+    },
+  );
 }
 
 async function highlight(code, requestedLanguage) {
@@ -87,8 +105,8 @@ async function extractBlocks(markdown, version) {
 
 async function renderBlock(block, version) {
   if (block.type === "mermaid") {
-    const image = `/whitepaper/diagrams/${encodeURIComponent(version)}/${encodeURIComponent(block.id)}.svg`;
-    return `<figure class="wp-diagram"><a href="${image}" target="_blank" rel="noreferrer" class="wp-diagram-canvas" aria-label="打开架构图原图"><img src="${image}" alt="DSH architecture diagram" loading="lazy"></a><figcaption><span>Mermaid source · ${escapeHtml(block.id)}</span><details><summary>查看源码</summary><pre><code>${escapeHtml(block.source.trimEnd())}</code></pre></details></figcaption></figure>`;
+    const image = `/whitepaper/diagrams/${encodeURIComponent(version.id)}/${encodeURIComponent(block.id)}.svg`;
+    return `<figure class="wp-diagram"><a href="${image}" target="_blank" rel="noreferrer" class="wp-diagram-canvas" aria-label="打开架构图原图"><img src="${image}" alt="DSH 架构图" loading="lazy"></a><figcaption><span>Mermaid 源码 · ${escapeHtml(block.id)}</span><details><summary>查看源码</summary><pre><code>${escapeHtml(block.source.trimEnd())}</code></pre></details></figcaption></figure>`;
   }
   const html = await highlight(block.source, block.language);
   return `<div class="wp-code-block" data-language="${escapeHtml(block.language)}">${html}</div>`;
@@ -96,7 +114,7 @@ async function renderBlock(block, version) {
 
 async function compile(markdown, version) {
   const body = stripFrontmatter(markdown);
-  const extracted = await extractBlocks(body, version);
+  const extracted = await extractBlocks(body, version.id);
   let html = marked.parse(extracted.markdown, { gfm: true, breaks: false });
   if (typeof html !== "string") html = await html;
 
@@ -108,6 +126,7 @@ async function compile(markdown, version) {
 
   html = html.replace(/<h([1-4])>([\s\S]*?)<\/h\1>/g, (_all, level, inner) => `<h${level} id="${headingId(inner)}">${inner}</h${level}>`);
   html = html.replace(/<table>([\s\S]*?)<\/table>/g, '<div class="wp-table-wrap"><table>$1</table></div>');
+  html = linkSourceLocations(html, version);
   html = html.replace(/<a href="(https:\/\/[^\"]+)"/g, '<a href="$1" target="_blank" rel="noreferrer"');
   return html;
 }
@@ -119,7 +138,7 @@ for (const version of versions.versions) {
   const nav = JSON.parse(await readFile(join(sourceDir, "nav.json"), "utf8"));
   for (const item of nav) {
     const markdown = await readFile(join(sourceDir, item.file), "utf8");
-    const html = await compile(markdown, version.id);
+    const html = await compile(markdown, version);
     const output = join(targetDir, `${basename(item.file, extname(item.file))}.html`);
     await writeFile(output, html, "utf8");
   }
