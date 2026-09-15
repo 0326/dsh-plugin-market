@@ -5,6 +5,7 @@ interface WranglerConfig {
 	triggers?: { crons?: string[] };
 	queues?: { consumers?: Array<{ max_concurrency?: number; max_retries?: number; dead_letter_queue?: string }> };
 	vars?: Record<string, string>;
+	assets?: { run_worker_first?: string[] };
 }
 
 describe("wrangler cron configuration", () => {
@@ -26,5 +27,14 @@ describe("wrangler cron configuration", () => {
 		expect(consumer?.max_retries).toBeGreaterThanOrEqual(3);
 		expect(consumer?.dead_letter_queue).toBeTruthy();
 		expect(config.vars?.RESCAN_DAILY_BUDGET).toBe("250");
+	});
+
+	it("keeps whitepaper redirects and SEO endpoints worker-first", () => {
+		const config = JSON.parse(readFileSync("wrangler.json", "utf8")) as WranglerConfig;
+		const routes = config.assets?.run_worker_first ?? [];
+
+		for (const path of ["/", "/whitepaper", "/whitepaper/*", "/latest", "/latest/*", "/robots.txt", "/sitemap.xml"]) {
+			expect(routes).toContain(path);
+		}
 	});
 });
