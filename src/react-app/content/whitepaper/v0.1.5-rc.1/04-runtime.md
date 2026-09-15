@@ -6,7 +6,7 @@ dsh_version: v0.1.5-rc.1
 upstream_tag: dsh-v0.1.5-rc.1
 upstream_commit: 183f08e9c6dde7e36cd2318eaee70b0da08fb35e
 status: verified
-verified_at: 2026-09-10
+verified_at: 2026-09-15
 sources:
   - docs/architecture.zh.md
   - docs/agent-lifecycle.zh.md
@@ -20,22 +20,22 @@ DSH 把一次连续工作组织为 Turn，把一次模型请求及其 Tool Calls
 
 ```mermaid id=turn-flow
 sequenceDiagram
-  participant U as User / Inbox
+  participant U as 用户 / Inbox
   participant A as Agent Loop
   participant L as LLM
   participant T as Tools
   participant S as Session Log
-  U->>A: message
-  A->>A: turn/start · claim input
-  A->>A: assemble prompt + schemas
+  U->>A: 输入消息
+  A->>A: turn/start · 领取输入
+  A->>A: 组装 Prompt + Tool Schemas
   A->>A: agent/pre-step
   A->>A: step/start · agent/request · prepareCall
-  A->>S: system/user/request events
-  A->>L: frozen prepared request
-  L-->>A: assistant stream
+  A->>S: 写入 system / user / request 事件
+  A->>L: 冻结后的 Prepared Request
+  L-->>A: Assistant 流
   A->>T: tool/call
   T-->>A: tool/result
-  A->>S: assistant/tool settlement
+  A->>S: 写入 Assistant / Tool 结算事件
   A->>A: step/end
   A->>S: turn/end
 ```
