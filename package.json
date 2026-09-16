@@ -54,7 +54,8 @@
 		"whitepaper:diagrams": "node scripts/whitepaper/render-diagrams.mjs",
 		"whitepaper:diagrams:check": "node scripts/whitepaper/render-diagrams.mjs --check",
 		"whitepaper:prepare": "npm run whitepaper:validate && npm run whitepaper:build-content",
-		"whitepaper:validate": "node scripts/whitepaper/release-policy.mjs && node scripts/whitepaper/validate-content.mjs"
+		"whitepaper:review-depth": "node scripts/whitepaper/review-depth.mjs",
+		"whitepaper:validate": "node scripts/whitepaper/release-policy.mjs && node scripts/whitepaper/validate-content.mjs && npm run whitepaper:review-depth"
 	},
 	"type": "module"
 }
