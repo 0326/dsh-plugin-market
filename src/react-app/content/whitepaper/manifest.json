@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 3,
+  "project": {
+    "id": "dsh-developer-whitepaper",
+    "name": "DSH Developer Whitepaper",
+    "repository": "https://github.com/0326/dsh-plugin-market",
+    "upstream": "https://github.com/deepseek-ai/deepseek-harness"
+  },
+  "policy": {
+    "channels": ["rc", "stable"],
+    "ignored": ["alpha", "beta", "canary", "dev", "nightly", "master"],
+    "sourcePolicy": "official-only",
+    "upstreamLatest": "v0.1.5-rc.2",
+    "latestPublished": "v0.1.5-rc.2",
+    "expectedBodyGroups": 5,
+    "requiredAppendices": [
+      "appendix-glossary",
+      "appendix-conventions",
+      "appendix-lifecycle",
+      "appendix-capability-index",
+      "appendix-source-index"
+    ],
+    "versionFallback": "explicit-only"
+  },
+  "sources": [
+    {
+      "id": "dsh-upstream",
+      "kind": "git",
+      "official": true,
+      "repository": "https://github.com/deepseek-ai/deepseek-harness"
+    }
+  ],
+  "articles": [
+    {"id":"overview","slug":"overview","title":"DSH 全貌","file":"00-overview.md","type":"overview-selection","audience":["all"],"readerOutcome":"建立 DSH 分层模型并选择后续阅读路径","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"reading-paths","slug":"reading-paths","title":"阅读路径与角色入口","file":"18-reading-paths.md","type":"overview-selection","audience":["all"],"readerOutcome":"按角色选择最短阅读路径并知道何时继续下钻","kind":"article","authority":"document-policy","verification":"reviewed"},
+    {"id":"composition","slug":"composition","title":"Cordis 与组合模型","file":"01-composition.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解 Cordis Context 与插件树如何构成 DSH 的组合基础","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"boot-config","slug":"boot-config","title":"启动与配置组装","file":"02-boot-config.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解 Profile、Bundle 与 Patch 如何组装一次启动","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"agent-core","slug":"agent-core","title":"Agent Core","file":"03-agent-core.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解 Agent Core 的公开边界与核心职责","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"runtime","slug":"runtime","title":"Agent 运行机制","file":"04-runtime.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"追踪一次 Agent Turn 的主要运行过程与责任边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"session-state","slug":"session-state","title":"Session 与状态","file":"05-session-state.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解 Session Event Log、写所有权与状态恢复边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"capability-seams","slug":"capability-seams","title":"Capability Seam","file":"06-capability-seams.md","type":"design-tradeoff","audience":["engineer"],"readerOutcome":"判断 Definition、Provider、Consumer 的替换边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"core-capabilities","slug":"core-capabilities","title":"核心能力模块","file":"07-core-capabilities.md","type":"overview-selection","audience":["engineer"],"readerOutcome":"建立核心能力地图并找到对应扩展入口","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"presets","slug":"presets","title":"Preset 与 Agent 组装","file":"08-presets.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解 Preset 如何约束 Agent 的能力组合与模式","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"subagent-workflow-jobs","slug":"subagent-workflow-jobs","title":"编排方式选择","file":"09-subagent-workflow-jobs.md","type":"design-tradeoff","audience":["engineer"],"readerOutcome":"在 Subagent、Workflow、Jobs 与 Teams 之间做出机制选择","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"subagent-delegation","slug":"subagent-delegation","title":"Subagent 委派","file":"19-subagent-delegation.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解委派后的会话、所有权与控制边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"workflow-orchestration","slug":"workflow-orchestration","title":"Workflow 编排","file":"20-workflow-orchestration.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解脚本化编排如何协调多个 Agent 动作及其失败语义","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"jobs-background","slug":"jobs-background","title":"Jobs 后台执行","file":"21-jobs-background.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解后台任务的会话内所有权、通知与可靠性边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"agent-teams","slug":"agent-teams","title":"Agent Teams（实验）","file":"22-agent-teams.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解实验性 Team 模式的协作模型与采用边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"hooks-interception","slug":"hooks-interception","title":"Hooks 与拦截","file":"10-hooks-interception.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解 Hook 在运行链路中的拦截位置与边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"web-client","slug":"web-client","title":"Web Client 架构","file":"11-web-client.md","type":"mechanism-explanation","audience":["engineer"],"readerOutcome":"理解 Web Client、Remote 与服务端之间的数据和控制关系","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"plugin-development","slug":"plugin-development","title":"插件开发与扩展面","file":"12-plugin-development.md","type":"practical-validation","audience":["plugin-developer"],"readerOutcome":"识别插件扩展面并选择稳定公开契约","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"extension-map","slug":"extension-map","title":"扩展能力地图","file":"13-extension-map.md","type":"overview-selection","audience":["plugin-developer"],"readerOutcome":"从需求快速定位可用扩展点与官方入口","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"sdk-acp-webhook","slug":"sdk-acp-webhook","title":"外部接入方式选择","file":"14-sdk-acp-webhook.md","type":"design-tradeoff","audience":["integrator"],"readerOutcome":"在 SDK、ACP 与 Webhook 之间选择合适接入方式","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"sdk","slug":"sdk","title":"SDK 接入","file":"23-sdk.md","type":"practical-validation","audience":["integrator"],"readerOutcome":"理解 SDK 接入边界并完成基础集成判断","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"acp","slug":"acp","title":"ACP 接入","file":"24-acp.md","type":"practical-validation","audience":["integrator"],"readerOutcome":"理解 ACP 的协议边界与适用场景","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"webhook","slug":"webhook","title":"Webhook 事件接入","file":"25-webhook.md","type":"practical-validation","audience":["integrator"],"readerOutcome":"理解 Webhook 的事件接入模型与交付边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"security-permissions","slug":"security-permissions","title":"安全与权限","file":"15-security-permissions.md","type":"design-tradeoff","audience":["operator"],"readerOutcome":"理解 Sandbox、Approval 与权限预设的责任边界","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"diagnostics-observability","slug":"diagnostics-observability","title":"调试与观测","file":"16-diagnostics-observability.md","type":"practical-validation","audience":["operator"],"readerOutcome":"定位主要诊断入口并区分运行期与持久证据","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"reliability-evaluation","slug":"reliability-evaluation","title":"可靠性与验证","file":"26-reliability-evaluation.md","type":"practical-validation","audience":["operator"],"readerOutcome":"理解测试与评测能够证明和不能证明的保证","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"limits","slug":"limits","title":"已知边界与不适用场景","file":"27-limits.md","type":"design-tradeoff","audience":["all"],"readerOutcome":"识别 DSH 的已知限制并避免把实现细节误当保证","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"evolution","slug":"evolution","title":"版本演进","file":"17-evolution.md","type":"version-migration","audience":["all"],"readerOutcome":"理解当前基线的版本变化与迁移判断方法","kind":"article","authority":"upstream","verification":"reviewed"},
+    {"id":"appendix-glossary","slug":"appendix-glossary","title":"术语表","file":"28-appendix-glossary.md","type":"glossary","audience":["all"],"readerOutcome":"统一关键术语并避免相近概念混用","kind":"appendix","authority":"document-policy","verification":"reviewed"},
+    {"id":"appendix-conventions","slug":"appendix-conventions","title":"文档约定与证据规则","file":"29-appendix-conventions.md","type":"conventions","audience":["all"],"readerOutcome":"理解白皮书的证据、版本与阅读约定","kind":"appendix","authority":"document-policy","verification":"reviewed"},
+    {"id":"appendix-lifecycle","slug":"appendix-lifecycle","title":"版本与生命周期规范","file":"30-appendix-lifecycle.md","type":"lifecycle","audience":["all"],"readerOutcome":"理解白皮书版本同步与发布生命周期","kind":"appendix","authority":"document-policy","verification":"reviewed"},
+    {"id":"appendix-capability-index","slug":"appendix-capability-index","title":"能力与扩展点索引","file":"31-appendix-capability-index.md","type":"api-reference","audience":["plugin-developer"],"readerOutcome":"按能力快速定位扩展点与官方资料","kind":"appendix","authority":"upstream","verification":"reviewed"},
+    {"id":"appendix-source-index","slug":"appendix-source-index","title":"官方源码入口索引","file":"32-appendix-source-index.md","type":"source-index","audience":["all"],"readerOutcome":"按问题快速回到固定版本的官方源码与文档","kind":"appendix","authority":"document-policy","verification":"reviewed"}
+  ],
+  "versions": [
+    {
+      "id":"v0.1.5-rc.2","label":"v0.1.5-rc.2","tag":"dsh-v0.1.5-rc.2","commit":"fb2c4b9e698e30edb738bca4cf0618587db7d203","releasedAt":"2026-09-10","channel":"rc","status":"published","documentationRevision":3,"verifiedAt":"2026-09-16","contentRoot":"src/react-app/content/whitepaper/v0.1.5-rc.2","assetRoot":"public/whitepaper/diagrams/v0.1.5-rc.2","sourceLocks":[{"sourceId":"dsh-upstream","ref":"dsh-v0.1.5-rc.2","commit":"fb2c4b9e698e30edb738bca4cf0618587db7d203","accessed":"2026-09-16"}],
+      "groups":[
+        {"id":"orientation","title":"一、认识 DSH","kind":"body","order":10,"articles":["overview","reading-paths"]},
+        {"id":"runtime-foundations","title":"二、运行时基础","kind":"body","order":20,"articles":["composition","boot-config","agent-core","runtime","session-state"]},
+        {"id":"orchestration","title":"三、编排与能力","kind":"body","order":30,"articles":["capability-seams","core-capabilities","presets","subagent-workflow-jobs","subagent-delegation","workflow-orchestration","jobs-background","agent-teams","hooks-interception"]},
+        {"id":"product-extension","title":"四、产品与扩展","kind":"body","order":40,"articles":["web-client","plugin-development","extension-map","sdk-acp-webhook","sdk","acp","webhook"]},
+        {"id":"production-evolution","title":"五、生产、边界与演进","kind":"body","order":50,"articles":["security-permissions","diagnostics-observability","reliability-evaluation","limits","evolution"]},
+        {"id":"appendices","title":"附录与规范","kind":"appendix","order":60,"articles":["appendix-glossary","appendix-conventions","appendix-lifecycle","appendix-capability-index","appendix-source-index"]}
+      ]
+    },
+    {
+      "id":"v0.1.5-rc.1","label":"v0.1.5-rc.1","tag":"dsh-v0.1.5-rc.1","commit":"183f08e9c6dde7e36cd2318eaee70b0da08fb35e","releasedAt":"2026-09-10","channel":"rc","status":"published","documentationRevision":3,"verifiedAt":"2026-09-16","contentRoot":"src/react-app/content/whitepaper/v0.1.5-rc.1","assetRoot":"public/whitepaper/diagrams/v0.1.5-rc.1","sourceLocks":[{"sourceId":"dsh-upstream","ref":"dsh-v0.1.5-rc.1","commit":"183f08e9c6dde7e36cd2318eaee70b0da08fb35e","accessed":"2026-09-16"}],
+      "groups":[
+        {"id":"orientation","title":"一、认识 DSH","kind":"body","order":10,"articles":["overview","reading-paths"]},
+        {"id":"runtime-foundations","title":"二、运行时基础","kind":"body","order":20,"articles":["composition","boot-config","agent-core","runtime","session-state"]},
+        {"id":"orchestration","title":"三、编排与能力","kind":"body","order":30,"articles":["capability-seams","core-capabilities","presets","subagent-workflow-jobs","subagent-delegation","workflow-orchestration","jobs-background","agent-teams","hooks-interception"]},
+        {"id":"product-extension","title":"四、产品与扩展","kind":"body","order":40,"articles":["web-client","plugin-development","extension-map","sdk-acp-webhook","sdk","acp","webhook"]},
+        {"id":"production-evolution","title":"五、生产、边界与演进","kind":"body","order":50,"articles":["security-permissions","diagnostics-observability","reliability-evaluation","limits","evolution"]},
+        {"id":"appendices","title":"附录与规范","kind":"appendix","order":60,"articles":["appendix-glossary","appendix-conventions","appendix-lifecycle","appendix-capability-index","appendix-source-index"]}
+      ]
+    }
+  ]
+}

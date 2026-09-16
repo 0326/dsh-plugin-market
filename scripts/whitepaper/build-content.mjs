@@ -6,9 +6,10 @@ const root = process.cwd();
 const contentRoot = join(root, "src/react-app/content/whitepaper");
 const generatedRoot = join(contentRoot, "generated");
 const publicWhitepaperRoot = join(root, "public/whitepaper");
-const versions = JSON.parse(await readFile(join(contentRoot, "versions.json"), "utf8"));
+const manifest = JSON.parse(await readFile(join(contentRoot, "manifest.json"), "utf8"));
 const upstreamRepo = "https://github.com/deepseek-ai/deepseek-harness";
 const whitepaperOrigin = "https://whitepaper.dsh-plugin.market";
+const articleRegistry = new Map(manifest.articles.map((article) => [article.id, article]));
 
 let highlighterPromise;
 const languageAliases = new Map([
@@ -150,33 +151,32 @@ function sitemapXml(entries) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join("\n")}\n</urlset>\n`;
 }
 
-function navItems(nav, versionId) {
-	if (!nav || !Array.isArray(nav.groups)) {
-		throw new Error(`${versionId}: nav.json must use the grouped navigation schema`);
-	}
-	return nav.groups.flatMap((group) => {
-		if (!Array.isArray(group.items)) {
-			throw new Error(`${versionId}: navigation group ${group.id ?? "<unknown>"} must contain items`);
-		}
-		return group.items;
-	});
+function articlesForVersion(version) {
+  const ids = version.groups
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .flatMap((group) => group.articles);
+  return ids.map((id) => {
+    const article = articleRegistry.get(id);
+    if (!article) throw new Error(`${version.id}: manifest references unknown article ${id}`);
+    return article;
+  });
 }
 
 const sitemapEntries = [{ loc: `${whitepaperOrigin}/versions` }];
 
-for (const version of versions.versions) {
-  const sourceDir = join(contentRoot, version.id);
+for (const version of manifest.versions) {
+  const sourceDir = join(root, version.contentRoot);
   const targetDir = join(generatedRoot, version.id);
   await mkdir(targetDir, { recursive: true });
-  const nav = JSON.parse(await readFile(join(sourceDir, "nav.json"), "utf8"));
-	for (const item of navItems(nav, version.id)) {
-    const markdown = await readFile(join(sourceDir, item.file), "utf8");
+  for (const article of articlesForVersion(version)) {
+    const markdown = await readFile(join(sourceDir, article.file), "utf8");
     const html = await compile(markdown, version);
-    const output = join(targetDir, `${basename(item.file, extname(item.file))}.html`);
+    const output = join(targetDir, `${basename(article.file, extname(article.file))}.html`);
     await writeFile(output, html, "utf8");
     if (version.status === "published") {
       sitemapEntries.push({
-        loc: `${whitepaperOrigin}/${encodeURIComponent(version.id)}/${encodeURIComponent(item.slug)}`,
+        loc: `${whitepaperOrigin}/${encodeURIComponent(version.id)}/${encodeURIComponent(article.slug)}`,
         lastmod: version.releasedAt,
       });
     }
@@ -186,4 +186,4 @@ for (const version of versions.versions) {
 await mkdir(publicWhitepaperRoot, { recursive: true });
 await writeFile(join(publicWhitepaperRoot, "sitemap.xml"), sitemapXml(sitemapEntries), "utf8");
 
-console.log(`Whitepaper content compiled: ${versions.versions.length} version(s); sitemap URLs: ${sitemapEntries.length}`);
+console.log(`Whitepaper content compiled: ${manifest.versions.length} version(s); sitemap URLs: ${sitemapEntries.length}`);
