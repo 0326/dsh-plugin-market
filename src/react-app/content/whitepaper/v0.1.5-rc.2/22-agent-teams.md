@@ -5,8 +5,9 @@ slug: agent-teams
 dsh_version: v0.1.5-rc.2
 upstream_tag: dsh-v0.1.5-rc.2
 upstream_commit: fb2c4b9e698e30edb738bca4cf0618587db7d203
-status: experimental
-verified_at: 2026-09-15
+status: verified
+maturity: experimental
+verified_at: 2026-09-16
 sources:
   - docs/subsystems/agent-team.zh.md
   - packages/subagent/README.zh.md
