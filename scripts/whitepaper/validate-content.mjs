@@ -31,6 +31,47 @@ function validLinkTarget(target) {
 	return target.startsWith("#") || target.startsWith("/whitepaper/") || allowedExternalPrefixes.some((prefix) => target.startsWith(prefix));
 }
 
+function navItems(nav, versionId) {
+	if (!nav || typeof nav !== "object" || nav.schemaVersion !== 2 || !Array.isArray(nav.groups)) {
+		errors.push(`${versionId}: nav.json must use schemaVersion 2 with grouped navigation`);
+		return [];
+	}
+	if (nav.groups.length < 2) errors.push(`${versionId}: navigation must contain content groups and a reference group`);
+
+	const groupIds = new Set();
+	const itemIds = new Set();
+	const itemSlugs = new Set();
+	let referenceGroups = 0;
+	let bodyGroups = 0;
+	const items = [];
+	for (const [groupIndex, group] of nav.groups.entries()) {
+		if (!group || typeof group !== "object" || !group.id || !group.title || !Array.isArray(group.items)) {
+			errors.push(`${versionId}: navigation group at index ${groupIndex} is invalid`);
+			continue;
+		}
+		if (groupIds.has(group.id)) errors.push(`${versionId}: duplicate navigation group id ${group.id}`);
+		groupIds.add(group.id);
+		if (group.type === "reference") referenceGroups += 1;
+		if (!group.type || group.type === "body") bodyGroups += 1;
+		if (group.type && group.type !== "body" && group.type !== "reference") errors.push(`${versionId}: navigation group ${group.id} has unsupported type ${group.type}`);
+		if (!group.items.length) errors.push(`${versionId}: navigation group ${group.id} is empty`);
+		for (const [itemIndex, item] of group.items.entries()) {
+			if (!item || !item.id || !item.slug || !item.title || !item.file) {
+				errors.push(`${versionId}: navigation item ${group.id}/${itemIndex} is invalid`);
+				continue;
+			}
+			if (itemIds.has(item.id)) errors.push(`${versionId}: duplicate chapter id ${item.id}`);
+			if (itemSlugs.has(item.slug)) errors.push(`${versionId}: duplicate chapter slug ${item.slug}`);
+			itemIds.add(item.id);
+			itemSlugs.add(item.slug);
+			items.push(item);
+		}
+	}
+	if (bodyGroups !== 5) errors.push(`${versionId}: navigation must contain exactly five body groups`);
+	if (referenceGroups !== 1) errors.push(`${versionId}: navigation must contain exactly one reference group`);
+	return items;
+}
+
 for (const version of versions.versions) {
 	const channel = classifyDshRelease(version.tag);
 	if (!channel) errors.push(`${version.id}: only rc and stable DSH releases are supported`);
@@ -50,7 +91,7 @@ for (const version of versions.versions) {
 	if (manifest.version !== version.id || manifest.upstreamTag !== version.tag || manifest.upstreamCommit !== version.commit) errors.push(`${version.id}: versions.json and manifest.json are inconsistent`);
 	if (manifest.releaseChannel && manifest.releaseChannel !== channel) errors.push(`${version.id}: manifest releaseChannel does not match tag`);
 
-	for (const item of nav) {
+	for (const item of navItems(nav, version.id)) {
 		const file = join(dir, item.file);
 		if (!existsSync(file)) {
 			errors.push(`${version.id}/${item.file}: missing chapter file`);

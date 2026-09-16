@@ -1,5 +1,5 @@
 ---
-title: SDK / ACP / Webhook
+title: 外部接入方式选择
 chapter_id: sdk-acp-webhook
 slug: sdk-acp-webhook
 dsh_version: v0.1.5-rc.2
@@ -12,9 +12,9 @@ sources:
   - packages/acp/README.zh.md
   - packages/webhook/README.zh.md
 ---
-# SDK / ACP / Webhook
+# 外部接入方式选择
 
-SDK、ACP 与 Webhook 都能让 DSH 与外部系统连接，但入口方向不同。SDK / ACP 是外部客户端主动驱动 Agent，Webhook 是外部事件触发受信规则，再由规则创建 Session。
+SDK、ACP 与 Webhook 都能让 DSH 与外部系统连接，但入口方向不同。SDK / ACP 是外部客户端主动驱动 Agent，Webhook 是外部事件触发受信规则，再由规则创建 Session。本页用于选择接入边界；左侧随后三篇文章分别讲解每种方式。
 
 ## 三种接入方式
 
@@ -44,4 +44,4 @@ Webhook Runtime 接收通过 Provider 验证的外部事件，执行受信任规
 
 ## 选择原则
 
-需要长期双向控制一个 Agent Runtime，选 SDK / ACP；需要被动响应外部事件，选 Webhook。不要用 Webhook 模拟可靠任务队列，也不要为了一个单向触发场景长期持有 SDK 进程连接。
+需要长期双向控制一个 Agent Runtime，选 SDK / ACP；需要被动响应外部事件，选 Webhook。不要用 Webhook 模拟可靠任务队列，也不要为了一个单向触发场景长期持有 SDK 进程连接。选定后继续阅读“SDK 接入”“ACP 接入”或“Webhook 事件接入”。

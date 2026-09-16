@@ -150,6 +150,18 @@ function sitemapXml(entries) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join("\n")}\n</urlset>\n`;
 }
 
+function navItems(nav, versionId) {
+	if (!nav || !Array.isArray(nav.groups)) {
+		throw new Error(`${versionId}: nav.json must use the grouped navigation schema`);
+	}
+	return nav.groups.flatMap((group) => {
+		if (!Array.isArray(group.items)) {
+			throw new Error(`${versionId}: navigation group ${group.id ?? "<unknown>"} must contain items`);
+		}
+		return group.items;
+	});
+}
+
 const sitemapEntries = [{ loc: `${whitepaperOrigin}/versions` }];
 
 for (const version of versions.versions) {
@@ -157,7 +169,7 @@ for (const version of versions.versions) {
   const targetDir = join(generatedRoot, version.id);
   await mkdir(targetDir, { recursive: true });
   const nav = JSON.parse(await readFile(join(sourceDir, "nav.json"), "utf8"));
-  for (const item of nav) {
+	for (const item of navItems(nav, version.id)) {
     const markdown = await readFile(join(sourceDir, item.file), "utf8");
     const html = await compile(markdown, version);
     const output = join(targetDir, `${basename(item.file, extname(item.file))}.html`);
