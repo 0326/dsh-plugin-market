@@ -33,28 +33,17 @@ DSH 的“可靠”不是一个总分，而是**某个具体保证是否有对�
 
 ## 一条可靠性证据链
 
-以“新增一个会修改文件的 Tool”为例，合理的验证链不是只写一个 `execute()` 单测：
-
-```mermaid id=reliability-evidence-chain
-flowchart LR
-  A[Tool definition] --> B[Unit / schema tests]
-  B --> C[Real registry + Tool Pipeline]
-  C --> D[Profile / Loader composition]
-  D --> E[Agent invokes Tool]
-  E --> F[Check file + Session result]
-  F --> G[Failure / cancel / timeout paths]
-  G --> H[Telemetry / diagnostics for triage]
-```
-
-每一层都回答不同问题：
+以“新增一个会修改文件的 Tool”为例，合理的验证链不是只写一个 `execute()` 单测，而是逐层回答不同问题：
 
 1. **定义层**：参数校验和输出契约是否正确；
-2. **流水线层**：Guard、Approval、Timeout、Post-execute 是否真实参与；
-3. **组合层**：目标 Profile 是否真的挂载了所需 Service；
+2. **流水线层**：通过真实 Tool Registry / Pipeline 执行时，Guard、Approval、Timeout、Post-execute 是否真实参与；
+3. **组合层**：目标 Profile 经 Loader 启动后是否真的挂载了所需 Service；
 4. **Agent 层**：模型可见 Tool Schema 与实际可执行面是否一致；
-5. **外部结果层**：文件、Session Event 或远端响应是否真的发生；
-6. **失败层**：取消、超时、拒绝、teardown 是否留下正确结果；
-7. **诊断层**：失败后能否从 Session / diagnostics / telemetry 定位到责任层。
+5. **外部结果层**：重新读取文件、Session Event 或远端响应，确认效果真的发生；
+6. **失败层**：取消、超时、拒绝、teardown 是否留下符合契约的结果；
+7. **诊断层**：失败后能否从 Session、Diagnostics 和 Telemetry 定位到责任层。
+
+这七层不是每次都要全部新增测试，而是提醒你：**你声称的保证落在哪一层，就必须有能观察那一层结果的证据。**
 
 ## 官方验证层次
 
