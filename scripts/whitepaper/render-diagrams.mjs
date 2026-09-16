@@ -5,8 +5,8 @@ import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
 const contentRoot = join(root, "src/react-app/content/whitepaper");
-const outputRoot = join(root, "public/whitepaper/diagrams");
-const versions = JSON.parse(await readFile(join(contentRoot, "versions.json"), "utf8"));
+const manifest = JSON.parse(await readFile(join(contentRoot, "manifest.json"), "utf8"));
+const articleRegistry = new Map(manifest.articles.map((article) => [article.id, article]));
 const checkOnly = process.argv.includes("--check");
 const mermaidCliVersion = "11.17.0";
 const tempRoot = await mkdtemp(join(tmpdir(), "dsh-whitepaper-mermaid-"));
@@ -14,15 +14,15 @@ const puppeteerConfig = join(tempRoot, "puppeteer-config.json");
 const isCi = process.env.CI === "true";
 let count = 0;
 
-function navItems(nav, versionId) {
-  if (!nav || !Array.isArray(nav.groups)) {
-    throw new Error(`${versionId}: nav.json must use the grouped navigation schema`);
-  }
-  return nav.groups.flatMap((group) => {
-    if (!Array.isArray(group.items)) {
-      throw new Error(`${versionId}: navigation group ${group.id ?? "<unknown>"} must contain items`);
-    }
-    return group.items;
+function articlesForVersion(version) {
+  const ids = version.groups
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .flatMap((group) => group.articles);
+  return ids.map((id) => {
+    const article = articleRegistry.get(id);
+    if (!article) throw new Error(`${version.id}: manifest references unknown article ${id}`);
+    return article;
   });
 }
 
@@ -37,14 +37,13 @@ try {
     );
   }
 
-  for (const version of versions.versions) {
-    const sourceDir = join(contentRoot, version.id);
-    const nav = JSON.parse(await readFile(join(sourceDir, "nav.json"), "utf8"));
-    const targetDir = checkOnly ? join(tempRoot, version.id) : join(outputRoot, version.id);
+  for (const version of manifest.versions) {
+    const sourceDir = join(root, version.contentRoot);
+    const targetDir = checkOnly ? join(tempRoot, version.id) : join(root, version.assetRoot);
     await mkdir(targetDir, { recursive: true });
 
-    for (const item of navItems(nav, version.id)) {
-      const markdown = await readFile(join(sourceDir, item.file), "utf8");
+    for (const article of articlesForVersion(version)) {
+      const markdown = await readFile(join(sourceDir, article.file), "utf8");
       const mermaid = [...markdown.matchAll(/```mermaid\s+id=([\w-]+)\r?\n([\s\S]*?)```/g)];
       for (const match of mermaid) {
         const [, id, source] = match;
@@ -69,7 +68,7 @@ try {
           stdio: "inherit",
           env: { ...process.env, PUPPETEER_DISABLE_HEADLESS_WARNING: "true" },
         });
-        if (result.status !== 0) throw new Error(`Mermaid render failed: ${version.id}/${item.file}#${id}`);
+        if (result.status !== 0) throw new Error(`Mermaid render failed: ${version.id}/${article.file}#${id}`);
         count += 1;
       }
     }
