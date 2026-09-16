@@ -78,24 +78,24 @@ sequenceDiagram
 | `workspace-write` | 可写当前 Session 工作区及后端承诺的临时区域 |
 | `danger-full-access` | 绕过该层 confinement |
 
-本地 Provider 使用 Linux bwrap / Landlock、macOS Seatbelt、Windows 受限令牌与 ACL 等后端。它属于“同世界”隔离：与宿主共享内核和文件系统语义；网络和进程可见性也不在 `SandboxMode` 的定义范围内。需要容器、MicroVM 或远程执行时，应替换更大的执行能力，而不是继续给 `ctx.sandbox` 增加想象中的保证。fileciteturn120file0L2-L2
+本地 Provider 使用 Linux bwrap / Landlock、macOS Seatbelt、Windows 受限令牌与 ACL 等后端。它属于“同世界”隔离：与宿主共享内核和文件系统语义；网络和进程可见性也不在 `SandboxMode` 的定义范围内。需要容器、MicroVM 或远程执行时，应替换更大的执行能力，而不是继续给 `ctx.sandbox` 增加想象中的保证。
 
 ### `full` 与 `partial` 必须区别对待
 
-Sandbox Provider 会报告实际 `enforcement`。`full` 表示当前后端覆盖了该模式承诺的文件效果；`partial` 表示只能覆盖子集，例如平台或内核能力不足。要求绝对文件边界的调用方不能把 `partial` 当成 `full` 静默继续。fileciteturn120file0L2-L2
+Sandbox Provider 会报告实际 `enforcement`。`full` 表示当前后端覆盖了该模式承诺的文件效果；`partial` 表示只能覆盖子集，例如平台或内核能力不足。要求绝对文件边界的调用方不能把 `partial` 当成 `full` 静默继续。
 
-对于受限模式，Provider 无法建立 confinement 时应 fail closed；静默退化成无隔离执行不是合法结果。`danger-full-access` 则不同：消费方本来就会绕过 confinement，因此必须由更上层策略明确决定是否允许进入该模式。fileciteturn120file0L2-L2
+对于受限模式，Provider 无法建立 confinement 时应 fail closed；静默退化成无隔离执行不是合法结果。`danger-full-access` 则不同：消费方本来就会绕过 confinement，因此必须由更上层策略明确决定是否允许进入该模式。
 
 ## Approval 是一次性决策，不是永久授权
 
-`ctx.approval` 的结果集合是闭合的：只有 `allowed-once` 表示这次操作被允许；`rejected`、`cancelled`、`unavailable` 都必须拒绝。没有应答者、应答者异常或返回非法值时同样 fail closed，而不是“默认通过”。fileciteturn121file0L2-L2
+`ctx.approval` 的结果集合是闭合的：只有 `allowed-once` 表示这次操作被允许；`rejected`、`cancelled`、`unavailable` 都必须拒绝。没有应答者、应答者异常或返回非法值时同样 fail closed，而不是“默认通过”。
 
 会话级 Approval Policy 只有两个核心语义：
 
 - `ask`：交给已组合的应答者；无人应答最终为 `unavailable`；
 - `never`：不询问任何人，确定性返回 `rejected`。
 
-`never` 在应答者分发之前生效，因此后来注册的 UI 或插件监听器不能绕过它。审批的 asked / decided 事件写入 Session Log 用于审计，但不会直接进入模型 transcript。fileciteturn121file0L2-L2
+`never` 在应答者分发之前生效，因此后来注册的 UI 或插件监听器不能绕过它。审批的 asked / decided 事件写入 Session Log 用于审计，但不会直接进入模型 transcript。
 
 ## Tool Pipeline 才是统一执行门面
 
@@ -103,7 +103,7 @@ Sandbox Provider 会报告实际 `enforcement`。`full` 表示当前后端覆盖
 
 `tools/pre-execute` → 单调 guards → `tools/execute` → `tools/post-execute` → `tools/result`
 
-`pre-execute` 可以允许、拒绝或触发询问；guard 的拒绝不能被后续监听器重新改成允许；执行层负责超时、重试等包装；最终结果冻结后再进入观测。敏感 Tool 如果绕开这条流水线自行 spawn 进程，就同时绕开了统一的权限、超时、结果归因和扩展拦截面。fileciteturn122file0L2-L2
+`pre-execute` 可以允许、拒绝或触发询问；guard 的拒绝不能被后续监听器重新改成允许；执行层负责超时、重试等包装；最终结果冻结后再进入观测。敏感 Tool 如果绕开这条流水线自行 spawn 进程，就同时绕开了统一的权限、超时、结果归因和扩展拦截面。
 
 ## 失败时要先判断失败发生在哪一层
 
