@@ -32,33 +32,14 @@ DSH 的安全模型不是一个“安全模式”开关，而是一条分层决�
 
 ## 一次敏感 Tool Call 如何通过安全链路
 
-以一个会启动进程的 Tool 为例，安全决策可以分成两段：Tool Pipeline 决定这次调用能否继续，Sandbox Consumer 再根据本次执行策略决定是否需要 confinement。
+以一个会启动进程的 Tool 为例，可以按下面的顺序定位安全责任：
 
-```mermaid id=security-tool-flow
-sequenceDiagram
-  participant M as Model / Agent
-  participant T as Tool Pipeline
-  participant A as Approval
-  participant P as Sandbox Policy
-  participant S as Sandbox Provider
-  participant E as Executor
-
-  M->>T: tool call
-  T->>T: pre-execute / guards
-  opt Tool policy asks for approval
-    T->>A: request(agent, tool, callId, reason)
-    A-->>T: allowed-once / rejected / cancelled / unavailable
-  end
-  T->>P: resolve(session)
-  P-->>T: execution policy
-  alt danger-full-access
-    T->>E: spawn directly (bypass ctx.sandbox)
-  else read-only / workspace-write
-    T->>S: confine(argv, policy)
-    S-->>T: wrapped argv + enforcement
-    T->>E: spawn wrapped argv
-  end
-```
+1. Tool Call 先进入 `tools/pre-execute` 和 guards，决定它是否允许进入执行或是否需要询问；
+2. 若当前 Tool 策略要求 Approval，`ctx.approval` 对这一个操作给出 `allowed-once`、`rejected`、`cancelled` 或 `unavailable`；
+3. 调用方通过 Sandbox Policy 为当前 Session 和本次调用解析执行模式；
+4. `danger-full-access` 由消费方直接执行，不进入 `ctx.sandbox`；
+5. `read-only` / `workspace-write` 才交给 Sandbox Provider 包装 argv，并同时得到实际 `enforcement`；
+6. Executor 执行原始或包装后的 argv，结果再回到统一 Tool Pipeline 结算。
 
 如果受限执行因策略拒绝而支持一次性升权，调用方可以再通过 Approval 获取 `allowed-once`，然后以显式 mode 重新解析一次 Sandbox Policy 并重试。关键点是：**升权是一次新的调用决策，不是修改 Sandbox Provider 的全局状态**。
 
