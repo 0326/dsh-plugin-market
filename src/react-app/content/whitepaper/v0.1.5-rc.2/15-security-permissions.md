@@ -32,7 +32,7 @@ DSH 的安全模型不是一个“安全模式”开关，而是一条分层决�
 
 ## 一次敏感 Tool Call 如何通过安全链路
 
-以一个 Bash Tool 试图写出工作区为例：
+以一个会启动进程的 Tool 为例，安全决策可以分成两段：Tool Pipeline 决定这次调用能否继续，Sandbox Consumer 再根据本次执行策略决定是否需要 confinement。
 
 ```mermaid id=security-tool-flow
 sequenceDiagram
@@ -45,28 +45,22 @@ sequenceDiagram
 
   M->>T: tool call
   T->>T: pre-execute / guards
-  T->>P: resolve(session)
-  P-->>T: read-only / workspace-write / danger-full-access
-  alt 当前策略允许
-    T->>S: confine(argv, policy)
-    S-->>T: wrapped argv + enforcement
-    T->>E: execute
-  else 操作需要一次性升权
+  opt Tool policy asks for approval
     T->>A: request(agent, tool, callId, reason)
     A-->>T: allowed-once / rejected / cancelled / unavailable
-    alt allowed-once
-      T->>P: resolve(session, approved mode)
-      P-->>T: widened per-call policy
-      T->>S: confine(argv, policy)
-      S-->>T: wrapped argv + enforcement
-      T->>E: retry once
-    else denied
-      T-->>M: structured rejection
-    end
+  end
+  T->>P: resolve(session)
+  P-->>T: execution policy
+  alt danger-full-access
+    T->>E: spawn directly (bypass ctx.sandbox)
+  else read-only / workspace-write
+    T->>S: confine(argv, policy)
+    S-->>T: wrapped argv + enforcement
+    T->>E: spawn wrapped argv
   end
 ```
 
-这里最关键的是：**升权是一次新的调用决策，不是修改 Sandbox Provider 的全局状态**。Sandbox Policy 按调用解析，批准后的显式 mode 只影响这次重试。
+如果受限执行因策略拒绝而支持一次性升权，调用方可以再通过 Approval 获取 `allowed-once`，然后以显式 mode 重新解析一次 Sandbox Policy 并重试。关键点是：**升权是一次新的调用决策，不是修改 Sandbox Provider 的全局状态**。
 
 ## Sandbox 只定义文件效果边界
 
