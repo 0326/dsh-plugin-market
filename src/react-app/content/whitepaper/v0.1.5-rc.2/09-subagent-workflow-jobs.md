@@ -64,18 +64,9 @@ DSH 没有一个统一的“异步任务”抽象。Subagent、Workflow、Jobs �
 
 ## 组合不是替代关系
 
-这些机制可以组合，但组合后仍要保持所有权清楚：
+这些机制可以组合，但组合后仍要保持所有权清楚：Workflow 可以按规则创建和等待 Subagent；Subagent 内可以启动 Job；Agent Teams 则维护多个持续角色及共享协作状态。
 
-```mermaid id=orchestration-choice
-flowchart LR
-  A[当前 Agent] -->|委派独立认知任务| S[Subagent]
-  A -->|启动长耗时操作| J[Job]
-  W[Workflow] -->|按规则创建/等待| S
-  S -->|子会话内后台执行| J
-  T[Agent Teams] -->|持续角色协作| P[共享 Task DAG / Mailbox]
-```
-
-Workflow 创建 Subagent 时，Workflow 拥有协调规则，Subagent 仍拥有自己的推理历史；Subagent 内启动 Job 时，Job 仍归对应子 Session 所有。不要因为它们出现在同一条链路里，就把生命周期混成一个“任务状态”。
+组合后仍分别保留各自的状态归属：Workflow 拥有协调规则，Subagent 拥有独立推理历史，Job 归启动它的 Session 所有。不要因为它们出现在同一条链路里，就把生命周期混成一个“任务状态”。
 
 ## 常见误用
 
