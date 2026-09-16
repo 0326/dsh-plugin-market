@@ -1,4 +1,4 @@
-import versionsManifest from "../content/whitepaper/versions.json";
+import whitepaperManifest from "../content/whitepaper/manifest.json";
 
 export interface WhitepaperSource {
 	path: string;
@@ -14,6 +14,9 @@ export interface WhitepaperChapter {
 	html: string;
 	sources: WhitepaperSource[];
 	groupId: string;
+	type: string;
+	readerOutcome: string;
+	audience: string[];
 }
 
 export interface WhitepaperGroup {
@@ -34,36 +37,47 @@ export interface WhitepaperVersion {
 	groups: WhitepaperGroup[];
 }
 
-interface WhitepaperNavItem {
+interface WhitepaperArticleDefinition {
 	id: string;
 	slug: string;
 	title: string;
 	file: string;
-	summary?: string;
+	type: string;
+	audience: string[];
+	readerOutcome: string;
+	kind: "article" | "appendix";
+	authority: "upstream" | "document-policy";
+	verification: "draft" | "reviewed" | "blocked";
 }
 
-interface WhitepaperNavGroup {
+interface WhitepaperManifestGroup {
 	id: string;
 	title: string;
-	type?: "body" | "reference";
-	items: WhitepaperNavItem[];
-}
-
-interface WhitepaperNav {
-	schemaVersion: number;
-	groups: WhitepaperNavGroup[];
+	kind: "body" | "appendix";
+	order: number;
+	articles: string[];
 }
 
 interface WhitepaperRelease {
 	id: string;
+	label: string;
 	tag: string;
 	commit: string;
 	releasedAt: string;
+	channel: string;
 	status: "preview" | "published";
+	documentationRevision: number;
+	verifiedAt: string;
+	contentRoot: string;
+	assetRoot: string;
+	groups: WhitepaperManifestGroup[];
 }
 
-interface WhitepaperVersionsManifest {
-	latestPublished: string;
+interface WhitepaperManifest {
+	policy: {
+		latestPublished: string;
+	};
+	articles: WhitepaperArticleDefinition[];
 	versions: WhitepaperRelease[];
 }
 
@@ -79,12 +93,8 @@ const htmlModules = import.meta.glob("../content/whitepaper/generated/*/*.html",
 	import: "default",
 }) as Record<string, string>;
 
-const navigationModules = import.meta.glob("../content/whitepaper/*/nav.json", {
-	eager: true,
-	import: "default",
-}) as Record<string, WhitepaperNav>;
-
-const manifest = versionsManifest as WhitepaperVersionsManifest;
+const manifest = whitepaperManifest as WhitepaperManifest;
+const articleRegistry = new Map(manifest.articles.map((article) => [article.id, article]));
 
 function frontmatterValue(markdown: string, key: string): string | undefined {
 	const match = new RegExp(`^${key}:\\s*(.+)$`, "m").exec(markdown);
@@ -113,41 +123,46 @@ function htmlKey(versionId: string, file: string): string {
 	return `../content/whitepaper/generated/${versionId}/${file.replace(/\.md$/i, ".html")}`;
 }
 
-function navFor(versionId: string): WhitepaperNav {
-	const nav = navigationModules[`../content/whitepaper/${versionId}/nav.json`];
-	if (!nav || !Array.isArray(nav.groups)) throw new Error(`Whitepaper navigation is missing for ${versionId}`);
-	return nav;
+function articleForId(articleId: string): WhitepaperArticleDefinition {
+	const article = articleRegistry.get(articleId);
+	if (!article) throw new Error(`Whitepaper article is missing from canonical manifest: ${articleId}`);
+	return article;
 }
 
-function chapterForItem(versionId: string, groupId: string, item: WhitepaperNavItem): WhitepaperChapter {
-	const markdown = markdownModules[markdownKey(versionId, item.file)];
-	const html = htmlModules[htmlKey(versionId, item.file)];
+function chapterForArticle(versionId: string, groupId: string, articleId: string): WhitepaperChapter {
+	const article = articleForId(articleId);
+	const markdown = markdownModules[markdownKey(versionId, article.file)];
+	const html = htmlModules[htmlKey(versionId, article.file)];
 	if (typeof markdown !== "string" || typeof html !== "string") {
-		throw new Error(`Whitepaper assets are missing for ${versionId}/${item.file}`);
+		throw new Error(`Whitepaper assets are missing for ${versionId}/${article.file}`);
 	}
 	return {
-		id: item.id,
-		slug: item.slug,
-		title: item.title,
-		summary: item.summary ?? frontmatterValue(markdown, "summary") ?? frontmatterValue(markdown, "title") ?? item.title,
+		id: article.id,
+		slug: article.slug,
+		title: article.title,
+		summary: frontmatterValue(markdown, "summary") ?? frontmatterValue(markdown, "title") ?? article.title,
 		markdown,
 		html,
 		sources: sourcePaths(markdown).map((path) => ({ path, label: sourceLabel(path) })),
 		groupId,
+		type: article.type,
+		readerOutcome: article.readerOutcome,
+		audience: article.audience,
 	};
 }
 
 function buildVersion(release: WhitepaperRelease): WhitepaperVersion {
-	const nav = navFor(release.id);
-	const groups = nav.groups.map((group) => ({
-		id: group.id,
-		title: group.title,
-		type: group.type ?? "body",
-		chapters: group.items.map((item) => chapterForItem(release.id, group.id, item)),
-	}));
+	const groups = [...release.groups]
+		.sort((a, b) => a.order - b.order)
+		.map((group) => ({
+			id: group.id,
+			title: group.title,
+			type: group.kind === "appendix" ? "reference" as const : "body" as const,
+			chapters: group.articles.map((articleId) => chapterForArticle(release.id, group.id, articleId)),
+		}));
 	return {
 		id: release.id,
-		label: release.id,
+		label: release.label,
 		upstreamTag: release.tag,
 		upstreamCommit: release.commit,
 		releasedAt: release.releasedAt,
@@ -158,7 +173,7 @@ function buildVersion(release: WhitepaperRelease): WhitepaperVersion {
 }
 
 export const WHITEPAPER_VERSIONS: WhitepaperVersion[] = manifest.versions.map(buildVersion);
-export const WHITEPAPER_LATEST_VERSION = manifest.latestPublished;
+export const WHITEPAPER_LATEST_VERSION = manifest.policy.latestPublished;
 
 export function resolveWhitepaperVersion(requested: string): WhitepaperVersion | undefined {
 	const id = requested === "latest" ? WHITEPAPER_LATEST_VERSION : requested;
