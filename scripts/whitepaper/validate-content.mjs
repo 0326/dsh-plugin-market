@@ -212,7 +212,7 @@ for (const version of versions) {
 	}
 }
 
-warnings.push("claim-level evidence IDs and independent reader-test results are not yet encoded in the target manifest; semantic verification remains a separate gate");
+warnings.push("claim-level evidence IDs are not yet encoded in the target manifest; semantic source verification remains a separate automated review concern");
 warnings.push("fixed upstream source paths are not exhaustively checked in this repository-only validation; tag-to-commit pins must be audited against the official upstream repository");
 
 if (errors.length) {

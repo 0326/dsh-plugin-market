@@ -67,7 +67,7 @@
   ],
   "versions": [
     {
-      "id":"v0.1.5-rc.2","label":"v0.1.5-rc.2","tag":"dsh-v0.1.5-rc.2","commit":"fb2c4b9e698e30edb738bca4cf0618587db7d203","releasedAt":"2026-09-10","channel":"rc","status":"published","documentationRevision":3,"verifiedAt":"2026-09-16","contentRoot":"src/react-app/content/whitepaper/v0.1.5-rc.2","assetRoot":"public/whitepaper/diagrams/v0.1.5-rc.2","sourceLocks":[{"sourceId":"dsh-upstream","ref":"dsh-v0.1.5-rc.2","commit":"fb2c4b9e698e30edb738bca4cf0618587db7d203","accessed":"2026-09-16"}],
+      "id":"v0.1.5-rc.2","label":"v0.1.5-rc.2","tag":"dsh-v0.1.5-rc.2","commit":"fb2c4b9e698e30edb738bca4cf0618587db7d203","releasedAt":"2026-09-10","channel":"rc","status":"published","documentationRevision":4,"verifiedAt":"2026-09-16","contentRoot":"src/react-app/content/whitepaper/v0.1.5-rc.2","assetRoot":"public/whitepaper/diagrams/v0.1.5-rc.2","sourceLocks":[{"sourceId":"dsh-upstream","ref":"dsh-v0.1.5-rc.2","commit":"fb2c4b9e698e30edb738bca4cf0618587db7d203","accessed":"2026-09-16"}],
       "groups":[
         {"id":"orientation","title":"一、认识 DSH","kind":"body","order":10,"articles":["overview","reading-paths"]},
         {"id":"runtime-foundations","title":"二、运行时基础","kind":"body","order":20,"articles":["composition","boot-config","agent-core","runtime","session-state"]},
