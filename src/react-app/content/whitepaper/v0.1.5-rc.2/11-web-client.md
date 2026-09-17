@@ -6,7 +6,7 @@ dsh_version: v0.1.5-rc.2
 upstream_tag: dsh-v0.1.5-rc.2
 upstream_commit: fb2c4b9e698e30edb738bca4cf0618587db7d203
 status: verified
-verified_at: 2026-09-15
+verified_at: 2026-09-17
 sources:
   - docs/subsystems/web-client.zh.md
   - docs/subsystems/client-modules.zh.md
@@ -24,83 +24,98 @@ sources:
 ---
 # Web Client 架构
 
-DSH Web Client 自身也是由插件组装的浏览器侧 Cordis 应用。Host 保留权威业务状态，浏览器通过类型化 Remote 构建本地 Model，再由 UI Adapter、Conversation 与 Slots 形成 React 界面。
+理解 DSH Web Client 的关键，不是记住 React 组件，而是先回答三个问题：**权威状态在哪里、浏览器拿到的是什么、断线以后谁负责恢复**。结论是：Host 拥有业务真相，Client Model 维护可替换的浏览器投影，React 只消费投影并发出命令。
 
-## 数据通路
+## 六层所有权
+
+| 层 | 主要 owner | 它负责什么 | 不负责什么 |
+| --- | --- | --- | --- |
+| Host | 业务 Service / Host Controller | 持久化、Mutation 顺序、访问策略、Stream 生产 | React 展示状态 |
+| Connection / API Gateway | Transport 与 Remote assembly | request correlation、Remote dispatch、logical stream、取消 | 业务状态真相 |
+| Client Model | Session / Workspace Client Model | 浏览器侧 identity、baseline、增量合并、observable snapshot | 最终业务决策 |
+| UI Adapter | `ui-session` / `ui-workspace` | 把 Model 转成标准 Slot source / hook | 复制一套业务 store |
+| Conversation / Presentation | Conversation target 与功能 UI | 把 Session Event 组装成 Chat / Trajectory 等视图 | 修改 Host 事实 |
+| Slots / React | `ui-slots` / renderer / layout | 生命周期组合与最终渲染 | 直接持有 Transport 或 Host Service |
+
+依赖方向始终是：
 
 ```mermaid id=web-client-flow
 flowchart LR
-  H["Host 权威状态"] --> R["Remote / API Gateway"]
+  H["Host 权威状态"] --> R["Remote / Stream"]
   R --> M["Client Model"]
   M --> U["UI Adapter"]
   U --> C["Conversation / Presentation"]
   C --> S["Typed Slots"]
   S --> V["React UI"]
-  V -. "回调 / 命令" .-> R
-  R -. "权威 Mutation" .-> H
+  V -. "command / callback" .-> R
+  R -. "authoritative mutation" .-> H
 ```
 
-官方 Web Client 的依赖方向就是 **Host State → Remote Transport → Client Model → UI Adapter → Conversation / Presentation → Slots → React**。用户操作沿 callback 反向进入 Client Service 或生成的 Remote，再由 Host 完成权威 Mutation，并通过 Stream / Event 回到 Client Model。
+这条链最重要的约束是：**投影可以被替换，权威状态不能倒置**。浏览器即使暂时保留旧值，也不能因为本地 UI 已更新就假设 Host Mutation 已成功。
 
-## Host、API Gateway 与 Typert
+## 一次用户操作怎样走完
 
-Host 半侧拥有 HTTP 路由、API Gateway 和真正的业务 Mutation。Typert 定义 Remote 描述符、类型图与 Host/Client lookup 契约；构建阶段生成双方约定，运行时通过 Connection 复用 RPC 与 `/api` 路由。
+以“用户在浏览器向当前 Session 发送一条消息”为例：
 
-这里要区分两类通路：
+1. React 组件通过 Slot owner、Adapter 或注入的 Client Service 发出 command；
+2. Client Service 调用生成的 Remote method，而不是直接改 Session Event window；
+3. Host Controller 校验当前 Session、权限与请求参数，并执行权威 Mutation；
+4. 持久 Session 事实进入 Session Log，瞬态控制状态进入对应 Host stream；
+5. Remote logical stream 把新 baseline / increment 或 Event 送回浏览器；
+6. Client Model 按自身语义合并，必要时替换旧 generation 的 projection；
+7. Conversation 根据 Session Event 重新组装 target snapshot；
+8. Slot / React 只渲染最新 snapshot。
 
-- 一元业务调用适合 Typert Remote；
-- Session Event、增量数据与其他 Stream 协议可以共用 Connection，但不等于 Remote Method。
+因此排障时要先判断问题停在哪一层：**command 没发出、Host 没提交、stream 没回来、Client 没合并，还是 UI 没渲染**。不要把所有 Web 问题都归因到 React。
 
-因此新增 Web 能力时，不应把所有实时数据都包装成普通 RPC，也不应让浏览器绕过 Host 直接修改权威状态。
+## Remote 与 Stream 不是同一类接口
 
-## Client Modules：浏览器插件树从哪里来
+Typert Remote 适合一次请求—一次结果的命令；Session Event、控制状态与 Workspace 变化则由 logical stream 承载。两者可以复用同一 Connection，但恢复语义不同。
 
-`client-modules` 负责浏览器插件表与 `dsh.client` 声明。Host 根据当前组合生成 Web Boot Graph，浏览器再按图加载对应 Client 插件与依赖。
+| 数据类型 | 首选机制 | 断线后的恢复方式 |
+| --- | --- | --- |
+| 一次性业务命令 | Remote method | 调用方根据失败结果决定是否重试 |
+| 持久 Session 历史 | `follow()` / `page()` | 新 generation 用 opening snapshot 替换窗口，再按 seq 续接；gap 用 page repair |
+| Session control / Workspace state | snapshot stream | 保留最后值，重连后由新 baseline 原子替换 |
+| 普通 forwarded notification | event forwarding | 不 replay；错过即错过 |
 
-这意味着 Web 插件不是一个脱离 Cordis 的 React bundle：它仍然属于版本化的插件组合，Host/Client 两半可以由同一个扩展声明共同参与。
+如果某个领域要求断线后可靠恢复，就必须自己提供 baseline、cursor 或 query；不存在一个全局 `resync()` 能自动恢复所有浏览器状态。
 
-## Client Model 与 Projection
+## Client Model 不是第二份业务真相
 
-Host Controller 拥有持久化、访问策略、Mutation 顺序与 Stream 生产。Client Model 只是最新可用状态的浏览器投影，需要处理重连、Baseline 替换和增量更新，但不成为第二份业务真相。
+Session Client 维护事件窗口、分页、Follow、Queue、Projection 与 Control State；Workspace Client 维护 Workspace rows、顺序和导航相关状态。这些对象负责浏览器侧 identity 和竞态合并，但最终 Mutation outcome 仍由 Host 决定。
 
-Session Client 维护事件窗口、分页、Follow、Queue、Projection 与 Control State；Workspace Client 维护 Workspace 列表与导航状态。React 层通过 UI Adapter 消费这些稳定 Model。
+一个常见错误是让组件在本地 store 中再复制一份 Session / Workspace 状态，然后同时监听 Remote。这样会产生第三套时序：Host、Client Model、Component Store。正确做法是让 UI Adapter 消费既有 Model，领域派生状态进入 Projection / Conversation，而不是在组件里重新实现状态机。
 
-Session Projection Seam 则提供一致的派生快照。UI 应消费 Projection / Model，而不是从原始 Event 数组里到处复制自己的状态机。
+## Conversation 负责“解释事件”，不是拥有事件
 
-## Conversation 是事件到 UI 的组装层
+Conversation 把持久 Session Event 与实时 Assistant chunk 关联成稳定 Context，再由 Chat、Trajectory 等 target 分别生成自己的 snapshot。聊天气泡只是最终 renderer，不是会话模型本身。
 
-Conversation 子系统把 target-neutral 的 Session Event 组装为 Chat、Trajectory 等 View，并保留 Context Identity、Location Data 与 Replay 路径。具体界面 Renderer 再决定如何展示这些 Render Node。
+这条边界带来两个直接结果：
 
-因此“会话数据模型”和“聊天气泡组件”不是同一层：前者属于 Conversation / Projection，后者属于 UI Presentation。
+- 新增一种 Session 事件展示，应优先考虑 Conversation Definition / target builder，而不是在某个气泡组件里直接扫原始 Event；
+- 重连与分页历史必须能经过同一条 Conversation 重放路径，否则实时 UI 与历史 UI 会分叉。
 
-## Slot 模型
+## Slot 决定 UI 生命周期
 
-`ui-slots` 支持 `single`、`list`、`keyed`、`chain` 四类组合。Slot 声明同时定义 cardinality、scope、owner props 与授权关系；插件通过 `ctx.slots.inject()` 等待目标 Slot 生命周期，再用 `ctx.slots.register()` 贡献 UI。
+`ui-slots` 提供 `single`、`list`、`keyed`、`chain` 四种组合形态。注册项归属于 Cordis 生命周期；父 Entry 销毁时，其 Child Slot 与贡献会一起撤销。
 
-销毁父 Entry 会递归撤销其 Child Slot 和贡献，UI 扩展因此与 Cordis 生命周期一致，而不是长期残留在全局 React 注册表中。
+当前主区域使用 root-scoped keyed `main` Slot：`conversation` 是主会话 key，`sidebar.panellist` 提供与主面板 id 对应的入口。新增产品级全局面板时，应同时注册主区内容和导航入口；增强现有会话 Header、Composer 或 Chat 时，则进入 `main.conversation` 下的子 Slot。
 
-## Client Resources 与右侧 Sidebar
+跨功能 UI 通过 Slot 组合，跨功能行为通过 Cordis Service。功能插件可以 `import type` 共享声明，但不应运行时导入另一个功能插件的组件或状态来建立隐式依赖。
 
-Client Resource 使用 `dsh-resource://<type>/...` 地址把“可打开的资源”抽象成统一模型，协议 Provider 负责解析，`useResource` 提供状态、Pin 与 Release 生命周期。
+## 一张表定位常见故障
 
-当前版本的右侧 Sidebar 建立在 Resource 与导航模型之上：不同资源类型可以注册 Tab 类型，`ctx.sidebarRight` 负责打开/导航，pane-tab Slot 负责 UI 贡献。Workspace Files 也是该资源模型的具体消费者。
+| 症状 | 第一现场 | 权威证据 | 常见错误判断 |
+| --- | --- | --- | --- |
+| 点击后无动作 | Component callback / Client Service | Remote 调用是否发出 | 先怀疑 Host |
+| RPC 成功但界面不变 | Host stream → Client Model | 新 baseline / increment 是否到达并合并 | 直接手动改 React state |
+| 重连后数据回退 | logical stream / generation | opening baseline 与 cursor / seq | 把旧本地 snapshot 当真相 |
+| Chat 实时正常、刷新后缺失 | Session Event / Conversation replay | 持久 Event 是否存在 | 认为 live chunk 等于持久事实 |
+| 插件卸载后 UI 残留 | Slot lifecycle | registration 是否归属正确 scope | 用全局 React registry 绕过 Slot |
 
-这比“每个插件自己维护一个右侧抽屉”更可组合，也让资源预览、Tab 生命周期和导航行为有统一契约。
+## 扩展时怎么选入口
 
-## 全局面板 API
+新增 Host 业务能力，先定义 Service / Controller，再通过生成 Remote 或 stream 暴露；新增浏览器领域状态，在 Client Model 中维护；新增 Session 呈现，进入 Conversation；新增布局或面板贡献，进入 Slot。
 
-当前版本的主区域使用 root 作用域 keyed `main` Slot，并由 `sidebar.panellist` 提供与主面板 id 对应的入口。Conversation 主区是 `main` 的 `conversation` key，其内部仍保留 Session Header、Composer、Input、Chat 等细粒度 Slot。
-
-这意味着需要新增产品级全局面板时，应注册 `main` + `sidebar.panellist`；需要增强具体会话 Header 或输入区时，则继续进入 `main.conversation` 下的 Conversation Slot，而不是替换整个主区。
-
-## rc.2 的 Feedback 与 Deliverables
-
-`ui-message-feedback` 是 Message Feedback 的浏览器 Consumer。rc.2 中好评和差评统一在未记录状态下先打开 `conversation.input.overlay` 中的 Feedback Dialog，确认后通过生成的 Remote 提交；失败会保留草稿并给出提示，已记录评分再次点击则直接撤回。这是 UI/Consumer 行为变化，没有新增 Agent 或 Session 主链路 API。
-
-交付文件相关 UI 在 rc.2 调整了卡片排版、Conversation 间距与代码文件图标。它们仍通过既有 Deliverables / Conversation / Resource / Slot 体系工作，因此自定义插件不需要为 rc.2 迁移 Slot 拓扑，但如果依赖内部 CSS、DOM 或旧图标实现，需要重新核对视觉集成。
-
-## 插件边界
-
-功能插件可以 `import type` 共享声明，但不应运行时导入另一个功能插件的组件或状态。跨功能行为使用 Cordis Service，跨功能 UI 使用 Slot；这条边界是 Web Client 能保持可组合性的基础。
-
-源码定位建议从 `packages/host/`、`packages/api/`、`packages/typert/`、`packages/client/`、`docs/subsystems/web-client.zh.md` 和 `docs/subsystems/slots.zh.md` 进入。
+如果实现需要让 React 组件直接拿 `ctx`、Transport object 或另一个功能插件的内部 store，通常说明边界选错了。继续排查时，从 `docs/subsystems/web-client.zh.md` 的所有权表和数据通路开始，再分别下钻 API Gateway、Client Modules、Conversation 与 Slots。

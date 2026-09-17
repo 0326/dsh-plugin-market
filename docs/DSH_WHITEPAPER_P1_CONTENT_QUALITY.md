@@ -12,6 +12,8 @@
 4. **选择页重复机制页**：列举每个模块“是什么”，但缺少统一比较维度和场景分支。
 5. **迁移页接近 Release 摘要**：有变化列表，但“旧行为 → 新行为 → 影响 → 动作 → 验证”链路不够稳定。
 6. **验证页容易抽象化**：需要把“什么证据能证明什么”绑定到真实改动类型。
+7. **协议回执容易被误写成业务完成**：RPC 返回、HTTP 202、Prompt 入队、Agent idle、Session flush、资源释放经常是不同终态。
+8. **前端投影容易被写成第二份真相**：需要显式区分 Host 权威状态、Client Model 与 React 展示。
 
 ## 2. P1 的统一目标
 
@@ -22,7 +24,8 @@
 - 在多个机制之间做选择；
 - 根据失败表现定位责任层；
 - 判断升级是否需要迁移；
-- 设计一条能证明目标结论的验证链。
+- 设计一条能证明目标结论的验证链；
+- 区分“请求被接受”和“业务真正完成”。
 
 不以篇幅、代码块数量或标题数量衡量深度。
 
@@ -55,6 +58,8 @@
 
 DSH 编排方式的核心比较维度包括：是否拥有独立 Agent 历史、谁控制协调、后台状态归谁、是否需要长期 Peer 协作、需要什么可靠性保证。
 
+外部接入方式则优先比较：谁启动工作、谁持有 Runtime / Session、一次调用返回代表什么终态、取消与恢复由谁负责、是否存在可靠交付保证。
+
 ## 5. 实践验证：从“有测试”变成“证据能证明什么”
 
 适用于 `practical-validation`。
@@ -68,6 +73,15 @@ DSH 编排方式的核心比较维度包括：是否拥有独立 Agent 历史、
 - 明确哪些结论仍不能由当前证据推出。
 
 例如 Agent 回复“文件已写入”不是验证；重新读取文件才是对外部效果的验证。
+
+对于协议接入，还必须区分至少四个状态：
+
+1. **accepted**：请求或消息被接纳；
+2. **committed**：关键事实已经写入持久状态；
+3. **settled**：本轮 Agent / Session 工作达到协议定义的终态；
+4. **disposed**：相关进程、Handle、Scope 或 callback 已真正释放。
+
+文章不能把其中一个状态模糊写成“任务完成”。
 
 ## 6. 版本迁移：从“变更列表”变成“升级决策”
 
@@ -106,7 +120,7 @@ DSH 编排方式的核心比较维度包括：是否拥有独立 Agent 历史、
 
 ### 7.5 Mermaid 只表达一个关系
 
-优先表达状态流、数据所有权、执行顺序或依赖关系。图不能代替设计理由和边界说明。
+优先表达状态流、数据所有权、执行顺序或依赖关系。图不能代替设计理由和边界说明；文字和表格已经足够清楚时，不为了“看起来专业”增加新图和维护资产。
 
 ### 7.6 结尾给出下一步动作
 
@@ -119,14 +133,13 @@ DSH 编排方式的核心比较维度包括：是否拥有独立 Agent 历史、
 - 事实一定正确；
 - 设计理由一定被官方明确说明；
 - Mermaid 语义一定正确；
-- 文章一定易读；
-- 真实读者一定能完成目标任务。
+- 文章一定易读。
 
 因此自动门禁是防止文章退化成模块摘要的最低线，不替代官方来源核验。
 
-## 9. P1 首批样板文章
+## 9. P1 第一批样板文章
 
-本轮优先改造六篇，覆盖四种文章类型：
+第一批覆盖四种文章类型：
 
 - `04-runtime.md`：机制解释——真实 Turn/Step 过程、状态所有权、失败定位；
 - `05-session-state.md`：机制解释——事实层/视图层、恢复、Fork、Flush、写所有权；
@@ -135,4 +148,40 @@ DSH 编排方式的核心比较维度包括：是否拥有独立 Agent 历史、
 - `26-reliability-evaluation.md`：实践验证——改动类型到证据链的映射；
 - `17-evolution.md`：版本迁移——旧/新/影响/动作/验证矩阵。
 
-后续正文优先按这些样板扩展，而不是机械复制固定标题。
+## 10. P1 第二批：补齐核心扩展与编排链
+
+第二批继续复用同一质量模型，但重点增加三类信息：**扩展权力、生命周期句柄、诊断证据链**。
+
+- `06-capability-seams.md`：从“Definition / Provider / Consumer 名词解释”升级为“什么时候值得定义 Seam、替换边界和组合代价”；
+- `10-hooks-interception.md`：明确 emit / waterfall / guard / around 各自拥有的不同权力，并沿一次 Tool Call 解释完整拦截顺序；
+- `19-subagent-delegation.md`：区分 one-shot 与 continuable，解释 Persisted Session、Activation、Inbox 和 parent/child ownership；
+- `20-workflow-orchestration.md`：解释 `WorkflowRun` 的 holder ownership、fatal error、bounded cancel 与 `dispose()`；
+- `21-jobs-background.md`：解释 Producer / Registry / Controller 分工、owner authorization、`stopping` 与 first-wins settlement；
+- `16-diagnostics-observability.md`：从工具清单升级成“症状 → 第一现场 → 权威证据 → 下一层”的排障链。
+
+第二批形成三个可复用写作原则：
+
+1. **扩展点先写权力模型**：谁只能观察、谁能拒绝、谁能变换、谁能控制生命周期；
+2. **异步机制先写 holder / owner**：返回 Promise 不代表生命周期结束，必须说明谁持有句柄、谁负责 cancel / dispose / teardown；
+3. **诊断文章先写证据顺序**：不同症状从哪个事实源开始，避免“搜所有日志”的无差别排障。
+
+## 11. P1 第三批：产品扩展与外部接入
+
+第三批重点解决两类容易被误解的文章：浏览器架构和外部协议接入。
+
+- `11-web-client.md`：把 Host → Remote → Client Model → Conversation → Slot → React 写成明确所有权链，并增加 mutation、reconnect 与故障定位；
+- `12-plugin-development.md`：从扩展点列表升级为“扩展面选择 → 生命周期 → 外部证据 → teardown”的验证方法；
+- `14-sdk-acp-webhook.md`：使用同一组维度比较 Runtime owner、Session owner、返回终态、取消、恢复与可靠交付；
+- `23-sdk.md`：明确低层 `prompt()` 只证明入队，高层 `run()` 收集到下一次 idle，`close()` 才证明子进程退出；
+- `24-acp.md`：解释多 Session ownership、Prompt / cancel / close 的不同语义，以及标准 ACP 表面刻意不包含的 DSH UI 能力；
+- `25-webhook.md`：明确 HTTP 202 / `dispatch()`、Rule、Session 创建与 Agent 完成不是同一个状态；
+- `22-agent-teams.md`：解释 Lead Log 真源、durable mailbox、Task CAS 与单进程 experimental 边界；
+- `27-limits.md`：从限制清单升级为“需要什么保证 → 当前提供什么 → 缺什么 → 用什么补齐”的采用矩阵。
+
+第三批继续沉淀三个通用原则：
+
+1. **协议文章先拆终态**：accepted、committed、settled、disposed 必须分开；
+2. **前端文章先找权威状态**：Host 真相、Client projection、React presentation 不得混成一层；
+3. **边界文章从需求保证反推机制**：不要列“缺点”，而要告诉读者哪类需求已经超出当前正式契约。
+
+后续正文继续按这些样板扩展，而不是机械复制固定标题。
