@@ -106,7 +106,7 @@ DSH 编排方式的核心比较维度包括：是否拥有独立 Agent 历史、
 
 ### 7.5 Mermaid 只表达一个关系
 
-优先表达状态流、数据所有权、执行顺序或依赖关系。图不能代替设计理由和边界说明。
+优先表达状态流、数据所有权、执行顺序或依赖关系。图不能代替设计理由和边界说明；文字和表格已经足够清楚时，不为了“看起来专业”增加新图和维护资产。
 
 ### 7.6 结尾给出下一步动作
 
@@ -119,14 +119,13 @@ DSH 编排方式的核心比较维度包括：是否拥有独立 Agent 历史、
 - 事实一定正确；
 - 设计理由一定被官方明确说明；
 - Mermaid 语义一定正确；
-- 文章一定易读；
-- 真实读者一定能完成目标任务。
+- 文章一定易读。
 
 因此自动门禁是防止文章退化成模块摘要的最低线，不替代官方来源核验。
 
-## 9. P1 首批样板文章
+## 9. P1 第一批样板文章
 
-本轮优先改造六篇，覆盖四种文章类型：
+第一批覆盖四种文章类型：
 
 - `04-runtime.md`：机制解释——真实 Turn/Step 过程、状态所有权、失败定位；
 - `05-session-state.md`：机制解释——事实层/视图层、恢复、Fork、Flush、写所有权；
@@ -135,4 +134,21 @@ DSH 编排方式的核心比较维度包括：是否拥有独立 Agent 历史、
 - `26-reliability-evaluation.md`：实践验证——改动类型到证据链的映射；
 - `17-evolution.md`：版本迁移——旧/新/影响/动作/验证矩阵。
 
-后续正文优先按这些样板扩展，而不是机械复制固定标题。
+## 10. P1 第二批：补齐核心扩展与编排链
+
+第二批继续复用同一质量模型，但重点增加三类信息：**扩展权力、生命周期句柄、诊断证据链**。
+
+- `06-capability-seams.md`：从“Definition / Provider / Consumer 名词解释”升级为“什么时候值得定义 Seam、替换边界和组合代价”；
+- `10-hooks-interception.md`：明确 emit / waterfall / guard / around 各自拥有的不同权力，并沿一次 Tool Call 解释完整拦截顺序；
+- `19-subagent-delegation.md`：区分 one-shot 与 continuable，解释 Persisted Session、Activation、Inbox 和 parent/child ownership；
+- `20-workflow-orchestration.md`：解释 `WorkflowRun` 的 holder ownership、fatal error、bounded cancel 与 `dispose()`；
+- `21-jobs-background.md`：解释 Producer / Registry / Controller 分工、owner authorization、`stopping` 与 first-wins settlement；
+- `16-diagnostics-observability.md`：从工具清单升级成“症状 → 第一现场 → 权威证据 → 下一层”的排障链。
+
+第二批形成三个可复用写作原则：
+
+1. **扩展点先写权力模型**：谁只能观察、谁能拒绝、谁能变换、谁能控制生命周期；
+2. **异步机制先写 holder / owner**：返回 Promise 不代表生命周期结束，必须说明谁持有句柄、谁负责 cancel / dispose / teardown；
+3. **诊断文章先写证据顺序**：不同症状从哪个事实源开始，避免“搜所有日志”的无差别排障。
+
+后续正文继续按这些样板扩展，而不是机械复制固定标题。
