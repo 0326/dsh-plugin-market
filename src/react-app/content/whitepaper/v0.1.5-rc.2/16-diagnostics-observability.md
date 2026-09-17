@@ -6,7 +6,7 @@ dsh_version: v0.1.5-rc.2
 upstream_tag: dsh-v0.1.5-rc.2
 upstream_commit: fb2c4b9e698e30edb738bca4cf0618587db7d203
 status: verified
-verified_at: 2026-09-15
+verified_at: 2026-09-17
 sources:
   - packages/runtime-diagnostics/README.zh.md
   - docs/subsystems/invariants.zh.md
@@ -18,55 +18,127 @@ sources:
 ---
 # 调试与观测
 
-DSH 的调试入口分成四层：组合是否正确、运行事件是否正确、持久事实是否正确、外部观测是否正确。当前版本提供包级 Runtime Invariant、Token Meter 与 Session Telemetry，使“断言正确性”和“记录运行数据”保持分离。
+DSH 的诊断不应该从“多打日志”开始，而应该先判断问题属于哪一层：**组合、Agent 运行、持久事实、能力执行，还是外部观测**。不同层有不同的权威证据。最有效的排障方式，是从用户可见症状一路收窄到拥有该事实的组件，而不是在所有插件里搜索同一个错误字符串。
 
-## Runtime Invariants
+## 先建立证据层级
 
-`runtime-diagnostics/invariants` 运行各包提供的 Invariant Companion，并通过 `ctx.invariants` 统一注册。检查失败会归因到拥有该约束的包，而不是只抛出一个全局“Session 损坏”错误。
+| 层 | 主要证据 | 能回答什么 | 不能单独证明什么 |
+| --- | --- | --- | --- |
+| 组合层 | Profile / Bundle / Patch、Config Catalog、Capability Graph | 实际加载了什么 | 运行时是否真的成功执行 |
+| Agent 层 | Turn / Step / Request / Inbox / Tool Events | 请求如何推进、在哪里停止 | 持久化之后能否恢复 |
+| Session 层 | Event Log、Projection、Request Header / Context | 模型当时看到了什么、哪些事实已提交 | 外部 Sink 是否收到观测数据 |
+| 能力层 | Invariant、Provider 状态、Tool Result | 哪个包的契约被破坏 | 全局业务结果是否正确 |
+| 度量层 | Token Meter、Benchmark / runtime metrics | 资源与上下文消耗 | 语义正确性 |
+| 外部观测层 | Session Telemetry / OTEL 等 Sink | 线上发生了什么趋势和故障 | Session 可恢复事实 |
 
-Invariant 适合验证事件配对、序列边界、持久数据关系等运行时契约。全局开关与包过滤器可以控制启用范围，便于开发与故障定位。
+诊断时先选对证据层，再下钻具体事件。
 
-## Token Meter
+## 一次“Tool 没有按预期执行”怎么查
 
-Token Meter 记录不可变的 Token 标量与位置回放度量，并绑定已消费的日志 Revision。它的意义不是再造一套 Session 状态，而是给“某个时刻模型上下文消费了多少 Token”提供可追踪测量基础。
+不要直接假设 Tool 本身坏了。按下面顺序收窄：
 
-涉及上下文预算、Compaction 触发或模型成本分析时，应优先使用这一类明确的度量数据，而不是从字符串长度或 UI 文本估算。
+1. **组合层**：目标 Profile 是否真的加载 Tool 与其依赖 Service；
+2. **可见性层**：目标 Agent Scope 是否能看到该 Tool，Tool Catalog 是否包含预期 schema；
+3. **模型请求层**：对应 Step 的 Request Header / Context 中是否带上该 Tool；
+4. **调用层**：Session 是否出现 `tool/call`；没有则问题仍在模型选择或可见性；
+5. **策略层**：如果有 call 但没有主体执行，检查 `tools/pre-execute`、Approval、guard；
+6. **执行层**：检查规范化 Tool Result、timeout / abort / Provider 错误；
+7. **持久层**：确认 Tool Result 和后续上下文已经进入 Session；
+8. **外部观测层**：最后再检查 Telemetry 是否正确上报。
 
-## Session Telemetry
+这条链的价值是每一步都能排除一类责任层，而不是从日志数量判断问题。
 
-Session Telemetry 通过独立 Sink 向外部系统上报经过分类和脱敏的记录。它与 Event Log 的关系是：
+## Runtime Invariant 用于发现“不该存在的状态”
 
-- Session Event Log：用于恢复、回放和解释 Agent 当时发生了什么；
-- Session Telemetry：用于把运行时指标、严重级别和诊断记录输出到外部观测系统。
+`runtime-diagnostics/invariants` 让各包注册自己拥有的不变量，并通过 `ctx.invariants` 统一执行。失败会归因到拥有该约束的包。
 
-Telemetry 不应成为 Session 恢复依赖；Session Event 也不应承担所有外部监控数据。
+适合用 Invariant 检查的通常是：
 
-## 官方生成目录
+- 事件 start/end 是否配对；
+- 序列号、生命周期和父子关系是否一致；
+- 持久记录之间是否满足结构约束；
+- 某个包声明的协议是否出现非法状态。
 
-DSH 的 Config Catalog、Tool Catalog、Capability / Module Graph 都由源码生成，并有新鲜度校验。排查“配置是否真的支持某字段”“模型当前到底看到哪个 Tool Schema”时，应优先查这些生成目录，而不是凭 README 示例推断。
+Invariant 的价值是把错误靠近**拥有规则的包**。它不是业务断言系统，也不能证明“Agent 最终答案正确”。
 
-Tool Catalog 会从实际插件注册结果提取 schema，因此它比手写接口列表更接近模型实际运行表面。
+## Session Log 回答“模型当时实际看到了什么”
 
-## Session 是最重要的运行证据
+当问题是“为什么模型这样回答”“为什么恢复后上下文不同”，首要证据是 Session，而不是 UI 状态或 Telemetry。
 
-一次 Agent 行为出现异常时，可以按以下顺序定位：
+重点查看：
 
-1. 查看最终 Profile / Patch 是否挂载了预期插件与 Provider；
-2. 确认目标 Agent Scope / Preset 是否包含预期 Tool、Prompt、Skill；
-3. 查看 Session Event 的 Turn、Step、Request Header / Context；
-4. 查看 Assistant Attempt、Tool Call / Result 与取消原因；
-5. 对 Token/Compaction 问题查看 Token Meter 与 Surface 变化；
-6. Web 问题再沿 Remote → Client Model → Conversation → Slot 检查投影；
-7. 外部监控问题最后检查 Session Telemetry Sink 与脱敏流水线。
+| 问题 | Session 证据 |
+| --- | --- |
+| 这一轮是否真正开始 | `turn/start` / `turn/end` |
+| 是否进入模型请求 | `step/start`、Request Header / Context |
+| 模型看到哪些消息 | Surface Projection / `deriveMessages()` 结果对应事件 |
+| Tool 是否被模型调用 | `tool/call` |
+| Tool 返回了什么 | `tool/result` |
+| 模型请求是否失败后重试 | `assistant/attempt` / `assistant/message` |
+| 是否存在取消或中断 | Turn / Step 结算与 interrupted 事实 |
 
-由于模型历史和 Request Envelope 都可从 Session 重建，Session Log 是判断“模型当时实际看到了什么”的首要证据。
+UI 是这些事实的消费方之一，不应反过来作为唯一真源。
 
-## 组合诊断与运行诊断不要混淆
+## Token Meter 回答资源问题，不回答语义问题
 
-配置层问题优先看 Profile、Bundle、Patch 与生成 Catalog；运行期问题看 Agent/Tool Event、Session Event 与 Invariant；性能或行为趋势看 Telemetry / Token Meter。把三类问题混成“多打日志”会让定位成本更高。
+Token Meter 记录与日志 Revision 对齐的 Token 度量，用于判断某个时刻上下文消费情况。它适合排查：
 
-## 插件开发时的最小诊断面
+- 上下文预算为什么突然上升；
+- Compaction 前后 Token 如何变化；
+- 长 Session 的输入规模如何增长；
+- 某类 Prompt / Tool Schema 是否带来固定成本。
 
-至少应能够回答五个问题：插件是否挂载、Service Provider 是否生效、目标 Agent 是否可见、执行结果是否进入 Session / Event、外部观测是否成功上报。把这五层证据打通，通常比增加更多日志字符串更有效。
+但 Token 数量正常并不能证明 Prompt 内容正确，也不能证明模型路由正确。度量只是资源证据。
+
+## Telemetry 与 Session 必须分工
+
+Session Telemetry 把经过分类和脱敏的记录送到外部 Sink；Session Event Log 保存可恢复事实。两者面向不同问题：
+
+- 需要恢复、回放、解释单次会话：查 Session；
+- 需要线上趋势、聚合、告警、跨会话观测：查 Telemetry；
+- Telemetry 丢失不应导致 Session 无法恢复；
+- Session 也不应为了监控方便无限承载所有指标。
+
+把 Telemetry 当数据库，会把可观测性故障升级成恢复故障；把所有监控数据写进 Session，则会污染持久协议。
+
+## 生成 Catalog 是组合事实，不是 README 示例
+
+Config Catalog、Tool Catalog、Capability / Module Graph 从源码生成，并有新鲜度检查。排查以下问题时，应优先使用生成目录：
+
+- 配置字段在当前版本是否真实存在；
+- 某 Tool Schema 是否真的进入模型表面；
+- 某个 `ctx.*` Service 由哪个 Provider 提供；
+- 某个 Consumer 依赖哪些能力。
+
+README 示例可以帮助理解，但不能替代当前版本生成结果。
+
+## 按症状选择第一现场
+
+| 症状 | 第一现场 | 下一步 |
+| --- | --- | --- |
+| 配置写了但能力不存在 | Config / Capability Catalog | Profile / Patch 装配 |
+| 模型说“没有这个 Tool” | Tool Catalog + Request Header | Agent Scope / Tool restriction |
+| Tool Call 有记录但没执行 | Tool Pipeline | Approval / guard / Provider |
+| UI 内容与恢复结果不同 | Session Projection / Event Log | Client Model / Remote |
+| Resume 后行为变化 | Request Header / Context + Session | Provider / Prompt 变化 |
+| 长会话突然超预算 | Token Meter | Compaction / Tool Schema / Prompt |
+| 线上告警无法定位到会话 | Telemetry correlation | Session id / event evidence |
+| Invariant 报错 | 对应 package owner | 相关持久事件和状态关系 |
+
+## 一个插件至少要留下五层可诊断证据
+
+新插件发布前，至少能回答：
+
+1. **有没有挂载？**——组合事实；
+2. **Provider 是否生效？**——Capability / Service 事实；
+3. **Agent 是否可见？**——Scope / Tool / Prompt 事实；
+4. **执行发生了什么？**——Tool / Agent / Session 事实；
+5. **线上能否归因？**——Invariant / Telemetry / correlation。
+
+缺任何一层，故障都可能退化成“看起来没工作”。
+
+## 诊断的边界
+
+这些证据可以帮助定位运行时责任层，但不能自动证明模型业务答案正确，也不能用 Telemetry 代替回放测试。性能问题仍需要 benchmark；安全边界仍需要对应 Sandbox / Approval 证据；跨版本问题还要回到版本锁和迁移说明。
 
 源码定位建议从 `packages/runtime-diagnostics/`、`docs/subsystems/invariants.zh.md`、`docs/subsystems/token-meter.zh.md`、`docs/subsystems/session-telemetry.zh.md`、`docs/config-catalog.zh.md` 与 `docs/tool-catalog.zh.md` 进入。
