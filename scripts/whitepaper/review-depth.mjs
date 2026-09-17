@@ -32,7 +32,7 @@ const P1_DEPTH_ARTICLES = [
 const typeSignals = {
   "mechanism-explanation": [
     ["concrete process", /一次|过程|经历|状态变化|sequenceDiagram|flowchart/i],
-    ["ownership/responsibility", /所有权|谁拥有|谁负责|拥有者|事实层|职责/i],
+    ["ownership/responsibility", /所有权|拥有者|谁拥有|谁负责|职责|责任|控制权|谁能控制|持有|归属|权力模型|不同权力|事实层/i],
     ["failure/recovery boundary", /失败|取消|恢复|拒绝|冲突|边界/i],
     ["application/diagnosis", /排障|判断|定位|继续阅读|怎么选|如何继续|诊断/i],
   ],
