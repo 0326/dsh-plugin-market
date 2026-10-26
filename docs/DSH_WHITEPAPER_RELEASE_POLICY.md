@@ -72,3 +72,9 @@ RC 和正式版本都是独立、完整的白皮书版本，不覆盖彼此内�
 维护；版本与白皮书内容状态由 canonical manifest 维护。任何后续 GitHub Action、Codex 定时任务或人工同步脚本都必须复用这两个入口，不自行维护另一套 prerelease 判断或导航注册表。
 
 检测到上游新版本不代表白皮书已经发布。`upstreamLatest` 表示策略范围内已发现的最新上游版本，`latestPublished` 只有在内容与工程门禁完成后才能前移。
+
+### Preview 语义
+
+检测到新的 RC / 正式版本后，可以先创建完整 `preview` 快照：`upstreamLatest` 前移到该版本，但 `latestPublished` 保持不变。Preview 章节允许使用 `status: draft`，用于明确“版本和来源已锁定，但正文尚未逐章完成源码复核”。
+
+只有完成逐章复核、将章节状态切为 `verified`、通过工程门禁并完成 Review 后，版本才能改为 `published`，并成为新的 `latestPublished`。
