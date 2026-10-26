@@ -187,7 +187,8 @@ for (const version of versions) {
 		}
 		if (meta.chapter_id !== article.id || meta.slug !== article.slug || meta.title !== article.title) errors.push(`${version.id}/${article.file}: canonical article metadata mismatch`);
 		if (meta.dsh_version !== version.id || meta.upstream_tag !== version.tag || meta.upstream_commit !== version.commit) errors.push(`${version.id}/${article.file}: upstream pin mismatch`);
-		if (version.status === "published" && article.verification === "reviewed" && meta.status !== "verified") errors.push(`${version.id}/${article.file}: published reviewed content requires frontmatter status: verified`);\n\t\tif (version.status === "preview" && meta.status !== "draft" && meta.status !== "verified") errors.push(`${version.id}/${article.file}: preview content status must be draft or verified`);
+		if (version.status === "published" && article.verification === "reviewed" && meta.status !== "verified") errors.push(`${version.id}/${article.file}: published reviewed content requires frontmatter status: verified`);
+		if (version.status === "preview" && meta.status !== "draft" && meta.status !== "verified") errors.push(`${version.id}/${article.file}: preview content status must be draft or verified`);
 		if (!Array.isArray(meta.sources) || meta.sources.length === 0 || meta.sources.some((source) => typeof source !== "string" || source.startsWith("http") || source.includes(".."))) {
 			errors.push(`${version.id}/${article.file}: sources must be non-empty official repository-relative paths`);
 		}
