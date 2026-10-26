@@ -5,15 +5,15 @@ import { dirname, resolve } from "node:path";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
 const domainConfig = JSON.parse(readFileSync(resolve(root, "config/cloudflare-domains.json"), "utf8"));
-const versions = JSON.parse(readFileSync(resolve(root, "src/react-app/content/whitepaper/versions.json"), "utf8"));
+const manifest = JSON.parse(readFileSync(resolve(root, "src/react-app/content/whitepaper/manifest.json"), "utf8"));
 
 const whitepaperDomain = domainConfig.domains.find((item) => item.hostname.startsWith("whitepaper."));
 if (!whitepaperDomain) throw new Error("No whitepaper custom domain configured");
-if (!versions.latestPublished) throw new Error("versions.json does not define latestPublished");
+if (!manifest.policy?.latestPublished) throw new Error("manifest.json does not define policy.latestPublished");
 
 const whitepaperOrigin = `https://${whitepaperDomain.hostname}`;
 const marketOrigin = "https://dsh-plugin.market";
-const concretePath = `/${encodeURIComponent(versions.latestPublished)}/overview`;
+const concretePath = `/${encodeURIComponent(manifest.policy.latestPublished)}/overview`;
 const concreteUrl = `${whitepaperOrigin}${concretePath}`;
 const attempts = 12;
 const delayMs = 5_000;
@@ -32,7 +32,7 @@ async function checkMigration() {
     throw new Error(`latest redirect mismatch: ${latestResponse.status} ${latestResponse.headers.get("location")}`);
   }
 
-  const legacyUrl = `${marketOrigin}/whitepaper/${encodeURIComponent(versions.latestPublished)}/overview`;
+  const legacyUrl = `${marketOrigin}/whitepaper/${encodeURIComponent(manifest.policy.latestPublished)}/overview`;
   const legacyResponse = await fetch(legacyUrl, { redirect: "manual" });
   if (legacyResponse.status !== 301 || legacyResponse.headers.get("location") !== concreteUrl) {
     throw new Error(`legacy redirect mismatch: ${legacyResponse.status} ${legacyResponse.headers.get("location")}`);

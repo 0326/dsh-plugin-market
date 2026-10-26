@@ -14,7 +14,7 @@ export default function WhitepaperVersions() {
 			<div className="wp-version-list">
 				{WHITEPAPER_VERSIONS.map((version) => (
 					<a key={version.id} href={whitepaperHrefForHost(currentHostname(), version.id, version.chapters[0]?.slug ?? "overview")} className="wp-version-row">
-						<div><strong>{version.label}</strong>{version.id === WHITEPAPER_LATEST_VERSION && <span>Latest</span>}</div>
+						<div><strong>{version.label}</strong>{version.id === WHITEPAPER_LATEST_VERSION && <span>Latest</span>}{version.status === "preview" && <span>最新 RC · 预览，待源码复核</span>}</div>
 						<p>{version.chapters.length} 个章节 · DSH 发布于 {version.releasedAt}</p>
 						<code>{version.upstreamCommit}</code>
 					</a>
