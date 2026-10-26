@@ -45,7 +45,7 @@ function VersionSelect({ version, chapter }: { version: WhitepaperVersion; chapt
 					navigate(chapterHref(target, nextChapter));
 				}}
 			>
-				{WHITEPAPER_VERSIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+				{WHITEPAPER_VERSIONS.map((item) => <option key={item.id} value={item.id}>{item.label}{item.status === "preview" ? " · Preview" : ""}</option>)}
 			</select>
 		</label>
 	);
@@ -89,6 +89,7 @@ export function WhitepaperLayout({ version, chapter, notFound = false }: Whitepa
 	const index = version.chapters.findIndex((item) => item.id === chapter.id);
 	const previous = index > 0 ? version.chapters[index - 1] : undefined;
 	const next = index >= 0 ? version.chapters[index + 1] : undefined;
+	const newestPreview = WHITEPAPER_VERSIONS.find((item) => item.status === "preview" && item.id !== version.id);
 
 	return (
 		<div className="whitepaper-shell">
@@ -117,6 +118,14 @@ export function WhitepaperLayout({ version, chapter, notFound = false }: Whitepa
 
 				<article className="wp-article">
 					{notFound && <div className="wp-version-notice">当前版本不存在请求的文章，已返回该版本首篇文章。</div>}
+					{version.status === "published" && newestPreview && (
+						<div className="wp-version-notice">
+							DSH 已发布 {newestPreview.label}，新版本白皮书处于预览阶段、尚未完成源码复核。{" "}
+							<a href={chapterHref(newestPreview, chapterForId(newestPreview, chapter.id) ?? newestPreview.chapters[0])}>
+								阅读 {newestPreview.label} 预览版
+							</a>
+						</div>
+					)}
 					<MarkdownRenderer html={chapter.html} />
 					<footer className="wp-article-footer">
 						{previous ? <a href={chapterHref(version, previous)}>← {previous.title}</a> : <span />}
